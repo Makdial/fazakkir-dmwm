@@ -1,0 +1,699 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{{ video.title }} - Fazakkir{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/videos.css' %}">
+<link rel="stylesheet" href="{% static 'css/videoplayer.css' %}">
+<link rel="stylesheet" href="{% static 'css/social.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="video-player-container">
+    <div class="video-player">
+        <video id="video-player" controls preload="metadata" playsinline
+               poster="{{ video.display_thumbnail_url }}"
+               src="{{ video.playback_url }}">
+            {% for track in subtitle_tracks %}
+            <track id="track-{{ track.language_code }}"
+                   kind="subtitles"
+                   srclang="{% if track.is_lyrics %}und{% else %}{{ track.language_code }}{% endif %}"
+                   label="{{ track.display_label }}"
+                   src="{% url 'videos:subtitle_file' video.id track.language_code %}">
+            {% endfor %}
+        </video>
+        <audio id="audio-player" controls preload="none" class="audio-player" style="display: none;">
+            {% for track in subtitle_tracks %}
+            <track id="atrack-{{ track.language_code }}"
+                   kind="subtitles"
+                   srclang="{% if track.is_lyrics %}und{% else %}{{ track.language_code }}{% endif %}"
+                   label="{{ track.display_label }}"
+                   src="{% url 'videos:subtitle_file' video.id track.language_code %}">
+            {% endfor %}
+        </audio>
+        <div id="video-error" class="video-error" style="display: none;">
+            <span class="error-icon">⚠</span>
+            <p>{% trans "Video Unavailable" %}</p>
+            <small>{% trans "The video file could not be loaded." %}</small>
+        </div>
+    </div>
+
+    {% if subtitle_tracks %}
+    <div class="subtitle-controls">
+        <span class="subtitle-title">{% trans "Subtitles" %}</span>
+        <div class="subtitle-toggle" role="group" aria-label="{% trans 'Subtitles' %}">
+            <button type="button" class="subtitle-btn active" data-lang=""
+                    onclick="setSubtitle('')">{% trans "Off" %}</button>
+            {% for track in subtitle_tracks %}
+            <button type="button" class="subtitle-btn" data-lang="{{ track.language_code }}"
+                    onclick="setSubtitle('{{ track.language_code }}')">
+                {% if track.is_lyrics %}♪ {% endif %}{{ track.display_label }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if audio_pending %}
+    <div class="audio-status" id="audioStatus"
+         data-status-url="{% url 'videos:audio_status' video.id %}"
+         data-generate-url="{% url 'videos:audio_generate' video.id %}">
+        <span class="audio-spinner" aria-hidden="true"></span>
+        <span>{% trans "Preparing the audio (MP3) for this video…" %}</span>
+    </div>
+    {% elif audio_failed %}
+    <div class="audio-status audio-status-error" id="audioStatus"
+         data-status-url="{% url 'videos:audio_status' video.id %}"
+         data-generate-url="{% url 'videos:audio_generate' video.id %}">
+        <span>{% trans "The audio could not be generated." %}</span>
+        <button type="button" class="download-btn" onclick="retryAudio(this)">{% trans "Try again" %}</button>
+    </div>
+    {% elif audio_none %}
+    <div class="audio-status audio-status-muted">
+        <span>{% trans "This video has no audio track." %}</span>
+    </div>
+    {% endif %}
+
+    {% if video.has_audio or video.video_download_url %}
+    <div class="player-controls">
+        {% if video.has_audio %}
+        <div class="mode-toggle" role="group" aria-label="{% trans 'Playback mode' %}">
+            <button type="button" id="mode-video" class="mode-btn active"
+                    onclick="setMode('video')">{% trans "Video" %}</button>
+            <button type="button" id="mode-audio" class="mode-btn"
+                    onclick="setMode('audio')">{% trans "Listen (MP3)" %}</button>
+        </div>
+        {% endif %}
+        <div class="player-downloads">
+            <a class="download-btn" href="{{ video.video_download_url }}" download>⬇ {% trans "Download video" %}</a>
+            {% if video.has_audio %}
+            <a class="download-btn" href="{{ video.audio_download_url }}" download>⬇ {% trans "Download MP3" %}</a>
+            <button type="button" class="download-btn offline-btn" id="offlineToggle"
+                    data-offline-url="{% url 'videos:audio_stream' video.id %}"
+                    data-offline-title="{{ video.title }}"
+                    data-label-save="{% trans 'Save offline' %}"
+                    data-label-saved="{% trans 'Saved offline' %}"
+                    data-label-remove="{% trans 'Remove download' %}"
+                    data-label-error="{% trans 'Could not update the offline copy. Check your connection.' %}">⤓ {% trans "Save offline" %}</button>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="video-details">
+        <h1>{{ video.title }}</h1>
+
+        <div class="video-stats">
+            <span class="video-stats-left">
+                {% blocktrans count counter=video.views %}{{ counter }} view{% plural %}{{ counter }} views{% endblocktrans %}
+                | {{ video.created_at|date:"M d, Y" }}
+            </span>
+            <div class="video-actions">
+                <button class="vote-btn {% if user_vote == 1 %}active{% endif %}" data-vote="like" onclick="vote({{ video.id }}, 'like')">
+                    👍 <span id="like-count">{{ video.likes }}</span>
+                </button>
+                {% if user.is_authenticated %}
+                <button type="button" class="vote-btn" id="saveToggle" aria-expanded="false" onclick="toggleSaveMenu()">
+                    ＋ {% trans "Save" %}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if user.is_authenticated %}
+        <div class="save-panel" id="savePanel" hidden>
+            <div class="save-panel-head">{% trans "Save to playlist" %}</div>
+            <ul class="save-panel-list">
+                {% for pl in user_playlists %}
+                <li>
+                    <label class="save-item">
+                        <input type="checkbox" data-playlist="{{ pl.id }}"
+                               {% if pl.id in playlist_ids_with_video %}checked{% endif %}
+                               onchange="togglePlaylist({{ pl.id }}, this)">
+                        <span class="save-item-title">{{ pl.title }}</span>
+                        <span class="save-count">{{ pl.item_count }}</span>
+                    </label>
+                </li>
+                {% empty %}
+                <li class="save-empty">{% trans "No playlists yet." %}</li>
+                {% endfor %}
+            </ul>
+            <form class="save-new" onsubmit="return createPlaylistFromSave(event)">
+                <input type="text" id="saveNewTitle" class="form-input"
+                       placeholder="{% trans 'New playlist name' %}" maxlength="120">
+                <button type="submit" class="btn-small">{% trans "Create" %}</button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="video-channel">
+            <div class="channel-avatar">{{ video.user.username|slice:":1" }}</div>
+            <a href="{% url 'videos:channel' video.user.username %}" class="channel-name">{{ video.user.username }}</a>
+        </div>
+
+        {% if video.description %}
+        <p class="video-description">{{ video.description }}</p>
+        {% endif %}
+
+        {% if can_write %}
+        <div class="auto-sub-panel" id="autoSubPanel"
+             data-generate-url="{% url 'videos:subtitles_generate' video.id %}"
+             data-status-url="{% url 'videos:subtitles_status' video.id %}">
+            <div class="auto-sub-head">
+                <span class="auto-sub-title">{% trans "Automatic subtitles" %}</span>
+                {% if not subtitles_configured %}
+                <span class="badge badge-warning">{% trans "Not configured" %}</span>
+                {% elif subtitles_failed %}
+                <span class="badge badge-critical">{% trans "Failed" %}</span>
+                {% elif subtitles_pending %}
+                <span class="badge badge-warning" id="autoSubBadge">{% trans "Not generated" %}</span>
+                {% else %}
+                <span class="badge badge-ok" id="autoSubBadge">{% trans "Ready" %}</span>
+                {% endif %}
+            </div>
+            <p class="auto-sub-hint">
+                {% trans "Transcribe the audio and translate it automatically, without uploading a file." %}
+            </p>
+            <div class="auto-sub-actions">
+                <button type="button" class="btn-small" id="autoSubBtn"
+                        {% if not subtitles_configured or not video.has_audio %}disabled{% endif %}>
+                    {% if subtitles_pending %}{% trans "Generate subtitles" %}{% else %}{% trans "Regenerate subtitles" %}{% endif %}
+                </button>
+                <span class="auto-sub-message" id="autoSubMessage" role="status"></span>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="comments-section">
+            <h2 class="comments-title">
+                {% trans "Comments" %} <span class="comments-count" id="commentsCount">{{ comment_count }}</span>
+            </h2>
+
+            {% if user.is_authenticated %}
+            <form class="comment-form" onsubmit="return postComment(event)">
+                <textarea id="commentBody" class="form-input" rows="2" maxlength="2000"
+                          placeholder="{% trans 'Add a comment…' %}" required></textarea>
+                <button type="submit" class="btn btn-primary btn-comment">{% trans "Comment" %}</button>
+            </form>
+            {% else %}
+            <p class="comment-signin">
+                <a href="{% url 'accounts:login' %}">{% trans "Sign in" %}</a> {% trans "to add a comment." %}
+            </p>
+            {% endif %}
+
+            <div class="comment-list" id="commentList">
+                {% for comment in comments %}
+                <div class="comment" data-comment="{{ comment.id }}">
+                    <span class="comment-avatar">{{ comment.user.username|slice:":1"|upper }}</span>
+                    <div class="comment-body">
+                        <div class="comment-head">
+                            <span class="comment-author">{{ comment.user.username }}</span>
+                            <span class="comment-date">{{ comment.created_at|date:"M d, Y H:i" }}</span>
+                        </div>
+                        <p class="comment-text">{{ comment.body }}</p>
+                    </div>
+                    {% if comment.user_id == user.id or can_write %}
+                    <button type="button" class="icon-btn" title="{% trans 'Delete' %}"
+                            onclick="deleteComment({{ comment.id }})">✕</button>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="comment-empty" id="commentEmpty">{% trans "No comments yet. Be the first!" %}</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if can_write %}
+        <div class="video-owner-actions">
+            <button class="delete-btn" type="button" onclick="deleteVideo({{ video.id }})">{% trans "Delete video" %}</button>
+        </div>
+
+        <div class="subtitle-admin">
+            <h2>{% trans "Subtitles & lyrics" %}</h2>
+            <p class="subtitle-hint">
+                {% trans "Upload a .vtt, .srt or .txt file for each language. Viewers can turn them on or off." %}
+            </p>
+
+            <form id="subtitleForm" class="subtitle-form" onsubmit="return uploadSubtitle(event)">
+                <select id="subtitleLanguage" class="form-input" aria-label="{% trans 'Language' %}">
+                    {% for code, name in subtitle_choices %}
+                    <option value="{{ code }}">{{ name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="file" id="subtitleFile" class="form-input" accept=".vtt,.srt,.txt" required>
+                <button type="submit" class="btn-submit">{% trans "Upload subtitle" %}</button>
+            </form>
+
+            <ul class="subtitle-list">
+                {% for track in subtitle_tracks %}
+                <li>
+                    <span>{% if track.is_lyrics %}♪ {% endif %}{{ track.display_label }}</span>
+                    <button type="button" class="delete-btn"
+                            onclick="deleteSubtitle('{{ track.language_code }}')">{% trans "Delete" %}</button>
+                </li>
+                {% empty %}
+                <li class="subtitle-empty">{% trans "No subtitles yet." %}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const videoPlayer = document.getElementById("video-player")
+const audioPlayer = document.getElementById("audio-player")
+const audioSrc = "{% url 'videos:audio_stream' video.id %}"
+const videoError = document.getElementById("video-error")
+const videoId = {{ video.id }}
+
+// --- Automatic MP3 generation -------------------------------------------
+// The detail view starts generating a missing MP3 in the background. While
+// that runs we poll for completion and reload the page once it is ready so the
+// Listen / Download MP3 controls appear without a manual refresh.
+const audioStatusEl = document.getElementById("audioStatus")
+if (audioStatusEl && audioStatusEl.dataset.statusUrl &&
+        !audioStatusEl.classList.contains("audio-status-error")) {
+    const statusUrl = audioStatusEl.dataset.statusUrl
+    const pollAudio = () => {
+        fetch(statusUrl)
+            .then(r => r.json())
+            .then(data => {
+                if (data.has_audio || !data.pending) window.location.reload()
+                else setTimeout(pollAudio, 5000)
+            })
+            .catch(() => setTimeout(pollAudio, 8000))
+    }
+    setTimeout(pollAudio, 4000)
+}
+
+function retryAudio(button) {
+    const el = document.getElementById("audioStatus")
+    const url = el ? el.dataset.generateUrl : ""
+    if (!url) return
+    button.disabled = true
+    fetch(url, { method: "POST", headers: { "X-CSRFToken": csrf } })
+        .then(() => window.location.reload())
+        .catch(() => { button.disabled = false })
+}
+
+if (videoPlayer) {
+    videoPlayer.addEventListener("error", () => {
+        videoPlayer.style.display = "none"
+        videoError.style.display = "flex"
+    })
+}
+
+function setMode(mode) {
+    if (!audioPlayer || !videoPlayer) return
+
+    const videoBtn = document.getElementById("mode-video")
+    const audioBtn = document.getElementById("mode-audio")
+
+    if (mode === "audio") {
+        if (!audioPlayer.getAttribute("src")) audioPlayer.setAttribute("src", audioSrc)
+        videoPlayer.pause()
+        videoPlayer.style.display = "none"
+        audioPlayer.style.display = "block"
+        setActivePlayer(audioPlayer)
+        audioPlayer.play().catch(() => {})
+        audioBtn.classList.add("active")
+        videoBtn.classList.remove("active")
+    } else {
+        audioPlayer.pause()
+        audioPlayer.style.display = "none"
+        videoPlayer.style.display = ""
+        setActivePlayer(videoPlayer)
+        videoBtn.classList.add("active")
+        audioBtn.classList.remove("active")
+    }
+    syncPlaybackState()
+    applySubtitle(currentSubtitle)
+}
+
+// --- Media Session: playback in the background ------------------------------
+// Registers the current media with the OS so that playback survives the screen
+// locking / the app being backgrounded, and so the lock-screen, headset and
+// notification-panel controls work on mobile, tablet and desktop alike.
+// Without this some browsers pause or hide the player when the page is hidden.
+const mediaSession = navigator.mediaSession || null
+let activePlayer = videoPlayer
+
+function mediaMetadata() {
+    const metadata = {
+        title: "{{ video.title|escapejs }}",
+        artist: "{{ video.user.username|escapejs }}",
+        album: "{% trans 'Fazakkir' %}",
+    }
+    const artwork = "{{ video.display_thumbnail_url|escapejs }}"
+    if (artwork) {
+        metadata.artwork = [{ src: artwork, sizes: "512x512", type: "image/jpeg" }]
+    }
+    return new MediaMetadata(metadata)
+}
+
+function setActivePlayer(player) {
+    activePlayer = player || null
+    if (!mediaSession) return
+    try { mediaSession.metadata = mediaMetadata() } catch (e) {}
+}
+
+function syncPlaybackState() {
+    if (!mediaSession) return
+    try {
+        mediaSession.playbackState =
+            activePlayer && !activePlayer.paused ? "playing" : "paused"
+    } catch (e) {}
+}
+
+function bindMediaSession() {
+    if (!mediaSession) return
+
+    // Listen on both elements so switching mode keeps the state correct.
+    [videoPlayer, audioPlayer].forEach(el => {
+        if (!el) return
+        ;["play", "pause", "ended", "emptied"].forEach(name =>
+            el.addEventListener(name, syncPlaybackState))
+    })
+
+    const seekBy = (delta) => {
+        if (!activePlayer) return
+        const length = activePlayer.duration
+        if (!isFinite(length)) return
+        activePlayer.currentTime = Math.max(0, Math.min(length, activePlayer.currentTime + delta))
+    }
+
+    const handlers = {
+        play:  () => activePlayer && activePlayer.play().catch(() => {}),
+        pause: () => activePlayer && activePlayer.pause(),
+        seekbackward: () => seekBy(-10),
+        seekforward: () => seekBy(10),
+        stop:  () => {
+            if (!activePlayer) return
+            activePlayer.pause()
+            try { activePlayer.currentTime = 0 } catch (e) {}
+        },
+    }
+    Object.keys(handlers).forEach(action => {
+        // Not every browser supports every action; unsupported ones throw.
+        try { mediaSession.setActionHandler(action, handlers[action]) } catch (e) {}
+    })
+
+    try { mediaSession.metadata = mediaMetadata() } catch (e) {}
+    syncPlaybackState()
+}
+
+bindMediaSession()
+
+// --- Subtitles / lyrics ---------------------------------------------------
+
+let currentSubtitle = ""
+
+function applySubtitle(lang) {
+    [videoPlayer, audioPlayer].forEach(el => {
+        if (!el || !el.textTracks) return
+        for (const track of el.textTracks) {
+            const code = (track.id || "").replace(/^a?track-/, "")
+            track.mode = (lang && code === lang) ? "showing" : "disabled"
+        }
+    })
+    document.querySelectorAll(".subtitle-btn").forEach(btn => {
+        btn.classList.toggle("active", (btn.dataset.lang || "") === lang)
+    })
+}
+
+function setSubtitle(lang) {
+    currentSubtitle = lang
+    try { localStorage.setItem("fazakkir-subtitle", lang) } catch (e) {}
+    applySubtitle(lang)
+}
+
+// Restore the viewer's last choice, or a track marked as enabled by default.
+try {
+    currentSubtitle = localStorage.getItem("fazakkir-subtitle") || ""
+} catch (e) {}
+
+// Ignore a remembered track that does not exist on this video.
+if (currentSubtitle && !document.querySelector(`.subtitle-btn[data-lang="${currentSubtitle}"]`)) {
+    currentSubtitle = ""
+}
+
+applySubtitle(currentSubtitle)
+
+const csrf = '{{ csrf_token }}'
+
+function deleteVideo(videoId) {
+    if (!confirm("{% trans 'Are you sure you want to delete this video?' %}")) return
+    fetch(`/${videoId}/delete/`, {method: "POST", headers: { "X-CSRFToken": csrf }})
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) window.location.href = '{% url "videos:list" %}'
+            else alert(data.error || "{% trans 'Failed to delete.' %}")
+        })
+        .catch(() => alert("{% trans 'Failed to delete.' %}"))
+}
+
+function uploadSubtitle(event) {
+    event.preventDefault()
+    const fileInput = document.getElementById("subtitleFile")
+    const language = document.getElementById("subtitleLanguage").value
+    if (!fileInput.files.length) return false
+
+    const formData = new FormData()
+    formData.append("language_code", language)
+    formData.append("subtitle_file", fileInput.files[0])
+
+    fetch(`/${videoId}/subtitles/upload/`, {
+        method: "POST", headers: { "X-CSRFToken": csrf }, body: formData
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) location.reload()
+            else alert(data.error || "{% trans 'Upload failed' %}")
+        })
+        .catch(() => alert("{% trans 'Upload failed' %}"))
+    return false
+}
+
+function deleteSubtitle(language) {
+    if (!confirm("{% trans 'Remove this subtitle track?' %}")) return
+    fetch(`/${videoId}/subtitles/${language}/delete/`, {
+        method: "POST", headers: { "X-CSRFToken": csrf }
+    })
+        .then(r => r.json())
+        .then(data => { if (data.success) location.reload() })
+        .catch(() => alert("{% trans 'Failed to delete.' %}"))
+}
+
+// --- Automatic subtitles ---------------------------------------------------
+
+const autoSubPanel = document.getElementById("autoSubPanel");
+if (autoSubPanel) {
+    const autoSubBtn = document.getElementById("autoSubBtn");
+    const autoSubMessage = document.getElementById("autoSubMessage");
+
+    const pollSubtitles = () => {
+        fetch(autoSubPanel.dataset.statusUrl)
+            .then(r => r.json())
+            .then(data => {
+                // Reload once the run finishes so the new tracks appear in the
+                // player and in the language buttons above it.
+                if (!data.pending) { location.reload(); return }
+                autoSubMessage.textContent = "{% trans 'Transcribing and translating…' %}";
+                setTimeout(pollSubtitles, 4000);
+            })
+            .catch(() => setTimeout(pollSubtitles, 8000));
+    }
+
+    autoSubBtn.addEventListener("click", () => {
+        autoSubBtn.disabled = true;
+        autoSubMessage.textContent = "{% trans 'Starting…' %}";
+        fetch(autoSubPanel.dataset.generateUrl, {
+            method: "POST", headers: { "X-CSRFToken": csrf }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    autoSubBtn.disabled = false;
+                    alert(data.error || "{% trans 'Failed.' %}");
+                    return;
+                }
+                pollSubtitles();
+            })
+            .catch(() => {
+                autoSubBtn.disabled = false;
+                autoSubMessage.textContent = "";
+            });
+    });
+}
+
+function vote(videoId, voteType) {
+    {% if not user.is_authenticated %}
+    window.location.href = '{% url "accounts:login" %}'
+    return
+    {% endif %}
+
+    fetch(`/${videoId}/vote/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": csrf
+        },
+        body: `vote=${voteType}`
+    })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById("like-count").textContent = data.likes
+            const dislikeCount = document.getElementById("dislike-count")
+            if (dislikeCount) dislikeCount.textContent = data.dislikes
+            document.querySelectorAll(".vote-btn").forEach(btn => btn.classList.remove("active"))
+            if (data.user_vote === 1) document.querySelector('[data-vote="like"]').classList.add("active")
+            else if (data.user_vote === -1) document.querySelector('[data-vote="dislike"]').classList.add("active")
+        })
+}
+
+// --- Save to playlist ------------------------------------------------------
+
+const PLAYLIST_TOGGLE_URL = "{% url 'videos:playlist_toggle' 0 %}"
+const COMMENT_DELETE_URL = "{% url 'videos:comment_delete' 0 %}"
+
+function withId(template, id) {
+    return template.replace("/0/", `/${id}/`)
+}
+
+function toggleSaveMenu() {
+    const panel = document.getElementById("savePanel")
+    const btn = document.getElementById("saveToggle")
+    if (!panel) return
+    const willOpen = panel.hasAttribute("hidden")
+    if (willOpen) {
+        panel.removeAttribute("hidden")
+        if (btn) btn.setAttribute("aria-expanded", "true")
+    } else {
+        panel.setAttribute("hidden", "")
+        if (btn) btn.setAttribute("aria-expanded", "false")
+    }
+}
+
+function togglePlaylist(playlistId, checkbox) {
+    fetch(withId(PLAYLIST_TOGGLE_URL, playlistId), {
+        method: "POST",
+        headers: { "X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ video_id: videoId }).toString(),
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                alert(data.error || "{% trans 'Failed.' %}")
+                checkbox.checked = !checkbox.checked
+                return
+            }
+            const row = checkbox.closest(".save-item")
+            const count = row ? row.querySelector(".save-count") : null
+            if (count) count.textContent = data.count
+        })
+        .catch(() => { checkbox.checked = !checkbox.checked })
+}
+
+function createPlaylistFromSave(event) {
+    event.preventDefault()
+    const input = document.getElementById("saveNewTitle")
+    const title = input.value.trim()
+    if (!title) return false
+
+    fetch("{% url 'videos:playlist_create' %}", {
+        method: "POST",
+        headers: { "X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ title: title, video_id: videoId }).toString(),
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) { alert(data.error || "{% trans 'Failed.' %}"); return }
+            window.location.reload()
+        })
+        .catch(() => alert("{% trans 'Failed.' %}"))
+    return false
+}
+
+// --- Comments --------------------------------------------------------------
+
+function postComment(event) {
+    event.preventDefault()
+    const box = document.getElementById("commentBody")
+    const body = box.value.trim()
+    if (!body) return false
+
+    fetch(`/${videoId}/comments/add/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ body: body }).toString(),
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) { alert(data.error || "{% trans 'Failed.' %}"); return }
+            box.value = ""
+            addCommentToDom(data.comment)
+            document.getElementById("commentsCount").textContent = data.comment_count
+        })
+        .catch(() => alert("{% trans 'Failed.' %}"))
+    return false
+}
+
+function addCommentToDom(comment) {
+    const list = document.getElementById("commentList")
+    const empty = document.getElementById("commentEmpty")
+    if (empty) empty.remove()
+
+    const el = document.createElement("div")
+    el.className = "comment"
+    el.dataset.comment = comment.id
+
+    const avatar = document.createElement("span")
+    avatar.className = "comment-avatar"
+    avatar.textContent = comment.initial
+
+    const body = document.createElement("div")
+    body.className = "comment-body"
+    const head = document.createElement("div")
+    head.className = "comment-head"
+    const author = document.createElement("span")
+    author.className = "comment-author"
+    author.textContent = comment.user
+    const date = document.createElement("span")
+    date.className = "comment-date"
+    date.textContent = comment.created
+    head.append(author, date)
+    const text = document.createElement("p")
+    text.className = "comment-text"
+    text.textContent = comment.body
+    body.append(head, text)
+
+    const remove = document.createElement("button")
+    remove.type = "button"
+    remove.className = "icon-btn"
+    remove.textContent = "✕"
+    remove.addEventListener("click", () => deleteComment(comment.id))
+
+    el.append(avatar, body, remove)
+    list.prepend(el)
+}
+
+function deleteComment(commentId) {
+    if (!confirm("{% trans 'Delete this comment?' %}")) return
+    fetch(withId(COMMENT_DELETE_URL, commentId), {
+        method: "POST", headers: { "X-CSRFToken": csrf },
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) { alert(data.error || "{% trans 'Failed.' %}"); return }
+            const el = document.querySelector(`.comment[data-comment="${commentId}"]`)
+            if (el) el.remove()
+            document.getElementById("commentsCount").textContent = data.comment_count
+        })
+        .catch(() => alert("{% trans 'Failed.' %}"))
+}
+</script>
+{% endblock %}

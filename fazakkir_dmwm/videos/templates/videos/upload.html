@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Upload Video" %} - Fazakkir{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/videos.css' %}">
+<link rel="stylesheet" href="{% static 'css/upload.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="upload-overlay" id="uploadOverlay">
+    <div class="upload-progress-container">
+        <div class="upload-spinner"></div>
+        <h2 id="uploadStatus">{% trans "Uploading Video..." %}</h2>
+        <p class="upload-warning">{% trans "Please don't close this page" %}</p>
+    </div>
+</div>
+
+<div class="upload-container">
+    <div class="upload-card">
+        <h1>{% trans "Upload Video" %}</h1>
+
+        {% if not storage_ready %}
+        <p class="storage-warning">
+            {% trans "Video storage is not configured yet. Add your Cloudflare R2 credentials to the .env file." %}
+        </p>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" class="upload-form" id="uploadForm">
+            {% csrf_token %}
+
+            <div id="errorContainer">
+                {% if form.errors %}
+                    <ul class="error-list">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_title">{% trans "Title" %}</label>
+                <input type="text" name="title" id="id_title" class="form-input"
+                       placeholder="{% trans 'Enter video title' %}"
+                       value="{{ form.title.value|default:'' }}" required/>
+            </div>
+
+            <div class="form-group">
+                <label for="id_description">{% trans "Description" %}</label>
+                <textarea name="description" id="id_description" class="form-input"
+                          placeholder="{% trans 'Enter video description' %}" rows="3">{{ form.description.value|default:'' }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="id_video_file">{% trans "Video File" %}</label>
+                <label class="file-input-wrapper" for="id_video_file">
+                    <span id="video-label">{% trans "Click to select a video file" %}</span>
+                </label>
+                <input type="file" name="video_file" id="id_video_file" accept="video/*" required style="display:none;"/>
+                <span class="help-text">{% trans "MP4, WebM, MOV or AVI. Max 3 GB." %}</span>
+                <span class="help-text">{% trans "An MP3 audio file is generated automatically." %}</span>
+            </div>
+
+            <div class="form-group">
+                <label for="customThumbnail">{% trans "Thumbnail (optional)" %}</label>
+                <label class="file-input-wrapper thumb-wrapper" for="customThumbnail">
+                    <img id="thumbPreview" alt="">
+                    <span id="thumb-label">{% trans "Click to select a thumbnail" %}</span>
+                </label>
+                <input type="file" id="customThumbnail" accept="image/*" style="display:none;"/>
+                <input type="hidden" name="thumbnail_data" id="thumbnailData"/>
+                <span class="help-text">{% trans "Leave empty to auto-generate a thumbnail from your video" %}</span>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">{% trans "Upload Video" %}</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const $ = id => document.getElementById(id);
+let customThumbnailChosen = false;
+
+function setThumbnail(dataUrl) {
+    if (!dataUrl) return;
+    $("thumbPreview").src = dataUrl;
+    $("thumbPreview").classList.add("visible");
+    $("thumb-label").style.display = "none";
+    $("thumbnailData").value = dataUrl;
+}
+
+// Capture a frame from the selected video so every upload gets a thumbnail.
+function generateThumbnail(file) {
+    return new Promise(resolve => {
+        const url = URL.createObjectURL(file);
+        const video = document.createElement("video");
+        video.preload = "metadata";
+        video.muted = true;
+        video.src = url;
+
+        video.addEventListener("loadedmetadata", () => {
+            const target = Math.min(1, (video.duration || 2) / 2);
+            video.currentTime = target;
+        });
+
+        video.addEventListener("seeked", () => {
+            try {
+                const canvas = document.createElement("canvas");
+                canvas.width = video.videoWidth || 1280;
+                canvas.height = video.videoHeight || 720;
+                canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL("image/jpeg", 0.8));
+            } catch (e) {
+                resolve("");
+            } finally {
+                URL.revokeObjectURL(url);
+            }
+        });
+
+        video.addEventListener("error", () => {
+            URL.revokeObjectURL(url);
+            resolve("");
+        });
+    });
+}
+
+$("id_video_file").onchange = async e => {
+    const file = e.target.files[0];
+    $("video-label").textContent = file ? file.name : "{% trans 'Click to select a video file' %}";
+
+    if (file && !customThumbnailChosen) {
+        const dataUrl = await generateThumbnail(file);
+        setThumbnail(dataUrl);
+    }
+};
+
+$("customThumbnail").onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    customThumbnailChosen = true;
+    const reader = new FileReader();
+    reader.onload = ev => setThumbnail(ev.target.result);
+    reader.readAsDataURL(file);
+};
+
+$("uploadForm").onsubmit = async e => {
+    e.preventDefault();
+
+    if (!$("id_video_file").files.length || !$("id_title").value.trim()) return;
+
+    $("uploadOverlay").classList.add("active");
+    $("submitBtn").disabled = true;
+    $("errorContainer").innerHTML = "";
+    window.onbeforeunload = () => "{% trans 'Upload in progress' %}";
+
+    try {
+        const res = await fetch("{% url 'videos:upload_submit' %}", {
+            method: "POST",
+            body: new FormData(e.target)
+        });
+        const data = await res.json();
+        window.onbeforeunload = null;
+
+        if (data.success) {
+            $("uploadStatus").textContent = "{% trans 'Upload complete!' %}";
+            setTimeout(() => location.href = '{% url "videos:list" %}', 500);
+        } else {
+            throw new Error(data.error || data.errors || "{% trans 'Upload failed' %}");
+        }
+    } catch (err) {
+        window.onbeforeunload = null;
+        $("uploadOverlay").classList.remove("active");
+        $("submitBtn").disabled = false;
+        $("errorContainer").innerHTML = `<ul class="error-list"><li>${err.message || "{% trans 'Upload failed' %}"}</li></ul>`;
+    }
+};
+</script>
+{% endblock %}

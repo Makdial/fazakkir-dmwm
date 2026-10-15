@@ -1,0 +1,720 @@
+import logging
+import os
+import tempfile
+from pathlib import Path
+
+from django.db.models import Count
+from django.http import Http404, HttpResponse, JsonResponse, StreamingHttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.translation import gettext as _
+from django.views.decorators.http import require_GET, require_POST
+
+from core.permissions import login_required, user_can_write, write_required
+
+from .audio import AudioExtractionError, extract_mp3, materialize
+from .audio_tasks import schedule_audio_generation
+from .forms import VideoUploadForm
+from .models import Comment, Playlist, PlaylistItem, SubtitleTrack, Video, VideoLike
+from .r2_storage import (
+    StorageError,
+    delete_file,
+    get_object,
+    is_configured,
+    is_object_path,
+    upload_audio,
+    upload_thumbnail,
+    upload_video,
+)
+from .subtitles import ALLOWED_SUBTITLE_EXTENSIONS, label_for, normalize_to_vtt
+from .transcription import (
+    is_configured as subtitles_configured,
+)
+from .transcription import (
+    schedule_subtitle_generation,
+)
+
+logger = logging.getLogger(__name__)
+
+
+def video_detail(request, video_id):
+    video = get_object_or_404(Video.objects, id=video_id)
+
+    video.views += 1
+    video.save(update_fields=["views"])
+
+    # Play counts as "please give me the audio": if this video has no MP3 yet,
+    # generate one in the background so the Listen / Download MP3 options show
+    # up without the administrator having to do anything.
+    if not video.has_audio and video.audio_status == "":
+        schedule_audio_generation(video.id)
+
+    audio_pending = not video.has_audio and video.audio_status in ("", "processing")
+    audio_failed = not video.has_audio and video.audio_status == "failed"
+    audio_none = not video.has_audio and video.audio_status == "none"
+
+    user_vote = None
+    if request.user.is_authenticated:
+        like = VideoLike.objects.filter(user=request.user, video=video).first()
+        if like:
+            user_vote = like.value
+
+    comments = video.comments.select_related("user").all()
+
+    user_playlists = []
+    playlist_ids_with_video = set()
+    if request.user.is_authenticated:
+        user_playlists = list(
+            request.user.playlists.annotate(item_count=Count("items"))
+        )
+        playlist_ids_with_video = set(
+            PlaylistItem.objects.filter(
+                playlist__user=request.user, video=video
+            ).values_list("playlist_id", flat=True)
+        )
+
+    return render(
+        request,
+        "videos/detail.html",
+        {
+            "video": video,
+            "user_vote": user_vote,
+            "comments": comments,
+            "comment_count": comments.count(),
+            "user_playlists": user_playlists,
+            "playlist_ids_with_video": playlist_ids_with_video,
+            "audio_pending": audio_pending,
+            "audio_failed": audio_failed,
+            "audio_none": audio_none,
+            "subtitles_configured": subtitles_configured(),
+            "subtitles_pending": video.auto_subtitle_status
+            in ("", "processing"),
+            "subtitles_failed": video.auto_subtitle_status == "failed",
+            "subtitle_tracks": video.subtitle_tracks.all(),
+            "subtitle_choices": [
+                ("ar", _("Arabic")),
+                ("fr", _("French")),
+                ("en", _("English")),
+                ("lyrics", _("Lyrics")),
+            ],
+        },
+    )
+
+
+def video_list(request):
+    videos = Video.objects.all()
+    return render(request, "videos/list.html", {"videos": videos})
+
+
+def channel_videos(request, username):
+    videos = Video.objects.filter(user__username=username)
+    return render(request, "videos/channel.html", {"videos": videos, "channel_name": username})
+
+
+def offline_library(request):
+    """A client-rendered list of the MP3s this device saved for offline use."""
+    return render(request, "videos/offline.html")
+
+
+# Chunk size used while streaming the MP3 back from R2.
+AUDIO_CHUNK_SIZE = 64 * 1024
+
+
+@require_GET
+def audio_stream(request, video_id):
+    """Stream a video's MP3 from R2 through this same origin.
+
+    Serving the audio from our own domain (instead of the expiring, cross-origin
+    R2 URL) lets the browser seek normally and lets the offline service worker
+    cache the file, so it can be replayed without a connection.
+    """
+    video = get_object_or_404(Video.objects, id=video_id)
+    if not video.audio_file_id:
+        raise Http404("This video has no audio track.")
+
+    # Legacy records keep their previously stored (external) URL.
+    if not is_object_path(video.audio_file_id):
+        if video.audio_url:
+            return redirect(video.audio_url)
+        raise Http404("This video has no audio track.")
+
+    range_header = request.headers.get("Range")
+    try:
+        obj = get_object(range_header=range_header, path=video.audio_file_id)
+    except StorageError:
+        # Fall back to a presigned URL so playback still works if the direct
+        # stream fails (for example when the R2 credentials are wrong).
+        fallback = video.audio_playback_url
+        if fallback:
+            return redirect(fallback)
+        raise Http404("Audio is not available right now.")
+
+    body = obj.get("Body")
+    content_range = obj.get("ContentRange")
+    length = obj.get("ContentLength")
+
+    def chunks():
+        try:
+            for chunk in body.iter_chunks(chunk_size=AUDIO_CHUNK_SIZE):
+                yield chunk
+        finally:
+            close = getattr(body, "close", None)
+            if callable(close):
+                close()
+
+    response = StreamingHttpResponse(
+        chunks(),
+        status=206 if content_range else 200,
+        content_type=obj.get("ContentType") or "audio/mpeg",
+    )
+    response["Accept-Ranges"] = "bytes"
+    if length is not None:
+        response["Content-Length"] = str(length)
+    if content_range:
+        response["Content-Range"] = content_range
+    response["Cache-Control"] = "public, max-age=3600"
+    return response
+
+
+@require_GET
+def audio_status(request, video_id):
+    """JSON endpoint the video page polls while an MP3 is being generated."""
+    video = get_object_or_404(Video.objects, id=video_id)
+    return JsonResponse(
+        {
+            "has_audio": video.has_audio,
+            "status": video.audio_status,
+            "pending": not video.has_audio
+            and video.audio_status in ("", "processing"),
+            "audio_url": reverse("videos:audio_stream", args=[video.id])
+            if video.has_audio
+            else "",
+            "download_url": video.audio_download_url if video.has_audio else "",
+        }
+    )
+
+
+@require_POST
+def audio_generate(request, video_id):
+    """Retry MP3 generation for a video whose first attempt failed."""
+    video = get_object_or_404(Video.objects, id=video_id)
+    if video.has_audio:
+        return JsonResponse({"success": True, "started": False, "status": "ready"})
+    started = schedule_audio_generation(video.id, retry=True)
+    return JsonResponse(
+        {"success": True, "started": started, "status": "processing"}
+    )
+
+
+@write_required
+def video_upload_page(request):
+    return render(
+        request,
+        "videos/upload.html",
+        {"form": VideoUploadForm(), "storage_ready": is_configured()},
+    )
+
+
+@write_required
+@require_POST
+def video_upload(request):
+    form = VideoUploadForm(request.POST, request.FILES)
+    if not form.is_valid():
+        errors = []
+        for field, field_errors in form.errors.items():
+            for error in field_errors:
+                errors.append(error if field == "__all__" else f"{field}: {error}")
+        return JsonResponse({"success": False, "errors": "; ".join(errors)})
+
+    video_file = form.cleaned_data["video_file"]
+    thumbnail_data = request.POST.get("thumbnail_data", "")
+
+    # Extract the audio first: uploading the video to R2 closes the temporary
+    # file Django saved the upload to, so it is gone afterwards.
+    audio_file_id, audio_url, audio_status = _extract_audio_track(
+        video_file, video_file.name
+    )
+
+    try:
+        video_file.seek(0)
+        result = upload_video(file_data=video_file, file_name=video_file.name)
+
+        thumbnail_file_id = ""
+        thumbnail_url = ""
+        if thumbnail_data.startswith("data:image"):
+            base_name = video_file.name.rsplit(".", 1)[0]
+            thumb_result = upload_thumbnail(
+                file_data=thumbnail_data,
+                file_name=base_name + "_thumb.jpg",
+            )
+            thumbnail_file_id = thumb_result["path"]
+            thumbnail_url = thumb_result["url"]
+    except StorageError as exc:
+        # Do not leave the MP3 orphaned if the video itself could not be stored.
+        if audio_file_id:
+            try:
+                delete_file(audio_file_id)
+            except StorageError:
+                pass
+        return JsonResponse({"success": False, "error": str(exc)})
+
+    video = Video.objects.create(
+        user=request.user,
+        title=form.cleaned_data["title"],
+        description=form.cleaned_data["description"],
+        file_id=result["path"],
+        video_url=result["url"],
+        thumbnail_file_id=thumbnail_file_id,
+        thumbnail_url=thumbnail_url,
+        audio_file_id=audio_file_id,
+        audio_url=audio_url,
+        audio_status=audio_status,
+    )
+
+    # Warn the administrator when the storage is getting full. Imported lazily
+    # to avoid an import cycle, and never allowed to break the upload.
+    try:
+        from dashboard.storage import check_and_notify
+
+        check_and_notify()
+    except Exception:  # noqa: BLE001 - a storage check must not fail an upload
+        logger.warning("Storage check after upload failed", exc_info=True)
+
+    return JsonResponse({
+        "success": True,
+        "video_id": video.id,
+        "message": _("Video uploaded successfully"),
+    })
+
+
+def _extract_audio_track(uploaded_file, original_name: str) -> tuple[str, str, str]:
+    """Best-effort extraction of a video's audio track as an R2-hosted MP3.
+
+    Returns ``(audio_file_id, audio_url, audio_status)``. On success the status
+    is ``"ready"``; when the video has no audio stream it is ``"none"`` (so the
+    video page will not keep retrying); on a transient failure it is ``""`` (so
+    the next page view retries).
+    """
+    try:
+        source_path, cleanup_source = materialize(uploaded_file)
+    except Exception:
+        logger.warning("Could not read the upload for MP3 extraction", exc_info=True)
+        return "", "", ""
+
+    mp3_path = ""
+    try:
+        base_name = Path(original_name or "").stem or "audio"
+        handle_fd, mp3_path = tempfile.mkstemp(suffix=".mp3")
+        os.close(handle_fd)
+
+        if not extract_mp3(source_path, mp3_path):
+            logger.info("Video %r has no audio track; skipping MP3.", original_name)
+            return "", "", "none"
+
+        with open(mp3_path, "rb") as mp3_file:
+            result = upload_audio(mp3_file, base_name + ".mp3")
+        return result["path"], result["url"], "ready"
+    except (AudioExtractionError, StorageError, OSError):
+        logger.warning("MP3 extraction failed for %r", original_name, exc_info=True)
+        return "", "", ""
+    finally:
+        _remove_path(mp3_path)
+        _remove_path(cleanup_source)
+
+
+def _remove_path(path):
+    if path:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
+@write_required
+@require_POST
+def delete_video(request, video_id):
+    video = get_object_or_404(Video, id=video_id)
+
+    # Remove the R2 objects first; the database row (and, via CASCADE, its
+    # comments, subtitle tracks and playlist entries) is deleted right after.
+    video.delete_stored_files()
+    video.delete()
+
+    return JsonResponse({"success": True, "message": _("Video deleted")})
+
+
+@require_POST
+def video_vote(request, video_id):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"success": False, "error": _("You must be signed in to vote.")},
+            status=403,
+        )
+
+    video = get_object_or_404(Video, id=video_id)
+    vote_type = request.POST.get("vote")
+
+    if vote_type not in ["like", "dislike"]:
+        return JsonResponse({"success": False, "error": _("Invalid vote")}, status=400)
+
+    value = VideoLike.LIKE if vote_type == "like" else VideoLike.DISLIKE
+
+    existing_vote = VideoLike.objects.filter(user=request.user, video=video).first()
+
+    if existing_vote:
+        if existing_vote.value == value:
+            if value == VideoLike.LIKE:
+                video.likes -= 1
+            else:
+                video.dislikes -= 1
+            existing_vote.delete()
+            user_vote = None
+        else:
+            if value == VideoLike.LIKE:
+                video.likes += 1
+                video.dislikes -= 1
+            else:
+                video.likes -= 1
+                video.dislikes += 1
+            existing_vote.value = value
+            existing_vote.save()
+            user_vote = value
+    else:
+        VideoLike.objects.create(user=request.user, video=video, value=value)
+        if value == VideoLike.LIKE:
+            video.likes += 1
+        else:
+            video.dislikes += 1
+        user_vote = value
+
+    video.save(update_fields=["likes", "dislikes"])
+
+    return JsonResponse({
+        "likes": video.likes,
+        "dislikes": video.dislikes,
+        "user_vote": user_vote,
+    })
+
+
+# --- Subtitles / lyrics ----------------------------------------------------
+
+def subtitle_file(request, video_id, language_code):
+    """Serve a stored WebVTT track from Django (always same-origin)."""
+    track = get_object_or_404(
+        SubtitleTrack, video_id=video_id, language_code=language_code
+    )
+    response = HttpResponse(track.content, content_type="text/vtt; charset=utf-8")
+    response["Cache-Control"] = "public, max-age=3600"
+    return response
+
+
+@write_required
+@require_POST
+def subtitle_upload(request, video_id):
+    video = get_object_or_404(Video, id=video_id)
+
+    language_code = (request.POST.get("language_code") or "").strip()
+    if language_code not in dict(SubtitleTrack.LANGUAGE_CHOICES):
+        return JsonResponse(
+            {"success": False, "error": _("Choose a valid language.")}, status=400
+        )
+
+    upload = request.FILES.get("subtitle_file")
+    if not upload:
+        return JsonResponse(
+            {"success": False, "error": _("Please choose a subtitle file.")},
+            status=400,
+        )
+
+    if Path(upload.name).suffix.lower() not in ALLOWED_SUBTITLE_EXTENSIONS:
+        return JsonResponse(
+            {"success": False, "error": _("Only .vtt, .srt or .txt files are supported.")},
+            status=400,
+        )
+
+    try:
+        content = normalize_to_vtt(upload.read())
+    except ValueError as exc:
+        return JsonResponse({"success": False, "error": str(exc)}, status=400)
+
+    SubtitleTrack.objects.update_or_create(
+        video=video,
+        language_code=language_code,
+        defaults={
+            "label": label_for(language_code),
+            "content": content,
+            "is_lyrics": language_code == "lyrics",
+        },
+    )
+
+    return JsonResponse({"success": True, "message": _("Subtitle saved")})
+
+
+@write_required
+@require_POST
+def subtitle_delete(request, video_id, language_code):
+    track = get_object_or_404(
+        SubtitleTrack, video_id=video_id, language_code=language_code
+    )
+    track.delete()
+    return JsonResponse({"success": True, "message": _("Subtitle removed")})
+
+
+@write_required
+@require_POST
+def subtitles_generate(request, video_id):
+    """Start generating subtitles for a video without uploading anything."""
+    video = get_object_or_404(Video, id=video_id)
+
+    if not subtitles_configured():
+        return JsonResponse(
+            {
+                "success": False,
+                "error": _(
+                    "Automatic subtitles are not configured. "
+                    "Set OPENAI_API_KEY in the .env file to enable them."
+                ),
+            },
+            status=400,
+        )
+
+    if not video.has_audio:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": _(
+                    "This video has no audio track yet. "
+                    "Generate its MP3 first, then create the subtitles."
+                ),
+            },
+            status=400,
+        )
+
+    started = schedule_subtitle_generation(video.id, retry=True)
+    return JsonResponse(
+        {
+            "success": True,
+            "started": started,
+            "message": _("Generating subtitles in the background.")
+            if started
+            else _("A subtitle run is already in progress for this video."),
+        }
+    )
+
+
+@require_GET
+def subtitles_status(request, video_id):
+    """Report the state of the automatic subtitle run for a video."""
+    video = get_object_or_404(Video, id=video_id)
+    return JsonResponse(
+        {
+            "status": video.auto_subtitle_status,
+            "error": video.auto_subtitle_error,
+            "pending": video.auto_subtitle_status in ("", "processing"),
+            "languages": [
+                track.language_code for track in video.subtitle_tracks.all()
+            ],
+        }
+    )
+
+
+# --- Comments --------------------------------------------------------------
+
+def _can_moderate(user) -> bool:
+    return user_can_write(user)
+
+
+@require_POST
+def comment_add(request, video_id):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"success": False, "error": _("You must be signed in to comment.")},
+            status=403,
+        )
+
+    video = get_object_or_404(Video, id=video_id)
+    body = (request.POST.get("body") or "").strip()
+
+    if not body:
+        return JsonResponse(
+            {"success": False, "error": _("Write something first.")}, status=400
+        )
+
+    comment = Comment.objects.create(video=video, user=request.user, body=body[:2000])
+
+    return JsonResponse(
+        {
+            "success": True,
+            "comment": {
+                "id": comment.id,
+                "user": comment.user.username,
+                "initial": comment.user.username[:1].upper(),
+                "body": comment.body,
+                "created": comment.created_at.strftime("%b %d, %Y %H:%M"),
+                "can_delete": True,
+            },
+            "comment_count": video.comments.count(),
+        }
+    )
+
+
+@require_POST
+def comment_delete(request, comment_id):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"success": False, "error": _("You must be signed in.")}, status=403
+        )
+
+    comment = get_object_or_404(Comment.objects.select_related("video"), id=comment_id)
+    if not comment.can_delete(request.user):
+        return JsonResponse(
+            {"success": False, "error": _("You cannot delete this comment.")},
+            status=403,
+        )
+
+    video = comment.video
+    comment.delete()
+
+    return JsonResponse({"success": True, "comment_count": video.comments.count()})
+
+
+# --- Playlists -------------------------------------------------------------
+
+@login_required
+def playlist_list(request):
+    playlists = (
+        request.user.playlists.annotate(item_count=Count("items"))
+        .prefetch_related("items__video")
+    )
+    return render(request, "videos/playlists.html", {"playlists": playlists})
+
+
+@login_required
+@require_POST
+def playlist_create(request):
+    title = (request.POST.get("title") or "").strip()
+    if not title:
+        return JsonResponse(
+            {"success": False, "error": _("Give your playlist a name.")}, status=400
+        )
+
+    playlist = Playlist.objects.create(
+        user=request.user,
+        title=title[:120],
+        description=(request.POST.get("description") or "").strip(),
+        is_public=request.POST.get("is_public") == "1",
+    )
+
+    video_id = request.POST.get("video_id")
+    if video_id:
+        video = Video.objects.filter(id=video_id).first()
+        if video:
+            PlaylistItem.objects.get_or_create(playlist=playlist, video=video)
+
+    return JsonResponse(
+        {
+            "success": True,
+            "playlist": {
+                "id": playlist.id,
+                "title": playlist.title,
+                "url": reverse("videos:playlist_detail", args=[playlist.id]),
+            },
+        }
+    )
+
+
+def _get_owned_playlist(request, playlist_id):
+    """Return the playlist if it belongs to the current user, else None."""
+    return Playlist.objects.filter(id=playlist_id, user=request.user).first()
+
+
+@login_required
+def playlist_detail(request, playlist_id):
+    playlist = Playlist.objects.filter(id=playlist_id).first()
+    if playlist is None:
+        return render(request, "videos/playlist_not_found.html", status=404)
+
+    is_owner = playlist.user_id == request.user.id
+    if not playlist.is_public and not is_owner and not _can_moderate(request.user):
+        return render(request, "videos/playlist_not_found.html", status=403)
+
+    items = playlist.items.select_related("video", "video__user")
+    return render(
+        request,
+        "videos/playlist_detail.html",
+        {"playlist": playlist, "items": items, "is_owner": is_owner},
+    )
+
+
+@login_required
+@require_POST
+def playlist_delete(request, playlist_id):
+    playlist = _get_owned_playlist(request, playlist_id)
+    if playlist is None:
+        return JsonResponse(
+            {"success": False, "error": _("Playlist not found.")}, status=404
+        )
+    playlist.delete()
+    return JsonResponse({"success": True, "message": _("Playlist deleted")})
+
+
+@login_required
+@require_POST
+def playlist_update(request, playlist_id):
+    playlist = _get_owned_playlist(request, playlist_id)
+    if playlist is None:
+        return JsonResponse(
+            {"success": False, "error": _("Playlist not found.")}, status=404
+        )
+
+    title = (request.POST.get("title") or "").strip()
+    if title:
+        playlist.title = title[:120]
+    if "description" in request.POST:
+        playlist.description = (request.POST.get("description") or "").strip()
+    if "is_public" in request.POST:
+        playlist.is_public = request.POST.get("is_public") == "1"
+    playlist.save()
+
+    return JsonResponse({"success": True, "message": _("Playlist updated")})
+
+
+@login_required
+@require_POST
+def playlist_toggle_video(request, playlist_id):
+    """Add the video to the playlist, or remove it when it is already in."""
+    playlist = _get_owned_playlist(request, playlist_id)
+    if playlist is None:
+        return JsonResponse(
+            {"success": False, "error": _("Playlist not found.")}, status=404
+        )
+
+    video = get_object_or_404(Video, id=request.POST.get("video_id"))
+    item = PlaylistItem.objects.filter(playlist=playlist, video=video).first()
+
+    if item:
+        item.delete()
+        added = False
+    else:
+        PlaylistItem.objects.create(playlist=playlist, video=video)
+        added = True
+
+    playlist.save(update_fields=["updated_at"])
+
+    return JsonResponse(
+        {"success": True, "added": added, "count": playlist.items.count()}
+    )
+
+
+@login_required
+@require_POST
+def playlist_remove_video(request, playlist_id, video_id):
+    playlist = _get_owned_playlist(request, playlist_id)
+    if playlist is None:
+        return JsonResponse(
+            {"success": False, "error": _("Playlist not found.")}, status=404
+        )
+
+    PlaylistItem.objects.filter(playlist=playlist, video_id=video_id).delete()
+    playlist.save(update_fields=["updated_at"])
+    return JsonResponse({"success": True, "message": _("Removed from playlist")})

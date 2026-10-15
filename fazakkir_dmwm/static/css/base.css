@@ -1,0 +1,51 @@
+/**
+ * Base styles - Reset and foundational styles
+ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    /* Stop iOS Safari from inflating text in landscape. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.6;
+    overflow-x: hidden;
+    transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* Media never overflows its container. */
+img, video {
+    max-width: 100%;
+}
+
+/* Main Content Container */
+.main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px;
+}
+
+/* Tablet and phones */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 24px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        padding: 20px 12px;
+    }
+}
+

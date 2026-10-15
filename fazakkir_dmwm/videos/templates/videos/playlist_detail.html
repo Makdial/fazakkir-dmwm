@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{{ playlist.title }} - Fazakkir{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/videos.css' %}">
+<link rel="stylesheet" href="{% static 'css/social.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="playlist-header">
+    <div class="playlist-header-cover">▶</div>
+    <div class="playlist-header-info">
+        <h1>{{ playlist.title }}</h1>
+        <p class="video-meta">
+            {{ playlist.user.username }} ·
+            {% blocktrans count counter=items|length %}{{ counter }} video{% plural %}{{ counter }} videos{% endblocktrans %}
+            · {% if playlist.is_public %}{% trans "Public" %}{% else %}{% trans "Private" %}{% endif %}
+        </p>
+        {% if playlist.description %}<p class="video-description">{{ playlist.description }}</p>{% endif %}
+    </div>
+</div>
+
+{% if is_owner %}
+<div class="owner-panel">
+    <form id="editPlaylistForm" class="playlist-edit-form">
+        {% csrf_token %}
+        <input type="text" id="editPlaylistTitle" class="form-input" value="{{ playlist.title }}" maxlength="120">
+        <input type="text" id="editPlaylistDescription" class="form-input"
+               value="{{ playlist.description }}" placeholder="{% trans 'Description' %}">
+        <label class="checkbox-inline">
+            <input type="checkbox" id="editPlaylistPublic" {% if playlist.is_public %}checked{% endif %}>
+            {% trans "Public" %}
+        </label>
+        <div class="owner-panel-actions">
+            <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+            <button type="button" class="delete-btn" onclick="deletePlaylist()">{% trans "Delete playlist" %}</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+{% if items %}
+<div class="playlist-items">
+    {% for item in items %}
+    <div class="playlist-item" data-video="{{ item.video.id }}">
+        <a class="playlist-item-link" href="{% url 'videos:detail' item.video.id %}">
+            <div class="playlist-item-thumb">
+                {% if item.video.display_thumbnail_url %}
+                    <img src="{{ item.video.display_thumbnail_url }}" alt="{{ item.video.title }}" loading="lazy">
+                {% else %}
+                    <span class="thumbnail-placeholder">▶</span>
+                {% endif %}
+            </div>
+            <div class="playlist-item-info">
+                <h3>{{ item.video.title }}</h3>
+                <p class="video-meta">{{ item.video.user.username }} ·
+                    {% blocktrans count counter=item.video.views %}{{ counter }} view{% plural %}{{ counter }} views{% endblocktrans %}
+                </p>
+            </div>
+        </a>
+        {% if is_owner %}
+        <button type="button" class="icon-btn" title="{% trans 'Remove' %}"
+                onclick="removeFromPlaylist({{ item.video.id }})">✕</button>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <span class="empty-icon">📂</span>
+    <h2>{% trans "This playlist is empty" %}</h2>
+    <p>{% trans "Use the “Save” button on any video to add it here." %}</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrf = '{{ csrf_token }}';
+const playlistId = {{ playlist.id }};
+{% if is_owner %}
+const updateUrl = "{% url 'videos:playlist_update' playlist.id %}";
+const deleteUrl = "{% url 'videos:playlist_delete' playlist.id %}";
+{% endif %}
+
+{% if is_owner %}
+document.getElementById("editPlaylistForm").addEventListener("submit", function (event) {
+    event.preventDefault();
+    const body = new URLSearchParams({
+        title: document.getElementById("editPlaylistTitle").value.trim(),
+        description: document.getElementById("editPlaylistDescription").value.trim(),
+        is_public: document.getElementById("editPlaylistPublic").checked ? "1" : "0",
+    });
+    fetch(updateUrl, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+    })
+        .then(r => r.json())
+        .then(data => { if (data.success) location.reload(); else alert(data.error || "{% trans 'Failed.' %}"); })
+        .catch(() => alert("{% trans 'Failed.' %}"));
+});
+
+function deletePlaylist() {
+    if (!confirm("{% trans 'Delete this playlist?' %}")) return;
+    fetch(deleteUrl, { method: "POST", headers: { "X-CSRFToken": csrf } })
+        .then(r => r.json())
+        .then(data => { if (data.success) window.location.href = "{% url 'videos:playlists' %}"; })
+        .catch(() => alert("{% trans 'Failed.' %}"));
+}
+
+function removeFromPlaylist(videoId) {
+    fetch(`/playlists/${playlistId}/remove/${videoId}/`, {
+        method: "POST", headers: { "X-CSRFToken": csrf },
+    })
+        .then(r => r.json())
+        .then(data => { if (data.success) location.reload(); })
+        .catch(() => alert("{% trans 'Failed.' %}"));
+}
+{% endif %}
+</script>
+{% endblock %}

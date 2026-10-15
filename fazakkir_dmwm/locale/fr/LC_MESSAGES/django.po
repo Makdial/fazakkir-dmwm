@@ -1,0 +1,781 @@
+# French translations for the Fazakkir project.
+# Run `python manage.py compiletranslations` after editing this file.
+msgid ""
+msgstr ""
+"Project-Id-Version: Fazakkir 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-14 00:00+0000\n"
+"PO-Revision-Date: 2026-10-14 00:00+0000\n"
+"Last-Translator: Fazakkir\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Already have an account?"
+msgstr "Vous avez déjà un compte ?"
+
+msgid "An MP3 audio file is generated automatically."
+msgstr "Un fichier audio MP3 est généré automatiquement."
+
+msgid "Arabic"
+msgstr "Arabe"
+
+msgid "Are you sure you want to delete this video?"
+msgstr "Voulez-vous vraiment supprimer cette vidéo ?"
+
+msgid "At least 8 characters, not entirely numeric."
+msgstr "Au moins 8 caractères, pas entièrement numérique."
+
+msgid "Choose a username"
+msgstr "Choisissez un nom d'utilisateur"
+
+msgid "Choose a valid language."
+msgstr "Choisissez une langue valide."
+
+msgid "Click to select a thumbnail"
+msgstr "Cliquez pour sélectionner une miniature"
+
+msgid "Click to select a video file"
+msgstr "Cliquez pour sélectionner un fichier vidéo"
+
+msgid "Confirm Password"
+msgstr "Confirmer le mot de passe"
+
+msgid "Confirm your password"
+msgstr "Confirmez votre mot de passe"
+
+msgid "Create Account"
+msgstr "Créer un compte"
+
+msgid "Create One"
+msgstr "Créer un compte"
+
+msgid "Create a password"
+msgstr "Créez un mot de passe"
+
+msgid "Delete"
+msgstr "Supprimer"
+
+msgid "Delete video"
+msgstr "Supprimer la vidéo"
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Don't have an account?"
+msgstr "Vous n'avez pas de compte ?"
+
+msgid "Download MP3"
+msgstr "Télécharger le MP3"
+
+msgid "Download video"
+msgstr "Télécharger la vidéo"
+
+msgid "Email"
+msgstr "E-mail"
+
+msgid "English"
+msgstr "Anglais"
+
+msgid "Enter video description"
+msgstr "Saisissez la description de la vidéo"
+
+msgid "Enter video title"
+msgstr "Saisissez le titre de la vidéo"
+
+msgid "Enter your email"
+msgstr "Saisissez votre e-mail"
+
+msgid "Enter your password"
+msgstr "Saisissez votre mot de passe"
+
+msgid "Enter your username"
+msgstr "Saisissez votre nom d'utilisateur"
+
+msgid "Failed to delete."
+msgstr "Échec de la suppression."
+
+msgid "French"
+msgstr "Français"
+
+msgid "Invalid vote"
+msgstr "Vote invalide"
+
+msgid "Join Fazakkir and start sharing"
+msgstr "Rejoignez Fazakkir et commencez à partager"
+
+msgid "Language"
+msgstr "Langue"
+
+msgid "Leave empty to auto-generate a thumbnail from your video"
+msgstr "Laissez vide pour générer automatiquement une miniature à partir de la vidéo"
+
+msgid "Listen (MP3)"
+msgstr "Écouter (MP3)"
+
+msgid "Logout"
+msgstr "Déconnexion"
+
+msgid "Lyrics"
+msgstr "Paroles"
+
+msgid "Menu"
+msgstr "Menu"
+
+msgid "MP4, WebM, MOV or AVI. Max 3 GB."
+msgstr "MP4, WebM, MOV ou AVI. Max 3 Go."
+
+msgid "New videos will appear here once the administrator uploads them."
+msgstr "Les nouvelles vidéos apparaîtront ici dès que l'administrateur les aura téléversées."
+
+msgid "No Videos Yet"
+msgstr "Aucune vidéo pour le moment"
+
+msgid "No subtitles yet."
+msgstr "Aucun sous-titre pour le moment"
+
+msgid "Off"
+msgstr "Désactivé"
+
+msgid "Only .vtt, .srt or .txt files are supported."
+msgstr "Seuls les fichiers .vtt, .srt ou .txt sont pris en charge."
+
+msgid "Only administrators can manage videos."
+msgstr "Seuls les administrateurs peuvent gérer les vidéos."
+
+msgid "Password"
+msgstr "Mot de passe"
+
+msgid "Playback mode"
+msgstr "Mode de lecture"
+
+msgid "Please choose a subtitle file."
+msgstr "Veuillez choisir un fichier de sous-titres."
+
+msgid "Please don't close this page"
+msgstr "Veuillez ne pas fermer cette page"
+
+msgid "Remove this subtitle track?"
+msgstr "Supprimer cette piste de sous-titres ?"
+
+msgid "Sign In"
+msgstr "Connexion"
+
+msgid "Sign In Again"
+msgstr "Se reconnecter"
+
+msgid "Sign Up"
+msgstr "Inscription"
+
+msgid "Sign in to continue with Fazakkir"
+msgstr "Connectez-vous pour continuer sur Fazakkir"
+
+msgid "Signed Out"
+msgstr "Déconnecté"
+
+msgid "Subtitle removed"
+msgstr "Sous-titre supprimé"
+
+msgid "Subtitle saved"
+msgstr "Sous-titre enregistré"
+
+msgid "Subtitles"
+msgstr "Sous-titres"
+
+msgid "Subtitles & lyrics"
+msgstr "Sous-titres et paroles"
+
+msgid "The video file could not be loaded."
+msgstr "Le fichier vidéo n'a pas pu être chargé."
+
+msgid "This channel hasn't uploaded any videos yet."
+msgstr "Cette chaîne n'a encore téléversé aucune vidéo."
+
+msgid "This video type is not allowed."
+msgstr "Ce type de vidéo n'est pas autorisé."
+
+msgid "Thumbnail (optional)"
+msgstr "Miniature (facultative)"
+
+msgid "Title"
+msgstr "Titre"
+
+msgid "Toggle light and dark mode"
+msgstr "Basculer entre le mode clair et le mode sombre"
+
+msgid "Upload"
+msgstr "Téléverser"
+
+msgid "Upload Video"
+msgstr "Téléverser une vidéo"
+
+msgid "Upload a .vtt, .srt or .txt file for each language. Viewers can turn them on or off."
+msgstr "Téléversez un fichier .vtt, .srt ou .txt pour chaque langue. Les spectateurs peuvent les activer ou les désactiver."
+
+msgid "Upload complete!"
+msgstr "Téléversement terminé !"
+
+msgid "Upload failed"
+msgstr "Échec du téléversement"
+
+msgid "Upload in progress"
+msgstr "Téléversement en cours"
+
+msgid "Upload subtitle"
+msgstr "Téléverser un sous-titre"
+
+msgid "Uploading Video..."
+msgstr "Téléversement de la vidéo..."
+
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+msgid "Video"
+msgstr "Vidéo"
+
+msgid "Video File"
+msgstr "Fichier vidéo"
+
+msgid "Video Unavailable"
+msgstr "Vidéo indisponible"
+
+msgid "Video deleted"
+msgstr "Vidéo supprimée"
+
+msgid "Video must be under 3 GB."
+msgstr "La vidéo doit faire moins de 3 Go."
+
+msgid "Video storage is not configured yet. Add your Cloudflare R2 credentials to the .env file."
+msgstr "Le stockage vidéo n'est pas encore configuré. Ajoutez vos identifiants Cloudflare R2 au fichier .env."
+
+msgid "Video uploaded successfully"
+msgstr "Vidéo téléversée avec succès"
+
+msgid "Videos"
+msgstr "Vidéos"
+
+msgid "Welcome Back"
+msgstr "Bon retour"
+
+msgid "You have been signed out..."
+msgstr "Vous avez été déconnecté..."
+
+msgid "You must be signed in to vote."
+msgstr "Vous devez être connecté pour voter."
+
+msgid "%(counter)s view"
+msgid_plural "%(counter)s views"
+msgstr[0] "%(counter)s vue"
+msgstr[1] "%(counter)s vues"
+
+msgid "%(counter)s video"
+msgid_plural "%(counter)s videos"
+msgstr[0] "%(counter)s vidéo"
+msgstr[1] "%(counter)s vidéos"
+
+msgid "%(counter)s account"
+msgid_plural "%(counter)s accounts"
+msgstr[0] "%(counter)s compte"
+msgstr[1] "%(counter)s comptes"
+
+msgid "Access"
+msgstr "Accès"
+
+msgid "Access updated"
+msgstr "Accès mis à jour"
+
+msgid "Actions"
+msgstr "Actions"
+
+msgid "Active"
+msgstr "Actif"
+
+msgid "Add a comment…"
+msgstr "Ajouter un commentaire…"
+
+msgid "Back to videos"
+msgstr "Retour aux vidéos"
+
+msgid "Block"
+msgstr "Bloquer"
+
+msgid "Blocked"
+msgstr "Bloqué"
+
+msgid "Comment"
+msgstr "Commenter"
+
+msgid "Comments"
+msgstr "Commentaires"
+
+msgid "Could not create the playlist."
+msgstr "Impossible de créer la playlist."
+
+msgid "Create"
+msgstr "Créer"
+
+msgid "Create your first playlist to organise videos."
+msgstr "Créez votre première playlist pour organiser les vidéos."
+
+msgid "Delete playlist"
+msgstr "Supprimer la playlist"
+
+msgid "Delete this comment?"
+msgstr "Supprimer ce commentaire ?"
+
+msgid "Delete this playlist?"
+msgstr "Supprimer cette playlist ?"
+
+msgid "Failed."
+msgstr "Échec."
+
+msgid "Give your playlist a name."
+msgstr "Donnez un nom à votre playlist."
+
+msgid "Invalid access level."
+msgstr "Niveau d'accès invalide."
+
+msgid "Manage users"
+msgstr "Gérer les utilisateurs"
+
+msgid "Member"
+msgstr "Membre"
+
+msgid "My Playlists"
+msgstr "Mes playlists"
+
+msgid "New playlist name"
+msgstr "Nom de la nouvelle playlist"
+
+msgid "No comments yet. Be the first!"
+msgstr "Aucun commentaire pour le moment. Soyez le premier !"
+
+msgid "No playlists yet"
+msgstr "Aucune playlist pour le moment"
+
+msgid "No playlists yet."
+msgstr "Aucune playlist pour le moment."
+
+msgid "Only a superuser can manage another superuser."
+msgstr "Seul un superutilisateur peut gérer un autre superutilisateur."
+
+msgid "Only administrators can view this page."
+msgstr "Seuls les administrateurs peuvent consulter cette page."
+
+msgid "Playlist deleted"
+msgstr "Playlist supprimée"
+
+msgid "Playlist not found."
+msgstr "Playlist introuvable."
+
+msgid "Playlist unavailable"
+msgstr "Playlist indisponible"
+
+msgid "Playlist updated"
+msgstr "Playlist mise à jour"
+
+msgid "Playlists"
+msgstr "Playlists"
+
+msgid "Private"
+msgstr "Privée"
+
+msgid "Profile"
+msgstr "Profil"
+
+msgid "Profiles"
+msgstr "Profils"
+
+msgid "Public"
+msgstr "Publique"
+
+msgid "Public playlists can be viewed by anyone."
+msgstr "Les playlists publiques sont visibles par tout le monde."
+
+msgid "Read & write"
+msgstr "Lecture et écriture"
+
+msgid "Read-only"
+msgstr "Lecture seule"
+
+msgid "Read-only staff can view this page; read & write staff can also upload, moderate and manage users."
+msgstr "Le personnel en lecture seule peut consulter cette page ; le personnel en lecture et écriture peut aussi téléverser, modérer et gérer les utilisateurs."
+
+msgid "Remove"
+msgstr "Retirer"
+
+msgid "Removed from playlist"
+msgstr "Retiré de la playlist"
+
+msgid "Save"
+msgstr "Enregistrer"
+
+msgid "Save to playlist"
+msgstr "Enregistrer dans une playlist"
+
+msgid "Sign in"
+msgstr "Connectez-vous"
+
+msgid "Status"
+msgstr "Statut"
+
+msgid "Superuser"
+msgstr "Superutilisateur"
+
+msgid "This also deletes their videos and comments."
+msgstr "Cela supprime aussi ses vidéos et ses commentaires."
+
+msgid "This playlist does not exist or is private."
+msgstr "Cette playlist n'existe pas ou est privée."
+
+msgid "This playlist is empty"
+msgstr "Cette playlist est vide"
+
+msgid "Unblock"
+msgstr "Débloquer"
+
+msgid "Use the “Save” button on any video to add it here."
+msgstr "Utilisez le bouton « Enregistrer » sur une vidéo pour l'ajouter ici."
+
+msgid "User"
+msgstr "Utilisateur"
+
+msgid "User blocked"
+msgstr "Utilisateur bloqué"
+
+msgid "User deleted"
+msgstr "Utilisateur supprimé"
+
+msgid "User unblocked"
+msgstr "Utilisateur débloqué"
+
+msgid "Users"
+msgstr "Utilisateurs"
+
+msgid "Write something first."
+msgstr "Écrivez d'abord quelque chose."
+
+msgid "You"
+msgstr "Vous"
+
+msgid "You cannot change your own account here."
+msgstr "Vous ne pouvez pas modifier votre propre compte ici."
+
+msgid "You cannot delete this comment."
+msgstr "Vous ne pouvez pas supprimer ce commentaire."
+
+msgid "You must be signed in."
+msgstr "Vous devez être connecté."
+
+msgid "You must be signed in to comment."
+msgstr "Vous devez être connecté pour commenter."
+
+msgid "to add a comment."
+msgstr "pour ajouter un commentaire."
+
+# Dashboard (storage & management)
+msgid "Dashboard"
+msgstr "Tableau de bord"
+
+msgid "Dashboard sections"
+msgstr "Sections du tableau de bord"
+
+msgid "Overview"
+msgstr "Aperçu"
+
+msgid "Control the videos, the users, the comments and the storage in one place."
+msgstr "Contrôlez les vidéos, les utilisateurs, les commentaires et le stockage en un seul endroit."
+
+msgid "Stored files"
+msgstr "Fichiers stockés"
+
+msgid "Storage"
+msgstr "Stockage"
+
+msgid "Full"
+msgstr "Plein"
+
+msgid "Nearly full"
+msgstr "Presque plein"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Measured"
+msgstr "Mesuré"
+
+msgid "Refresh"
+msgstr "Actualiser"
+
+msgid "Cloudflare R2 is not configured, so the media usage cannot be measured. Add the R2 credentials to your .env file."
+msgstr "Cloudflare R2 n'est pas configuré, l'utilisation du stockage média ne peut donc pas être mesurée. Ajoutez les identifiants R2 à votre fichier .env."
+
+msgid "Media storage (Cloudflare R2)"
+msgstr "Stockage média (Cloudflare R2)"
+
+msgid "Database (SQLite)"
+msgstr "Base de données (SQLite)"
+
+msgid "%(free)s free"
+msgstr "%(free)s libres"
+
+msgid "Alerts"
+msgstr "Alertes"
+
+msgid "An email is sent to %(email)s once the storage passes the alert threshold."
+msgstr "Un e-mail est envoyé à %(email)s dès que le stockage dépasse le seuil d'alerte."
+
+msgid "The alert triggers at %(threshold)s percent or more, and again when the storage is completely full."
+msgstr "L'alerte se déclenche à partir de %(threshold)s pour cent d'occupation, et de nouveau lorsque le stockage est complètement plein."
+
+msgid "Media quota (GB)"
+msgstr "Quota média (Go)"
+
+msgid "Database quota (GB)"
+msgstr "Quota de la base de données (Go)"
+
+msgid "Alert threshold (%)"
+msgstr "Seuil d'alerte (%)"
+
+msgid "Notification email"
+msgstr "E-mail de notification"
+
+msgid "Save settings"
+msgstr "Enregistrer les paramètres"
+
+msgid "Send test email"
+msgstr "Envoyer un e-mail de test"
+
+msgid "Largest videos"
+msgstr "Vidéos les plus volumineuses"
+
+msgid "Manage all"
+msgstr "Tout gérer"
+
+msgid "Uploader"
+msgstr "Auteur"
+
+msgid "No videos yet."
+msgstr "Aucune vidéo pour le moment."
+
+msgid "Reclaimable space"
+msgstr "Espace récupérable"
+
+msgid "Files left behind by interrupted uploads:"
+msgstr "Fichiers laissés par des téléversements interrompus :"
+
+msgid "Deleting them frees space without touching any video."
+msgstr "Les supprimer libère de l'espace sans toucher à aucune vidéo."
+
+msgid "Free this space"
+msgstr "Libérer cet espace"
+
+msgid "Deleting a video removes it from the database and from Cloudflare R2."
+msgstr "Supprimer une vidéo la retire de la base de données et de Cloudflare R2."
+
+msgid "Read-only staff can view the dashboard; read & write staff can also delete videos and free space."
+msgstr "Le personnel en lecture seule peut consulter le tableau de bord ; le personnel en lecture et écriture peut aussi supprimer des vidéos et libérer de l'espace."
+
+msgid "This cannot be undone."
+msgstr "Cette action est irréversible."
+
+msgid "Saved."
+msgstr "Enregistré."
+
+msgid "Sent."
+msgstr "Envoyé."
+
+msgid "Delete the files that no video uses?"
+msgstr "Supprimer les fichiers qu'aucune vidéo n'utilise ?"
+
+msgid "Space freed:"
+msgstr "Espace libéré :"
+
+msgid "Manage videos"
+msgstr "Gérer les vidéos"
+
+msgid "Manage comments"
+msgstr "Gérer les commentaires"
+
+msgid "Search by title or uploader"
+msgstr "Rechercher par titre ou auteur"
+
+msgid "Search"
+msgstr "Rechercher"
+
+msgid "Clear"
+msgstr "Effacer"
+
+msgid "Added"
+msgstr "Ajoutée"
+
+msgid "No videos found"
+msgstr "Aucune vidéo trouvée"
+
+msgid "Nothing matches your search."
+msgstr "Rien ne correspond à votre recherche."
+
+msgid "Search by author or text"
+msgstr "Rechercher par auteur ou texte"
+
+msgid "Author"
+msgstr "Auteur"
+
+msgid "Posted"
+msgstr "Publié"
+
+msgid "No comments found"
+msgstr "Aucun commentaire trouvé"
+
+msgid "Storage settings saved."
+msgstr "Paramètres de stockage enregistrés."
+
+msgid "Test email sent to %(email)s."
+msgstr "E-mail de test envoyé à %(email)s."
+
+msgid "Could not send the email."
+msgstr "Impossible d'envoyer l'e-mail."
+
+msgid "Storage monitor"
+msgstr "Moniteur de stockage"
+
+msgid "Media quota (bytes)"
+msgstr "Quota média (octets)"
+
+msgid "How much room the Cloudflare R2 bucket has."
+msgstr "L'espace disponible dans le compartiment Cloudflare R2."
+
+msgid "Database quota (bytes)"
+msgstr "Quota de la base de données (octets)"
+
+msgid "Soft limit for the SQLite database file."
+msgstr "Limite indicative pour le fichier de base de données SQLite."
+
+msgid "Send an email once this percentage of the space is used."
+msgstr "Envoyer un e-mail dès que ce pourcentage de l'espace est utilisé."
+
+msgid "%(counter)s comment"
+msgid_plural "%(counter)s comments"
+msgstr[0] "%(counter)s commentaire"
+msgstr[1] "%(counter)s commentaires"
+
+msgid "Offline"
+msgstr "Hors ligne"
+
+msgid "Offline listening"
+msgstr "Écoute hors ligne"
+
+msgid "Audio you saved plays here even without an internet connection."
+msgstr "L'audio que vous avez enregistré est lisible ici même sans connexion Internet."
+
+msgid "You have not saved any audio yet."
+msgstr "Vous n'avez encore enregistré aucun audio."
+
+msgid "Tip: open a video and press “Save offline” to keep its MP3 on this device."
+msgstr "Astuce : ouvrez une vidéo et appuyez sur « Enregistrer hors ligne » pour garder son MP3 sur cet appareil."
+
+msgid "Save offline"
+msgstr "Enregistrer hors ligne"
+
+msgid "Saved offline"
+msgstr "Enregistré hors ligne"
+
+msgid "Remove download"
+msgstr "Supprimer le téléchargement"
+
+msgid "Could not update the offline copy. Check your connection."
+msgstr "Impossible de mettre à jour la copie hors ligne. Vérifiez votre connexion."
+
+msgid "Watch and listen to videos, online or offline."
+msgstr "Regardez et écoutez des vidéos, en ligne ou hors ligne."
+
+msgid "Preparing the audio (MP3) for this video…"
+msgstr "Préparation de l'audio (MP3) pour cette vidéo…"
+
+msgid "The audio could not be generated."
+msgstr "L'audio n'a pas pu être généré."
+
+msgid "Try again"
+msgstr "Réessayer"
+
+msgid "This video has no audio track."
+msgstr "Cette vidéo n'a pas de piste audio."
+
+msgid "Not generated"
+msgstr "Non généré"
+
+msgid "Generating"
+msgstr "Génération"
+
+msgid "Ready"
+msgstr "Prêt"
+
+msgid "No audio track"
+msgstr "Aucune piste audio"
+
+msgid "Failed"
+msgstr "Échec"
+
+msgid "MP3"
+msgstr "MP3"
+
+msgid "Every video has an MP3"
+msgstr "Toutes les vidéos ont un MP3"
+
+msgid "%(counter)s video needs an MP3"
+msgid_plural "%(counter)s videos need an MP3"
+msgstr[0] "%(counter)s vidéo a besoin d'un MP3"
+msgstr[1] "%(counter)s vidéos ont besoin d'un MP3"
+
+msgid "%(counter)s video has no audio track"
+msgid_plural "%(counter)s videos have no audio track"
+msgstr[0] "%(counter)s vidéo n'a pas de piste audio"
+msgstr[1] "%(counter)s vidéos n'ont pas de piste audio"
+
+msgid "Generate missing MP3s"
+msgstr "Générer les MP3 manquants"
+
+msgid "Generating MP3s…"
+msgstr "Génération des MP3…"
+
+msgid "Starting…"
+msgstr "Démarrage…"
+
+msgid "Generating missing MP3s in the background."
+msgstr "Génération des MP3 manquants en arrière-plan."
+
+msgid "An MP3 generation run is already in progress."
+msgstr "Une génération de MP3 est déjà en cours."
+
+msgid "Automatic subtitles"
+msgstr "Sous-titres automatiques"
+
+msgid "Not configured"
+msgstr "Non configuré"
+
+msgid "Transcribe the audio and translate it automatically, without uploading a file."
+msgstr "Transcrivez l'audio et traduisez-le automatiquement, sans envoyer de fichier."
+
+msgid "Generate subtitles"
+msgstr "Générer les sous-titres"
+
+msgid "Regenerate subtitles"
+msgstr "Régénérer les sous-titres"
+
+msgid "Transcribing and translating…"
+msgstr "Transcription et traduction…"
+
+msgid "Generating subtitles in the background."
+msgstr "Génération des sous-titres en arrière-plan."
+
+msgid "A subtitle run is already in progress for this video."
+msgstr "Une génération de sous-titres est déjà en cours pour cette vidéo."
+
+msgid "Automatic subtitles are not configured. Set OPENAI_API_KEY in the .env file to enable them."
+msgstr "Les sous-titres automatiques ne sont pas configurés. Définissez OPENAI_API_KEY dans le fichier .env pour les activer."
+
+msgid "This video has no audio track yet. Generate its MP3 first, then create the subtitles."
+msgstr "Cette vidéo n'a pas encore de piste audio. Générez d'abord son MP3, puis créez les sous-titres."

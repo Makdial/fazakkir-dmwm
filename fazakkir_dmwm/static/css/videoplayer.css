@@ -1,0 +1,440 @@
+/**
+ * Native HTML5 video player styling
+ */
+
+.video-player {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.video-player video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.video-error {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    text-align: center;
+    gap: 12px;
+}
+
+.error-icon {
+    font-size: 3rem;
+    color: var(--accent-red);
+}
+
+.video-error p {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.video-error small {
+    color: var(--text-secondary);
+}
+
+video::-webkit-media-controls {
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+}
+
+video::-webkit-media-controls-panel {
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+}
+
+/* Audio-only ("Listen (MP3)") mode */
+.audio-player {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 88%;
+}
+
+/* Playback-mode toggle + download buttons */
+.player-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: -8px 0 24px;
+}
+
+.mode-toggle {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+}
+
+.mode-btn {
+    padding: 8px 18px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.mode-btn:hover {
+    color: var(--text-primary);
+}
+
+.mode-btn.active {
+    background: var(--accent-red);
+    border-color: var(--accent-red);
+    color: #fff;
+}
+
+.player-downloads {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all var(--transition-normal);
+}
+
+.download-btn:hover {
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+}
+
+/* The "Save offline" button reuses the download button look. */
+.offline-btn {
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.offline-btn.is-saved {
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+}
+
+/* Subtitle / lyrics viewer controls */
+.subtitle-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: -8px 0 24px;
+}
+
+.subtitle-title {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.subtitle-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.subtitle-btn {
+    padding: 6px 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.subtitle-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--accent-red);
+}
+
+.subtitle-btn.active {
+    background: var(--accent-red);
+    border-color: var(--accent-red);
+    color: #fff;
+}
+
+/* Subtitle admin panel (staff only) */
+.subtitle-admin {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.subtitle-admin h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 6px;
+}
+
+.subtitle-hint {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin: 0 0 16px;
+}
+
+.subtitle-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.subtitle-form .form-input {
+    flex: 1 1 180px;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: inherit;
+}
+
+.subtitle-form .btn-submit {
+    padding: 8px 18px;
+    white-space: nowrap;
+}
+
+.subtitle-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.subtitle-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+}
+
+.subtitle-empty {
+    color: var(--text-secondary);
+    justify-content: flex-start !important;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive (tablet and phones)                                     */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 768px) {
+    .player-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .mode-toggle {
+        display: flex;
+        width: 100%;
+    }
+
+    .mode-btn {
+        flex: 1;
+        min-height: 44px;
+    }
+
+    .player-downloads {
+        width: 100%;
+    }
+
+    .download-btn {
+        flex: 1 1 140px;
+        justify-content: center;
+        min-height: 44px;
+    }
+
+    .subtitle-controls {
+        gap: 8px;
+    }
+
+    .subtitle-title {
+        width: 100%;
+    }
+
+    .subtitle-btn {
+        min-height: 40px;
+        padding: 8px 16px;
+    }
+
+    .subtitle-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .subtitle-form .form-input {
+        flex: 1 1 auto;
+        width: 100%;
+    }
+
+    .subtitle-form .btn-submit {
+        width: 100%;
+    }
+
+    .subtitle-list li {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .video-player {
+        border-radius: var(--radius-md);
+    }
+
+    .audio-player {
+        width: 94%;
+    }
+
+    .download-btn {
+        flex: 1 1 100%;
+    }
+
+    .audio-status {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+
+    .audio-status .download-btn {
+        width: auto;
+        margin-left: 0;
+    }
+}
+
+/* Audio generation status (shown while MP3 is being prepared) */
+.audio-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 16px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.audio-spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-top-color: var(--text-secondary);
+    animation: spin 0.8s linear infinite;
+    flex: 0 0 16px;
+}
+
+.audio-status-error {
+    background: rgba(244, 67, 54, 0.18);
+    color: var(--text-primary);
+    border: 1px solid rgba(244, 67, 54, 0.55);
+}
+
+.audio-status-muted {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+}
+
+.audio-status .download-btn {
+    margin-left: auto;
+    min-height: 40px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Automatic subtitles panel (staff only) */
+.auto-sub-panel {
+    margin: 16px 0;
+    padding: 14px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+}
+
+.auto-sub-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.auto-sub-title {
+    font-weight: 600;
+}
+
+.auto-sub-hint {
+    margin: 6px 0 10px;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+}
+
+.auto-sub-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.auto-sub-message {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.auto-sub-panel .badge {
+    margin-left: 0;
+}
+
+.btn-small[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
