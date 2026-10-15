@@ -779,3 +779,171 @@ msgstr "Les sous-titres automatiques ne sont pas configurés. Définissez OPENAI
 
 msgid "This video has no audio track yet. Generate its MP3 first, then create the subtitles."
 msgstr "Cette vidéo n'a pas encore de piste audio. Générez d'abord son MP3, puis créez les sous-titres."
+
+msgid "Audio File (MP3)"
+msgstr "Fichier audio (MP3)"
+
+msgid "Back 10 seconds"
+msgstr "Reculer de 10 secondes"
+
+msgid "Back to sign in"
+msgstr "Retour à la connexion"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Check Your Email"
+msgstr "Vérifiez votre messagerie"
+
+msgid "Check your email"
+msgstr "Vérifiez votre messagerie"
+
+msgid "Choose a New Password"
+msgstr "Choisissez un nouveau mot de passe"
+
+msgid "Choose a new password"
+msgstr "Choisissez un nouveau mot de passe"
+
+msgid "Click to select an MP3 file"
+msgstr "Cliquez pour sélectionner un fichier MP3"
+
+msgid "Confirm new password"
+msgstr "Confirmez le nouveau mot de passe"
+
+msgid "Copy this link:"
+msgstr "Copiez ce lien :"
+
+msgid "Current thumbnail"
+msgstr "Miniature actuelle"
+
+msgid "Edit"
+msgstr "Modifier"
+
+msgid "Edit Video"
+msgstr "Modifier la vidéo"
+
+msgid "Enter your email address"
+msgstr "Entrez votre adresse e-mail"
+
+msgid "Enter your email address and we will send you a link to choose a new one."
+msgstr "Entrez votre adresse e-mail et nous vous enverrons un lien pour en choisir un nouveau."
+
+msgid "Fazakkir"
+msgstr "Fazakkir"
+
+msgid "Forgot your password?"
+msgstr "Mot de passe oublié ?"
+
+msgid "Forward 10 seconds"
+msgstr "Avancer de 10 secondes"
+
+msgid "Fullscreen"
+msgstr "Plein écran"
+
+msgid "If you did not ask for this, you can ignore this message and nothing will change."
+msgstr "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message et rien ne changera."
+
+msgid "Link copied"
+msgstr "Lien copié"
+
+msgid "MP3 link"
+msgstr "Lien MP3"
+
+msgid "MP3 link copied"
+msgstr "Lien MP3 copié"
+
+msgid "MP3 only. This becomes the track friends can stream and download."
+msgstr "MP3 uniquement. C'est la piste que vos amis pourront écouter et télécharger."
+
+msgid "Mute"
+msgstr "Muet"
+
+msgid "New password"
+msgstr "Nouveau mot de passe"
+
+msgid "No results"
+msgstr "Aucun résultat"
+
+msgid "Nothing matched. Try a different word, or a year such as 2000."
+msgstr "Aucun résultat. Essayez un autre mot ou une année comme 2000."
+
+msgid "Open the link below to choose a new one:"
+msgstr "Ouvrez le lien ci-dessous pour en choisir un nouveau :"
+
+msgid "Password Changed"
+msgstr "Mot de passe modifié"
+
+msgid "Pause"
+msgstr "Pause"
+
+msgid "Picture in picture"
+msgstr "Image dans l'image"
+
+msgid "Play"
+msgstr "Lecture"
+
+msgid "Playback speed"
+msgstr "Vitesse de lecture"
+
+msgid "Request a new link"
+msgstr "Demander un nouveau lien"
+
+msgid "Reset Password"
+msgstr "Réinitialiser le mot de passe"
+
+msgid "Save New Password"
+msgstr "Enregistrer le nouveau mot de passe"
+
+msgid "Save changes"
+msgstr "Enregistrer les modifications"
+
+msgid "Search by title, name or year"
+msgstr "Rechercher par titre, nom ou année"
+
+msgid "Search videos"
+msgstr "Rechercher des vidéos"
+
+msgid "Seek"
+msgstr "Position"
+
+msgid "Send Reset Link"
+msgstr "Envoyer le lien de réinitialisation"
+
+msgid "Share"
+msgstr "Partager"
+
+msgid "Share this video"
+msgstr "Partager cette vidéo"
+
+msgid "Show or hide the player controls"
+msgstr "Afficher ou masquer les commandes du lecteur"
+
+msgid "Size"
+msgstr "Taille"
+
+msgid "The address does not match any account. Check it and try again, or ask an administrator to add an email address to your profile."
+msgstr "Cette adresse ne correspond à aucun compte. Vérifiez-la et réessayez, ou demandez à un administrateur d'ajouter une adresse e-mail à votre profil."
+
+msgid "This reset link is invalid, most likely because it has already been used or has expired. Please request a new one."
+msgstr "Ce lien de réinitialisation n'est pas valide, probablement parce qu'il a déjà été utilisé ou a expiré. Veuillez en demander un nouveau."
+
+msgid "Type a few words from a title, the uploader's name, or a year such as 2000."
+msgstr "Tapez quelques mots d'un titre, le nom de l'auteur, ou une année comme 2000."
+
+msgid "Video link"
+msgstr "Lien vidéo"
+
+msgid "Views"
+msgstr "Vues"
+
+msgid "Volume"
+msgstr "Volume"
+
+msgid "You can now sign in with your new password."
+msgstr "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."
+
+msgid "Your password has been changed"
+msgstr "Votre mot de passe a été modifié"
+
+msgid "for"
+msgstr "pour"

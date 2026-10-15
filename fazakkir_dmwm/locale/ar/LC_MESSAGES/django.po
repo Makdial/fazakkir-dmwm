@@ -800,3 +800,171 @@ msgstr "الترجمات التلقائية غير مُعدّة. عيّن OPENAI
 
 msgid "This video has no audio track yet. Generate its MP3 first, then create the subtitles."
 msgstr "لا يحتوي هذا الفيديو بعد على مسار صوتي. أنشئ ملف MP3 أولًا، ثم أنشئ الترجمات."
+
+msgid "Audio File (MP3)"
+msgstr "ملف صوتي (MP3)"
+
+msgid "Back 10 seconds"
+msgstr "رجوع 10 ثوانٍ"
+
+msgid "Back to sign in"
+msgstr "العودة إلى تسجيل الدخول"
+
+msgid "Cancel"
+msgstr "إلغاء"
+
+msgid "Check Your Email"
+msgstr "تحقق من بريدك الإلكتروني"
+
+msgid "Check your email"
+msgstr "تحقق من بريدك الإلكتروني"
+
+msgid "Choose a New Password"
+msgstr "اختر كلمة مرور جديدة"
+
+msgid "Choose a new password"
+msgstr "اختر كلمة مرور جديدة"
+
+msgid "Click to select an MP3 file"
+msgstr "اضغط لاختيار ملف MP3"
+
+msgid "Confirm new password"
+msgstr "تأكيد كلمة المرور الجديدة"
+
+msgid "Copy this link:"
+msgstr "انسخ هذا الرابط:"
+
+msgid "Current thumbnail"
+msgstr "الصورة المصغّرة الحالية"
+
+msgid "Edit"
+msgstr "تعديل"
+
+msgid "Edit Video"
+msgstr "تعديل الفيديو"
+
+msgid "Enter your email address"
+msgstr "أدخل بريدك الإلكتروني"
+
+msgid "Enter your email address and we will send you a link to choose a new one."
+msgstr "أدخل بريدك الإلكتروني وسنرسل لك رابطًا لاختيار كلمة مرور جديدة."
+
+msgid "Fazakkir"
+msgstr "فَذَكِّرْ"
+
+msgid "Forgot your password?"
+msgstr "هل نسيت كلمة المرور؟"
+
+msgid "Forward 10 seconds"
+msgstr "تقديم 10 ثوانٍ"
+
+msgid "Fullscreen"
+msgstr "ملء الشاشة"
+
+msgid "If you did not ask for this, you can ignore this message and nothing will change."
+msgstr "إذا لم تطلب ذلك، فيمكنك تجاهل هذه الرسالة ولن يتغيّر شيء."
+
+msgid "Link copied"
+msgstr "تم نسخ الرابط"
+
+msgid "MP3 link"
+msgstr "رابط MP3"
+
+msgid "MP3 link copied"
+msgstr "تم نسخ رابط MP3"
+
+msgid "MP3 only. This becomes the track friends can stream and download."
+msgstr "MP3 فقط. هذا هو المقطع الذي يمكن لأصدقائك تشغيله وتحميله."
+
+msgid "Mute"
+msgstr "كتم الصوت"
+
+msgid "New password"
+msgstr "كلمة المرور الجديدة"
+
+msgid "No results"
+msgstr "لا توجد نتائج"
+
+msgid "Nothing matched. Try a different word, or a year such as 2000."
+msgstr "لا توجد نتائج. جرّب كلمة أخرى أو سنة مثل 2000."
+
+msgid "Open the link below to choose a new one:"
+msgstr "افتح الرابط أدناه لاختيار كلمة مرور جديدة:"
+
+msgid "Password Changed"
+msgstr "تم تغيير كلمة المرور"
+
+msgid "Pause"
+msgstr "إيقاف مؤقت"
+
+msgid "Picture in picture"
+msgstr "صورة داخل صورة"
+
+msgid "Play"
+msgstr "تشغيل"
+
+msgid "Playback speed"
+msgstr "سرعة التشغيل"
+
+msgid "Request a new link"
+msgstr "اطلب رابطًا جديدًا"
+
+msgid "Reset Password"
+msgstr "إعادة تعيين كلمة المرور"
+
+msgid "Save New Password"
+msgstr "حفظ كلمة المرور الجديدة"
+
+msgid "Save changes"
+msgstr "حفظ التغييرات"
+
+msgid "Search by title, name or year"
+msgstr "ابحث بالعنوان أو الاسم أو السنة"
+
+msgid "Search videos"
+msgstr "ابحث في الفيديوهات"
+
+msgid "Seek"
+msgstr "الانتقال"
+
+msgid "Send Reset Link"
+msgstr "إرسال رابط إعادة التعيين"
+
+msgid "Share"
+msgstr "مشاركة"
+
+msgid "Share this video"
+msgstr "شارك هذا الفيديو"
+
+msgid "Show or hide the player controls"
+msgstr "إظهار أو إخفاء أدوات المشغّل"
+
+msgid "Size"
+msgstr "الحجم"
+
+msgid "The address does not match any account. Check it and try again, or ask an administrator to add an email address to your profile."
+msgstr "هذا البريد لا يطابق أي حساب. تحقّق منه وحاول مرة أخرى، أو اطلب من المسؤول إضافة بريد إلكتروني إلى ملفك الشخصي."
+
+msgid "This reset link is invalid, most likely because it has already been used or has expired. Please request a new one."
+msgstr "رابط إعادة التعيين غير صالح، على الأرجح لأنه استُخدم من قبل أو انتهت صلاحيته. يُرجى طلب رابط جديد."
+
+msgid "Type a few words from a title, the uploader's name, or a year such as 2000."
+msgstr "اكتب بعض كلمات من العنوان أو اسم الناشر أو سنة مثل 2000."
+
+msgid "Video link"
+msgstr "رابط الفيديو"
+
+msgid "Views"
+msgstr "المشاهدات"
+
+msgid "Volume"
+msgstr "مستوى الصوت"
+
+msgid "You can now sign in with your new password."
+msgstr "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة."
+
+msgid "Your password has been changed"
+msgstr "تم تغيير كلمة المرور الخاصة بك"
+
+msgid "for"
+msgstr "عن"

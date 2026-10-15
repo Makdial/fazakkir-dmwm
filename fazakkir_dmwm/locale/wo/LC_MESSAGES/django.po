@@ -776,3 +776,171 @@ msgstr "Sous-titrage automatique mi kenn defu paramétré. Ràng OPENAI_API_KEY 
 
 msgid "This video has no audio track yet. Generate its MP3 first, then create the subtitles."
 msgstr "Vidéo bi amay piste audio. Generer MP3 bi lépp bu soxla, teul generaat sous-titrage."
+
+msgid "Audio File (MP3)"
+msgstr "Faar bu MP3"
+
+msgid "Back 10 seconds"
+msgstr "Dee 10 seconds"
+
+msgid "Back to sign in"
+msgstr "Dellool ci mbirtee mi"
+
+msgid "Cancel"
+msgstr "Ma§çoç"
+
+msgid "Check Your Email"
+msgstr "Check mbir bu email bu yër"
+
+msgid "Check your email"
+msgstr "Check mbir bu email bu yër"
+
+msgid "Choose a New Password"
+msgstr "Tannale mbirtee mi"
+
+msgid "Choose a new password"
+msgstr "Tannale mbirtee mi"
+
+msgid "Click to select an MP3 file"
+msgstr "Click wala faar bu MP3"
+
+msgid "Confirm new password"
+msgstr "Confirme mbirtee mi"
+
+msgid "Copy this link:"
+msgstr "Koppi link bi:"
+
+msgid "Current thumbnail"
+msgstr "Thumbnail bi lay bi"
+
+msgid "Edit"
+msgstr "Soppi"
+
+msgid "Edit Video"
+msgstr "Soppi video bi"
+
+msgid "Enter your email address"
+msgstr "Bamba mbir bu email bu yër"
+
+msgid "Enter your email address and we will send you a link to choose a new one."
+msgstr "Bamba mbir bu email bu yër, dundëi laye mbirtee bu lay yi lay dusk ci dund mbirtee bees."
+
+msgid "Fazakkir"
+msgstr "Fazakkir"
+
+msgid "Forgot your password?"
+msgstr "Mbirtee bi mbàddu?"
+
+msgid "Forward 10 seconds"
+msgstr "Tetel 10 seconds"
+
+msgid "Fullscreen"
+msgstr "Sër sa bopp"
+
+msgid "If you did not ask for this, you can ignore this message and nothing will change."
+msgstr "Su kenn ma kenn sa kës bu lay defar, wacis ci bir, kenn bu lay dukay door."
+
+msgid "Link copied"
+msgstr "Link bi joy"
+
+msgid "MP3 link"
+msgstr "Link bu MP3"
+
+msgid "MP3 link copied"
+msgstr "Link bu MP3 bi joy"
+
+msgid "MP3 only. This becomes the track friends can stream and download."
+msgstr "MP3 took. Mi laye rek bu mbirto-yóbbu topp kisi topp tekki."
+
+msgid "Mute"
+msgstr "Tama"
+
+msgid "New password"
+msgstr "Mbirtee mi"
+
+msgid "No results"
+msgstr "Benni bir"
+
+msgid "Nothing matched. Try a different word, or a year such as 2000."
+msgstr "Benni bir. Jëmm ci saf kumam wala sa cascadeur man ni 2000."
+
+msgid "Open the link below to choose a new one:"
+msgstr "Ubbi link mi ci ndaw yi teg bir mbirtee bees:"
+
+msgid "Password Changed"
+msgstr "Mbirtee bi buute"
+
+msgid "Pause"
+msgstr "Seckan"
+
+msgid "Picture in picture"
+msgstr "Ndox ci ndox"
+
+msgid "Play"
+msgstr "Topp"
+
+msgid "Playback speed"
+msgstr "Speed bu topp"
+
+msgid "Request a new link"
+msgstr "Sann link bu bees"
+
+msgid "Reset Password"
+msgstr "Sala mbirtee"
+
+msgid "Save New Password"
+msgstr "Engg mbirtee mi"
+
+msgid "Save changes"
+msgstr "Engg yi soppi"
+
+msgid "Search by title, name or year"
+msgstr "Lah mbir yuwa, tur wala sa cascadeur"
+
+msgid "Search videos"
+msgstr "Lah ci video yi"
+
+msgid "Seek"
+msgstr "Sala"
+
+msgid "Send Reset Link"
+msgstr "Yubbi link bu sala mbirtee"
+
+msgid "Share"
+msgstr "Bolli"
+
+msgid "Share this video"
+msgstr "Bolli video bi"
+
+msgid "Show or hide the player controls"
+msgstr "Wone wallis masalan wii topper"
+
+msgid "Size"
+msgstr "Taay"
+
+msgid "The address does not match any account. Check it and try again, or ask an administrator to add an email address to your profile."
+msgstr "Email bi mi kenn danger béccëg bu bees kenn man. Check ko, far ta, wala soxla ndox mi dokku ngay def teɲɲi email yi mbir bu yër."
+
+msgid "This reset link is invalid, most likely because it has already been used or has expired. Please request a new one."
+msgstr "Link bu sala mbirtee bi danger nun. Fànk nga laye kennu kenn bi lay defar wala sa bopp kenn. Lékkal teg bir link bu bees."
+
+msgid "Type a few words from a title, the uploader's name, or a year such as 2000."
+msgstr "Ciw bii yi ci tur wala tur u saf, wala sa cascadeur man ni 2000."
+
+msgid "Video link"
+msgstr "Link bu video"
+
+msgid "Views"
+msgstr "Looku"
+
+msgid "Volume"
+msgstr "Degg bu teg"
+
+msgid "You can now sign in with your new password."
+msgstr "Teugg ci mbirtee mi teg dib mbirtee."
+
+msgid "Your password has been changed"
+msgstr "Mbirtee bu yër bi buute"
+
+msgid "for"
+msgstr "bu"

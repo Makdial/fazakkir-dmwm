@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 from io import StringIO
+import re
 from pathlib import Path
 from unittest import mock
 
@@ -974,7 +975,7 @@ class ProductionStaticTests(TestCase):
         # DJANGO_DEBUG (which Django ignores). With the wrong name, collectstatic
         # runs with DEBUG=1, writes no staticfiles.json, and every page in the
         # deployed container fails with "Missing staticfiles manifest entry".
-        from pathlib import Path
+        import re
 
         import fazakkir_dmwm
 
@@ -2003,3 +2004,53 @@ class AudioOnlyUploadTests(TestCase):
         self.assertContains(response, 'name="media_type"')
         self.assertContains(response, 'name="audio_file"')
         self.assertContains(response, 'name="video_file"')
+
+class TranslationCoverageTests(TestCase):
+    """Every string shown in the UI must exist in all three catalogues.
+
+    GNU gettext is not available on this machine, so `makemessages` cannot run
+    and a newly added string silently falls back to English on the French,
+    Arabic and Wolof pages. This test fails the build when that happens, and
+    points at exactly which strings are missing.
+    """
+
+    LANGUAGES = ("fr", "ar", "wo")
+    SKIP_DIRS = {".venv", "staticfiles", "__pycache__", "migrations", "locale"}
+    TRANS = re.compile(r"{%\s*trans(?:late)?\s+(['\"])(.*?)\1", re.S)
+    GETTEXT = re.compile(r"\bgettext\(\s*(['\"])(.*?)\1", re.S)
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        project_root = Path(__file__).resolve().parent.parent
+        cls.used: set[str] = set()
+        for path in project_root.rglob("*"):
+            if path.is_dir() or any(part in cls.SKIP_DIRS for part in path.parts):
+                continue
+            if path.suffix not in {".html", ".py", ".txt"}:
+                continue
+            try:
+                text = path.read_text(encoding="utf-8")
+            except (UnicodeDecodeError, OSError):
+                continue
+            for match in cls.TRANS.finditer(text):
+                if "%(" not in match.group(2):
+                    cls.used.add(match.group(2))
+            if path.suffix == ".py":
+                for match in cls.GETTEXT.finditer(text):
+                    cls.used.add(match.group(2))
+
+    def test_every_language_covers_every_string(self):
+        root = Path(__file__).resolve().parent.parent
+        for lang in self.LANGUAGES:
+            po = root / "locale" / lang / "LC_MESSAGES" / "django.po"
+            with self.subTest(language=lang):
+                self.assertTrue(po.exists(), f"missing catalogue for {lang}")
+                text = po.read_text(encoding="utf-8")
+                have = set(re.findall(r'(?m)^msgid\s+"((?:[^"\\]|\\.)*)"', text))
+                missing = sorted(self.used - have)
+                self.assertEqual(
+                    missing, [],
+                    f"{lang} is missing {len(missing)} translations: "
+                    f"{missing[:10]}",
+                )
