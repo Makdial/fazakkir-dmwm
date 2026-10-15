@@ -129,6 +129,18 @@
     text-align: right;
 }
 
+/* The play affordance hugs the leading edge, which in Arabic is the right. */
+[dir="rtl"] .play-icon {
+    left: auto;
+    right: 12px;
+}
+
+@media (max-width: 480px) {
+    [dir="rtl"] .play-icon {
+        right: 8px;
+    }
+}
+
 /* --- Dashboard tables ----------------------------------------------------- */
 
 [dir="rtl"] .manage-table th,

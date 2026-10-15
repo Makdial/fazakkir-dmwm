@@ -564,8 +564,21 @@ class ThumbnailOverlayTests(TestCase):
         self.assertIn("display: none", touch_block)
         self.assertNotIn("opacity: 1", touch_block)
 
+    def test_overlay_sits_on_the_thumbnail_edge_not_the_middle(self):
+        block = self._block_for(".play-icon {")
+        self.assertIn("left: 12px", block)
+        self.assertIn("translateY(-50%)", block)
+        # Centring with translate(-50%, -50%) is what put it over the subject.
+        self.assertNotIn("left: 50%", block)
+        self.assertNotIn("translate(-50%, -50%)", block)
+
     def test_overlay_still_appears_on_hover_capable_devices(self):
         self.assertIn(".video-card:hover .play-icon", self.css)
+
+    def _block_for(self, opening: str) -> str:
+        start = self.css.index(opening)
+        end = self.css.index("}", start)
+        return self.css[start:end]
 
     def _hover_none_block(self) -> str:
         start = self.css.index("@media (hover: none)")
