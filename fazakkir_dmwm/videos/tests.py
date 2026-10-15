@@ -2149,6 +2149,62 @@ class TranslationCoverageTests(TestCase):
                     f"{missing[:10]}",
                 )
 
+class MarkupBalanceTests(TestCase):
+    """The player markup must close every element it opens.
+
+    A single missing ``</div>`` left ``.video-player-container`` unclosed, so the
+    download buttons and the entire comments section became its children. The
+    control bar is absolutely positioned against that container, which therefore
+    spanned the whole page and pushed the bar down to the bottom of the
+    document. The page still rendered, so nothing caught it.
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user("balanced", password="pw12345678")
+        self.video = Video.objects.create(
+            user=self.user,
+            title="Nested",
+            file_id="videos/n.mp4",
+            video_url="https://example.com/n.mp4",
+            audio_file_id="audio/n.mp3",
+            audio_status="ready",
+        )
+        self.body = self.client.get(
+            reverse("videos:detail", args=[self.video.id])
+        ).content.decode()
+
+    def test_no_unclosed_div_in_the_player_region(self):
+        start = self.body.index('<div class="video-player-container"')
+        end = self.body.index('<div class="video-details"')
+        chunk = self.body[start:end]
+        self.assertEqual(
+            len(re.findall(r"<div\b", chunk)),
+            len(re.findall(r"</div>", chunk)),
+            "the player container is not closed, so the bar anchors to the page",
+        )
+
+    def test_download_buttons_are_not_inside_the_player_container(self):
+        start = self.body.index('<div class="video-player-container"')
+        end = self.body.index('<div class="player-controls"')
+        self.assertGreater(
+            end, start,
+            "player-controls must follow the closed player container",
+        )
+        # The container's closing tag has to appear before the controls.
+        tail = self.body[start:end]
+        self.assertEqual(
+            tail.count("<div"), tail.count("</div>"),
+            "player-controls leaked inside .video-player-container",
+        )
+
+    def test_the_control_bar_is_a_sibling_of_the_picture(self):
+        stage = self.body.index('id="playerStage"')
+        bar = self.body.index('id="playerBar"')
+        controls = self.body.index('class="player-controls"')
+        self.assertLess(stage, bar)
+        self.assertLess(bar, controls)
+
+
 class ConfirmationDialogTests(TestCase):
     """Destructive actions must ask first, and cancelling must change nothing.
 
