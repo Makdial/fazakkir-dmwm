@@ -12,9 +12,16 @@
 {% block content %}
 
 <div class="video-player-container">
-    <div class="video-player">
-        <video id="video-player" controls preload="metadata" playsinline
-               poster="{{ video.display_thumbnail_url }}"
+    <div class="video-player" id="playerStage">
+        {% comment %}
+            No poster and no native controls. The browser drew its own centred
+            play button straight over the poster image, hiding the very frame it
+            was meant to announce; dropping the poster removes that clash, and
+            the control bar below puts every control where we want it. The Media
+            Session wiring (see further down) is independent of the `controls`
+            attribute, so background playback still works.
+        {% endcomment %}
+        <video id="video-player" playsinline preload="metadata"
                src="{{ video.playback_url }}">
             {% for track in subtitle_tracks %}
             <track id="track-{{ track.language_code }}"
@@ -24,7 +31,7 @@
                    src="{% url 'videos:subtitle_file' video.id track.language_code %}">
             {% endfor %}
         </video>
-        <audio id="audio-player" controls preload="none" class="audio-player" style="display: none;">
+        <audio id="audio-player" preload="none" class="audio-player" style="display: none;">
             {% for track in subtitle_tracks %}
             <track id="atrack-{{ track.language_code }}"
                    kind="subtitles"
@@ -37,6 +44,36 @@
             <span class="error-icon">⚠</span>
             <p>{% trans "Video Unavailable" %}</p>
             <small>{% trans "The video file could not be loaded." %}</small>
+        </div>
+
+        <div class="player-bar" id="playerBar">
+            <input type="range" class="player-seek" id="seekBar" value="0" min="0" max="100" step="0.1"
+                   aria-label="{% trans 'Seek' %}">
+            <div class="player-bar-row">
+                <button type="button" class="player-btn" id="playPauseBtn"
+                        aria-label="{% trans 'Play' %}">▶</button>
+                <button type="button" class="player-btn" id="backBtn"
+                        aria-label="{% trans 'Back 10 seconds' %}">↺<span>10</span></button>
+                <button type="button" class="player-btn" id="fwdBtn"
+                        aria-label="{% trans 'Forward 10 seconds' %}"><span>10</span>↻</button>
+                <span class="player-time"><span id="currentTime">0:00</span> / <span id="duration">0:00</span></span>
+                <button type="button" class="player-btn" id="muteBtn"
+                        aria-label="{% trans 'Mute' %}">🔊</button>
+                <input type="range" class="player-volume" id="volumeBar" value="1" min="0" max="1" step="0.05"
+                       aria-label="{% trans 'Volume' %}">
+                <select class="player-rate" id="rateSelect" aria-label="{% trans 'Playback speed' %}">
+                    <option value="0.5">0.5×</option>
+                    <option value="0.75">0.75×</option>
+                    <option value="1" selected>1×</option>
+                    <option value="1.25">1.25×</option>
+                    <option value="1.5">1.5×</option>
+                    <option value="2">2×</option>
+                </select>
+                <button type="button" class="player-btn" id="pipBtn" hidden
+                        aria-label="{% trans 'Picture in picture' %}">⧉</button>
+                <button type="button" class="player-btn" id="fullscreenBtn"
+                        aria-label="{% trans 'Fullscreen' %}">⛶</button>
+            </div>
         </div>
     </div>
 
@@ -367,6 +404,8 @@ function setMode(mode) {
     }
     syncPlaybackState()
     applySubtitle(currentSubtitle)
+    // The bar reads from whichever element is active, so refresh it here too.
+    if (typeof refreshAllControls === "function") refreshAllControls()
 }
 
 // --- Media Session: playback in the background ------------------------------
@@ -442,6 +481,177 @@ function bindMediaSession() {
 }
 
 bindMediaSession()
+
+// --- Custom control bar ------------------------------------------------------
+// Replaces the browser's native `controls` attribute. Everything here drives
+// `activePlayer`, so the bar keeps working after switching between the video and
+// the MP3 without being rewired.
+const playerStage = document.getElementById("playerStage")
+const seekBar = document.getElementById("seekBar")
+const playPauseBtn = document.getElementById("playPauseBtn")
+const currentTimeEl = document.getElementById("currentTime")
+const durationEl = document.getElementById("duration")
+const muteBtn = document.getElementById("muteBtn")
+const volumeBar = document.getElementById("volumeBar")
+const rateSelect = document.getElementById("rateSelect")
+const pipBtn = document.getElementById("pipBtn")
+const fullscreenBtn = document.getElementById("fullscreenBtn")
+let scrubbing = false
+
+function formatTime(seconds) {
+    if (!isFinite(seconds) || seconds < 0) return "0:00"
+    const whole = Math.floor(seconds)
+    const hours = Math.floor(whole / 3600)
+    const minutes = Math.floor((whole % 3600) / 60)
+    const secs = String(whole % 60).padStart(2, "0")
+    return hours
+        ? `${hours}:${String(minutes).padStart(2, "0")}:${secs}`
+        : `${minutes}:${secs}`
+}
+
+function refreshPlayPauseIcon() {
+    if (!playPauseBtn || !activePlayer) return
+    const playing = !activePlayer.paused && !activePlayer.ended
+    playPauseBtn.textContent = playing ? "❚❚" : "▶"
+    playPauseBtn.setAttribute(
+        "aria-label", playing ? "{% trans 'Pause' %}" : "{% trans 'Play' %}"
+    )
+}
+
+function refreshSeekBar() {
+    if (!seekBar || !activePlayer) return
+    const duration = activePlayer.duration
+    if (scrubbing) return
+    if (isFinite(duration) && duration > 0) {
+        seekBar.value = String((activePlayer.currentTime / duration) * 100)
+    }
+}
+
+function refreshVolume() {
+    if (!activePlayer || !volumeBar || !muteBtn) return
+    volumeBar.value = String(activePlayer.volume)
+    muteBtn.textContent = activePlayer.muted || activePlayer.volume === 0 ? "🔇" : "🔊"
+}
+
+function refreshAllControls() {
+    refreshPlayPauseIcon()
+    refreshSeekBar()
+    refreshVolume()
+    if (activePlayer && isFinite(activePlayer.duration)) {
+        durationEl.textContent = formatTime(activePlayer.duration)
+    }
+}
+
+function togglePlayPause() {
+    if (!activePlayer) return
+    if (activePlayer.paused) {
+        activePlayer.play().catch(() => {})
+    } else {
+        activePlayer.pause()
+    }
+}
+
+function seekBy(delta) {
+    if (!activePlayer) return
+    const length = activePlayer.duration
+    if (!isFinite(length)) return
+    activePlayer.currentTime = Math.max(0, Math.min(length, activePlayer.currentTime + delta))
+}
+
+function wireControls() {
+    if (!playPauseBtn) return
+
+    playPauseBtn.addEventListener("click", togglePlayPause)
+    document.getElementById("backBtn").addEventListener("click", () => seekBy(-10))
+    document.getElementById("fwdBtn").addEventListener("click", () => seekBy(10))
+
+    // While dragging, the bar follows the pointer rather than the playback.
+    seekBar.addEventListener("pointerdown", () => { scrubbing = true })
+    seekBar.addEventListener("input", () => {
+        if (!activePlayer) return
+        const duration = activePlayer.duration
+        if (!isFinite(duration)) return
+        activePlayer.currentTime = (Number(seekBar.value) / 100) * duration
+        currentTimeEl.textContent = formatTime(activePlayer.currentTime)
+    })
+    const stopScrubbing = () => { scrubbing = false; refreshSeekBar() }
+    seekBar.addEventListener("pointerup", stopScrubbing)
+    seekBar.addEventListener("change", stopScrubbing)
+    seekBar.addEventListener("pointercancel", stopScrubbing)
+
+    volumeBar.addEventListener("input", () => {
+        if (!activePlayer) return
+        activePlayer.volume = Number(volumeBar.value)
+        activePlayer.muted = activePlayer.volume === 0
+        refreshVolume()
+    })
+    muteBtn.addEventListener("click", () => {
+        if (!activePlayer) return
+        activePlayer.muted = !activePlayer.muted
+        refreshVolume()
+    })
+
+    rateSelect.addEventListener("change", () => {
+        if (!activePlayer) return
+        activePlayer.playbackRate = Number(rateSelect.value)
+    })
+
+    fullscreenBtn.addEventListener("click", () => {
+        if (!playerStage) return
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {})
+        } else {
+            playerStage.requestFullscreen().catch(() => {})
+        }
+    })
+
+    // Picture-in-picture is video only, and not available everywhere.
+    if (window.documentPictureInPictureEnabled && !audioPlayer) {
+        pipBtn.hidden = false
+        pipBtn.addEventListener("click", async () => {
+            if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture().catch(() => {})
+                return
+            }
+            try { await videoPlayer.requestPictureInPicture() } catch (e) {}
+        })
+    }
+
+    // Keep the bar in step with whatever is playing, whichever element it is.
+    ;[videoPlayer, audioPlayer].forEach(el => {
+        if (!el) return
+        ;["play", "pause", "ended", "loadedmetadata", "durationchange",
+          "volumechange", "ratechange"].forEach(name =>
+            el.addEventListener(name, refreshAllControls))
+        el.addEventListener("timeupdate", () => {
+            refreshSeekBar()
+            if (activePlayer) {
+                currentTimeEl.textContent = formatTime(activePlayer.currentTime)
+            }
+        })
+    })
+
+    // Space and the usual transport keys, so the page still behaves like a
+    // player without reaching for the mouse.
+    document.addEventListener("keydown", event => {
+        const tag = (event.target.tagName || "").toLowerCase()
+        if (["input", "select", "textarea", "button"].includes(tag)) return
+        if (event.key === " " || event.key === "k") {
+            event.preventDefault()
+            togglePlayPause()
+        } else if (event.key === "ArrowRight") {
+            seekBy(10)
+        } else if (event.key === "ArrowLeft") {
+            seekBy(-10)
+        } else if (event.key === "f") {
+            fullscreenBtn.click()
+        }
+    })
+
+    refreshAllControls()
+}
+
+wireControls()
 
 // --- Subtitles / lyrics ---------------------------------------------------
 

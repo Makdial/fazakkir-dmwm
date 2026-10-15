@@ -548,6 +548,87 @@ class VideoSharingTests(TestCase):
         self.assertIn("AbortError", body)
 
 
+class CustomPlayerTests(TestCase):
+    """The player owns its controls instead of delegating to the browser.
+
+    The native control bar drew its own play button over the poster image, so
+    the poster and the `controls` attribute were both dropped. Two things must
+    survive that change: `playsinline`, without which iOS takes playback
+    fullscreen and background playback stops, and the Media Session wiring,
+    which is what keeps audio going when the screen locks.
+    """
+
+    def setUp(self):
+        self.admin = make_user("player", is_staff=True, is_superuser=True)
+        Profile.objects.filter(user=self.admin).update(access_level=Profile.Access.WRITE)
+        self.video = make_video(
+            self.admin,
+            title="Played",
+            audio_file_id="audio/p.mp3",
+            audio_url="https://example.com/p.mp3",
+            audio_status="ready",
+        )
+
+    def body(self):
+        response = self.client.get(reverse("videos:detail", args=[self.video.id]))
+        self.assertEqual(response.status_code, 200)
+        return response.content.decode()
+
+    def test_video_has_no_poster(self):
+        self.assertNotIn("poster=", self.body())
+
+    def test_media_elements_have_no_native_controls_attribute(self):
+        body = self.body()
+        self.assertNotIn('<video id="video-player" controls', body)
+        self.assertNotIn('<audio id="audio-player" controls', body)
+
+    def test_playsinline_is_kept_for_background_playback(self):
+        body = self.body()
+        video_tag = body[body.index("<video id="):body.index(">", body.index("<video id="))]
+        self.assertIn("playsinline", video_tag)
+
+    def test_custom_control_bar_is_rendered(self):
+        body = self.body()
+        for element_id in ("playerBar", "seekBar", "playPauseBtn", "volumeBar",
+                           "rateSelect", "fullscreenBtn", "currentTime", "duration"):
+            self.assertIn(f'id="{element_id}"', body)
+
+    def test_media_session_wiring_survives(self):
+        body = self.body()
+        self.assertIn("navigator.mediaSession", body)
+        self.assertIn("mediaSession.setActionHandler", body)
+        # seekbackward / seekforward are what the lock screen buttons use.
+        self.assertIn("seekbackward", body)
+        self.assertIn("seekforward", body)
+        self.assertIn("MediaMetadata", body)
+
+    def test_control_bar_drives_the_active_player(self):
+        body = self.body()
+        # Switching to MP3 mode must not leave the bar bound to the video only.
+        self.assertIn("activePlayer", body)
+        self.assertIn("function refreshAllControls", body)
+        self.assertIn("if (typeof refreshAllControls", body)
+
+    def test_seek_and_volume_are_wired(self):
+        body = self.body()
+        self.assertIn("function seekBy", body)
+        self.assertIn('seekBar.addEventListener("input"', body)
+        self.assertIn('volumeBar.addEventListener("input"', body)
+
+    def test_keyboard_transport_shortcuts_are_wired(self):
+        body = self.body()
+        self.assertIn('"keydown"', body)
+        self.assertIn("togglePlayPause()", body)
+
+    def test_subtitle_tracks_still_reach_the_video_element(self):
+        SubtitleTrack.objects.create(
+            video=self.video, language_code="fr", label="French", content="WEBVTT"
+        )
+        body = self.body()
+        self.assertIn('kind="subtitles"', body)
+        self.assertIn(reverse("videos:subtitle_file", args=[self.video.id, "fr"]), body)
+
+
 class ThumbnailOverlayTests(TestCase):
     """The hover play overlay must never permanently cover a thumbnail.
 
