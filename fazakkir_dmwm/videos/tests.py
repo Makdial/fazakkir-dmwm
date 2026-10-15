@@ -2,6 +2,9 @@ from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 from io import StringIO
 import re
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 from unittest import mock
 
@@ -2296,3 +2299,127 @@ class PlayerLayoutTests(TestCase):
         block = css[start:css.index("}", start)]
         self.assertIn("--bar-fg: #fff", block)
         self.assertIn("rgba(0, 0, 0, 0.85)", block)
+
+
+class PlayerScriptTests(TestCase):
+    """Execute the rendered player script instead of only grepping it.
+
+    Every earlier player test asserted that certain strings appeared in the
+    HTML. That passed happily while the script threw a ReferenceError on the
+    first line, because ``playerBar`` was used in six places and never
+    declared, so the whole player was dead on arrival. String assertions cannot
+    catch that; only running the code can.
+    """
+
+    def setUp(self):
+        node = shutil.which("node") or shutil.which("node.exe")
+        if not node:
+            self.skipTest("node is not installed on this machine")
+        self.node = node
+
+        user = User.objects.create_user(
+            "runner", password="pw12345678", is_staff=True, is_superuser=True
+        )
+        Profile.objects.filter(user=user).update(access_level=Profile.Access.WRITE)
+        self.video = Video.objects.create(
+            user=user,
+            title="Runnable",
+            file_id="videos/run.mp4",
+            video_url="https://example.com/run.mp4",
+            audio_file_id="audio/run.mp3",
+            audio_status="ready",
+        )
+
+    def _script(self) -> str:
+        body = self.client.get(
+            reverse("videos:detail", args=[self.video.id])
+        ).content.decode()
+        # The page opens with the theme bootstrap inline, so pick the block that
+        # actually holds the player rather than the first one on the page.
+        for block in re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>",
+                                body, re.S):
+            if "playerBar" in block:
+                return block
+        raise AssertionError("player script block not found in the page")
+
+    def _run(self) -> str:
+        project = Path(__file__).resolve().parent.parent
+        harness = project / "static" / "js" / "tests" / "player_smoke.js"
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "player.js"
+            target.write_text(self._script(), encoding="utf-8")
+            proc = subprocess.run(
+                [self.node, str(harness), str(target)],
+                capture_output=True, text=True, timeout=120, cwd=str(project),
+            )
+        return (proc.stdout or "") + (proc.stderr or "")
+
+    def test_player_script_runs_without_throwing(self):
+        output = self._run()
+        self.assertIn(
+            "script executed without throwing", output,
+            "the player script failed to execute:\n" + output,
+        )
+
+    def test_tapping_the_picture_starts_playback(self):
+        output = self._run()
+        self.assertIn("video.play() called : true", output)
+        self.assertIn("bar visible         : true", output)
+
+    def test_every_control_is_wired_to_a_handler(self):
+        output = self._run()
+        for element, event in (
+            ("tapZone", "click"),
+            ("bigPlay", "click"),
+            ("playPauseBtn", "click"),
+            ("video-player", "play"),
+            ("video-player", "pause"),
+        ):
+            self.assertNotIn(
+                f"{element} {event} NOT BOUND", output,
+                f"{element} has no {event} handler:\n{output}",
+            )
+
+    def test_every_referenced_element_variable_is_declared(self):
+        # A variable used in the auto-hide code must also be declared.
+        script = self._script()
+        for name in ("playerBar", "playerStage", "tapZone", "bigPlay"):
+            self.assertRegex(script, rf"const {name}\s*=", f"{name} is never declared")
+            self.assertEqual(
+                len(re.findall(rf"\bconst {name}\s*=", script)), 1,
+                f"{name} is declared more than once",
+            )
+
+    def test_audio_only_flag_is_a_boolean_not_a_quoted_string(self):
+        # "false" is a non-empty string and therefore truthy, which made every
+        # control drive the audio element instead of the video.
+        script = self._script()
+        match = re.search(r"const audioOnly\s*=\s*(.+)", script)
+        self.assertIsNotNone(match, "audioOnly is not set")
+        self.assertEqual(
+            match.group(1).strip(), "false",
+            'audioOnly must be a bare boolean; a quoted "false" is truthy',
+        )
+
+    def test_controls_drive_the_video_for_a_normal_upload(self):
+        output = self._run()
+        self.assertIn("video.play() called : true", output)
+
+    def test_every_id_the_script_looks_up_exists_in_the_markup(self):
+        # These are only rendered when MP3 generation is running or the viewer
+        # can generate subtitles, and the script already guards each lookup.
+        conditional = {"audioStatus", "autoSubBtn", "autoSubMessage", "autoSubPanel"}
+
+        output = self._run()
+        line = [l for l in output.splitlines() if l.startswith("requested ids:")]
+        self.assertTrue(line, "harness did not report the ids it looked up")
+        requested = [i for i in line[0].split(":", 1)[1].split() if i not in conditional]
+
+        body = self.client.get(
+            reverse("videos:detail", args=[self.video.id])
+        ).content.decode()
+        missing = [i for i in requested if f'id="{i}"' not in body]
+        self.assertEqual(
+            missing, [],
+            f"the script asks for elements the page does not render: {missing}",
+        )

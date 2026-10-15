@@ -437,7 +437,10 @@ function setMode(mode) {
 const mediaSession = navigator.mediaSession || null
 // An audio-only upload has no picture, so the controls must drive the MP3 from
 // the outset rather than a hidden <video>.
-const audioOnly = "{% if is_audio_only %}true{% else %}false{% endif %}"
+// Rendered as a bare boolean, not a quoted string: "false" is a non-empty
+// string and therefore truthy in JavaScript, which made every control drive the
+// audio element instead of the video.
+const audioOnly = {% if is_audio_only %}true{% else %}false{% endif %}
 let activePlayer = audioOnly ? audioPlayer : videoPlayer
 
 function mediaMetadata() {
@@ -511,6 +514,7 @@ bindMediaSession()
 // `activePlayer`, so the bar keeps working after switching between the video and
 // the MP3 without being rewired.
 const playerStage = document.getElementById("playerStage")
+const playerBar = document.getElementById("playerBar")
 const seekBar = document.getElementById("seekBar")
 const playPauseBtn = document.getElementById("playPauseBtn")
 const currentTimeEl = document.getElementById("currentTime")
