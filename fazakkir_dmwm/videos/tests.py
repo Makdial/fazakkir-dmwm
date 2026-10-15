@@ -2110,17 +2110,22 @@ class ConfirmationDialogTests(TestCase):
 
     def test_confirm_script_is_loaded_on_every_page(self):
         body = self.client.get(reverse("videos:list")).content.decode()
-        self.assertIn("/static/js/confirm.js", body)
-        self.assertIn("/static/css/confirm.css", body)
+        # ManifestStaticFilesStorage appends a content hash in production, so
+        # match the name rather than an exact unhashed path.
+        self.assertRegex(body, r"/static/js/confirm\.[0-9a-f]+\.js|/static/js/confirm\.js")
+        self.assertRegex(body, r"/static/css/confirm\.[0-9a-f]+\.css|/static/css/confirm\.css")
 
     def test_confirm_script_is_loaded_before_offline_js(self):
         # offline.js calls fazakkirConfirm when removing a download, so the
         # helper has to be defined first.
+        import re as _re
+
         body = self.client.get(reverse("videos:list")).content.decode()
-        self.assertLess(
-            body.index("/static/js/confirm.js"),
-            body.index("/static/js/offline.js"),
-        )
+        confirm = _re.search(r"/static/js/confirm[^\"']*\.js", body)
+        offline = _re.search(r"/static/js/offline[^\"']*\.js", body)
+        self.assertIsNotNone(confirm, "confirm.js is not referenced")
+        self.assertIsNotNone(offline, "offline.js is not referenced")
+        self.assertLess(confirm.start(), offline.start())
 
     def test_confirm_script_exposes_a_promise_api(self):
         script = self._asset("js/confirm.js")
