@@ -462,6 +462,26 @@ class ProductionStaticTests(TestCase):
         response = self.client.get(reverse("videos:list"))
         self.assertEqual(response.status_code, 200)
 
+    def test_settings_load_without_hsts_variable(self):
+        # The container build runs with DEBUG=0 and no SECURE_HSTS_SECONDS set.
+        # Indexing os.environ for an absent key used to raise KeyError and fail
+        # the image build, so reload the settings with the variable removed.
+        import importlib
+        import os
+
+        os.environ["DJANGO_SETTINGS_MODULE"] = "fazakkir_dmwm.settings"
+        previous = os.environ.pop("SECURE_HSTS_SECONDS", None)
+        module = importlib.import_module("fazakkir_dmwm.settings")
+        try:
+            importlib.reload(module)
+            # Unset means HSTS is simply never configured, which leaves
+            # Django's own default (0, disabled) in place.
+            self.assertFalse(hasattr(module, "SECURE_HSTS_SECONDS"))
+        finally:
+            if previous is not None:
+                os.environ["SECURE_HSTS_SECONDS"] = previous
+            importlib.reload(module)
+
 
 class OfflineSupportTests(TestCase):
     def setUp(self):

@@ -81,8 +81,11 @@ if not DEBUG:
     if _env_flag("SECURE_SSL_REDIRECT"):
         SECURE_SSL_REDIRECT = True
     # Only enable HSTS once the site is really served over HTTPS everywhere.
-    if os.environ.get("SECURE_HSTS_SECONDS", "0").isdigit():
-        SECURE_HSTS_SECONDS = int(os.environ["SECURE_HSTS_SECONDS"])
+    # Read the value once: indexing os.environ again would raise a KeyError when
+    # the variable is unset, which broke the container build.
+    hsts_seconds = os.environ.get("SECURE_HSTS_SECONDS", "").strip()
+    if hsts_seconds.isdigit() and int(hsts_seconds) > 0:
+        SECURE_HSTS_SECONDS = int(hsts_seconds)
         SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 
 
