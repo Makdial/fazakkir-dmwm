@@ -66,8 +66,8 @@ The repository already contains everything needed: a `Dockerfile`, a
 | `DATABASE_URL` | from the PostgreSQL addon (step 2) |
 | `SECRET_KEY` | `python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"` |
 | `DEBUG` | `0` |
-| `ALLOWED_HOSTS` | your service hostname, e.g. `fazakkir--web.code.run` |
-| `CSRF_TRUSTED_ORIGINS` | `https://<that same hostname>` |
+| `ALLOWED_HOSTS` | every hostname the site answers on, plus `127.0.0.1,localhost` for the health probe |
+| `CSRF_TRUSTED_ORIGINS` | `https://` + each of those hostnames, comma separated |
 | `R2_ACCOUNT_ID` | from your local `fazakkir_dmwm/.env` |
 | `R2_ACCESS_KEY_ID` | from your local `fazakkir_dmwm/.env` |
 | `R2_SECRET_ACCESS_KEY` | from your local `fazakkir_dmwm/.env` |
@@ -112,14 +112,30 @@ gunicorn, so schema changes are applied automatically.
 
 ### The live deployment
 
-The site is deployed and running:
+The site is deployed and running on its own domain:
 
 | | |
 | --- | --- |
-| **URL** | `https://http--fazakkir-web--7c9pf6vp6x6y.code.run` |
+| **URL** | `https://fazakkirdmwm.com` |
+| Also serves | `https://www.fazakkirdmwm.com` |
+| Fallback | `https://http--fazakkir-web--7c9pf6vp6x6y.code.run` |
 | Project / service | `fazakkir` / `fazakkir-web` |
 | Database | `fazakkir-db` (PostgreSQL 18, free tier, europe-west) |
+| Region | `europe-west` |
 | Admin | `MakhouTech` (superuser, read & write) |
+| Certificate | Let's Encrypt, issued automatically and renewed by Northflank |
+
+The domain is registered at Cloudflare Registrar and served through
+Northflank, which terminates TLS. Cloudflare remains the DNS provider
+(DNS-only records) so Northflank can issue and renew the certificate.
+
+### Why the custom domain matters
+
+Some ISPs return `NXDOMAIN` for `*.code.run` when queried over IPv6 while
+resolving it correctly over IPv4. Windows prefers IPv6, so the site appeared to
+be unreachable on an otherwise healthy network. A domain behind Cloudflare's
+DNS avoids that class of problem entirely, because the resolver is asked for a
+name it already serves rather than one it has never cached.
 
 Three gotchas learned during the real deployment, worth remembering for any
 similar host:
