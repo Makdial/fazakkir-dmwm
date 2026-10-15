@@ -92,6 +92,9 @@ Open the service's **Shell** tab and run:
 python manage.py createsuperuser
 ```
 
+> In practice the admin was created with the CLI (`northflank exec service`)
+> running the same code inside the container, which avoids copy/paste errors.
+
 ### Step 6 — Verify
 
 Open the public URL Northflank gave you and check:
@@ -106,6 +109,43 @@ Open the public URL Northflank gave you and check:
 Every `git push` to `master` triggers a rebuild and redeploy. The container's
 start command runs `python manage.py migrate --noinput` before starting
 gunicorn, so schema changes are applied automatically.
+
+### The live deployment
+
+The site is deployed and running:
+
+| | |
+| --- | --- |
+| **URL** | `https://http--fazakkir-web--7c9pf6vp6x6y.code.run` |
+| Project / service | `fazakkir` / `fazakkir-web` |
+| Database | `fazakkir-db` (PostgreSQL 18, free tier, europe-west) |
+| Admin | `MakhouTech` (superuser, read & write) |
+
+Two gotchas learned during the real deployment, worth remembering for any
+similar host:
+
+- **`ALLOWED_HOSTS` must include `127.0.0.1` and `localhost`.** Northflank's
+  health check agent probes the container on `127.0.0.1:8000`; without those
+  entries every probe returns `400 DisallowedHost` and the platform keeps
+  restarting the container.
+- **The port must be `public`.** A port created with `"public": false` has no
+  live DNS record, so the `code.run` name never resolves even though the
+  container is healthy.
+
+### Driving Northflank from the CLI
+
+The official CLI can create the whole stack once you are signed in:
+
+```bash
+npm install -g @northflank/cli
+northflank login                 # opens a browser; your token never reaches me
+northflank create project --name fazakkir
+northflank create service combined --project fazakkir   # combined = build + run
+```
+
+Prefer the dashboard (or the API) for anything involving **secrets**: the
+Cloudflare R2 keys and `SECRET_KEY` belong in the Northflank environment, not on
+a command line where they would end up in shell history.
 
 ---
 
