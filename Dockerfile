@@ -23,10 +23,17 @@ WORKDIR /app/fazakkir_dmwm
 
 # Collect the static files at build time. WhiteNoise then serves them from
 # inside the container, so no separate static-file service is needed.
+#
+# The variable must be DEBUG: that is the name fazakkir_dmwm/settings.py reads.
+# With it left at 1, collectstatic uses the plain storage backend and writes no
+# staticfiles.json. Production then serves with the manifest backend and every
+# page fails with "Missing staticfiles manifest entry". The guard below turns
+# that into a failed build instead of a broken deployment.
 RUN DJANGO_SETTINGS_MODULE=fazakkir_dmwm.settings \
-    DJANGO_DEBUG=0 \
+    DEBUG=0 \
     SECRET_KEY=build-only-not-used-at-runtime \
     python manage.py collectstatic --noinput \
+ && test -f staticfiles/staticfiles.json \
  && python manage.py compiletranslations
 
 EXPOSE 8000

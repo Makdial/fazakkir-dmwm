@@ -423,6 +423,46 @@ class LanguageToggleTests(TestCase):
         self.assertTrue(content.lstrip().startswith("<!DOCTYPE html>"))
 
 
+class ProductionStaticTests(TestCase):
+    """Guard the production static-file setup the Docker build depends on."""
+
+    def test_whitenoise_middleware_is_installed(self):
+        from django.conf import settings
+
+        self.assertIn(
+            "whitenoise.middleware.WhiteNoiseMiddleware", settings.MIDDLEWARE
+        )
+
+    def test_dockerfile_build_disables_debug_with_the_right_variable(self):
+        # The build step must set DEBUG (which the settings read), not
+        # DJANGO_DEBUG (which Django ignores). With the wrong name, collectstatic
+        # runs with DEBUG=1, writes no staticfiles.json, and every page in the
+        # deployed container fails with "Missing staticfiles manifest entry".
+        from pathlib import Path
+
+        import fazakkir_dmwm
+
+        # The Dockerfile sits at the repository root, one level above the
+        # Django project directory that holds this package.
+        repo_root = Path(fazakkir_dmwm.__file__).resolve().parents[2]
+        dockerfile = repo_root / "Dockerfile"
+        self.assertTrue(
+            dockerfile.exists(), f"Dockerfile not found at {dockerfile}"
+        )
+        text = dockerfile.read_text(encoding="utf-8")
+        # The env var must be DEBUG, which the settings actually read. Checking
+        # the whole file is fine: DJANGO_DEBUG must not appear anywhere, not
+        # even in a comment, so nobody is tempted to rely on it.
+        self.assertIn("DEBUG=0", text)
+        self.assertNotIn("DJANGO_DEBUG", text)
+        # The build fails loudly instead of shipping an image without a manifest.
+        self.assertIn("staticfiles.json", text)
+
+    def test_production_renders_every_page(self):
+        response = self.client.get(reverse("videos:list"))
+        self.assertEqual(response.status_code, 200)
+
+
 class OfflineSupportTests(TestCase):
     def setUp(self):
         self.user = make_user("viewer")
