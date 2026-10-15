@@ -37,6 +37,12 @@
 /* The bar floats over the bottom of the picture on a desktop, and fades away
    entirely while the video plays so it never sits on top of the action. */
 .player-bar {
+    /* Light-on-dark, because on a desktop it always sits over the picture. */
+    --bar-fg: #fff;
+    --bar-btn: rgba(255, 255, 255, 0.18);
+    --bar-btn-hover: rgba(255, 255, 255, 0.34);
+    --bar-field: rgba(255, 255, 255, 0.18);
+
     position: absolute;
     left: 0;
     right: 0;
@@ -47,6 +53,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    color: var(--bar-fg);
     opacity: 0;
     visibility: hidden;
     transform: translateY(8px);
@@ -86,9 +93,9 @@
 }
 
 .player-btn {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--bar-btn);
     border: none;
-    color: #fff;
+    color: var(--bar-fg);
     border-radius: var(--radius-sm, 6px);
     min-width: 38px;
     height: 34px;
@@ -102,7 +109,7 @@
 }
 
 .player-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--bar-btn-hover);
 }
 
 .player-btn span {
@@ -111,7 +118,7 @@
 }
 
 .player-time {
-    color: #fff;
+    color: var(--bar-fg);
     font-size: 0.82rem;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -119,13 +126,13 @@
 
 .player-volume {
     width: 80px;
-    accent-color: #fff;
+    accent-color: var(--bar-fg);
     cursor: pointer;
 }
 
 .player-rate {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    background: var(--bar-field);
+    color: var(--bar-fg);
     border: none;
     border-radius: var(--radius-sm, 6px);
     height: 34px;
@@ -163,12 +170,40 @@
 
     .player-bar {
         position: static;
+        /* Below the picture the bar no longer has a dark backdrop to hide
+           behind, so it follows the page theme. White-on-white made the
+           controls invisible in light mode. */
+        --bar-fg: var(--text-primary);
+        --bar-btn: var(--bg-tertiary);
+        --bar-btn-hover: var(--bg-hover, var(--bg-primary));
+        --bar-field: var(--bg-tertiary);
+
         background: var(--bg-secondary);
         border: 1px solid var(--border-color);
         border-top: none;
         border-bottom-left-radius: var(--radius-lg);
         border-bottom-right-radius: var(--radius-lg);
         padding: 10px 12px 12px;
+    }
+
+    /* A visible edge and a pressed state, so each control reads clearly
+       against either theme. */
+    .player-btn {
+        border: 1px solid var(--border-color);
+    }
+
+    .player-btn:active {
+        background: var(--bar-btn-hover);
+        transform: translateY(1px);
+    }
+
+    .player-rate {
+        border: 1px solid var(--border-color);
+    }
+
+    .player-bar .player-seek,
+    .player-bar .player-volume {
+        height: 26px;
     }
 
     .video-player.controls-visible::after {

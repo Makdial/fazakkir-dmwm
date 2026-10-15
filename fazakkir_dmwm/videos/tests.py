@@ -2017,6 +2017,7 @@ class TranslationCoverageTests(TestCase):
     LANGUAGES = ("fr", "ar", "wo")
     SKIP_DIRS = {".venv", "staticfiles", "__pycache__", "migrations", "locale"}
     TRANS = re.compile(r"{%\s*trans(?:late)?\s+(['\"])(.*?)\1", re.S)
+    BLOCKTRANS = re.compile(r"{%\s*blocktrans[^%]*%}(.*?){%\s*endblocktrans\s*%}", re.S)
     GETTEXT = re.compile(r"\bgettext\(\s*(['\"])(.*?)\1", re.S)
 
     @classmethod
@@ -2034,11 +2035,32 @@ class TranslationCoverageTests(TestCase):
             except (UnicodeDecodeError, OSError):
                 continue
             for match in cls.TRANS.finditer(text):
-                if "%(" not in match.group(2):
-                    cls.used.add(match.group(2))
+                cls.used.add(cls._normalise(match.group(2)))
+            for match in cls.BLOCKTRANS.finditer(text):
+                cls.used.add(cls._normalise(cls._singular_form(match.group(1))))
             if path.suffix == ".py":
                 for match in cls.GETTEXT.finditer(text):
-                    cls.used.add(match.group(2))
+                    cls.used.add(cls._normalise(match.group(2)))
+
+    @staticmethod
+    def _normalise(value: str) -> str:
+        """Rewrite a template placeholder the way Django stores it.
+
+        ``{{ email }}`` inside trans/blocktrans is written to the catalogue as
+        ``%(email)s``, so the source text has to be converted before it can be
+        compared with a msgid.
+        """
+        return re.sub(r"\{\{\s*(\w+)\s*\}\}", r"%(\1)s", " ".join(value.split()))
+
+    @staticmethod
+    def _singular_form(body: str) -> str:
+        """The msgid of a blocktrans body.
+
+        A pluralised blocktrans holds two halves separated by {% plural %},
+        and only the first becomes the msgid; the second becomes msgid_plural.
+        """
+        head = re.split(r"{%\s*plural\s*%}", " ".join(body.split()), maxsplit=1)[0]
+        return head.strip()
 
     def test_every_language_covers_every_string(self):
         root = Path(__file__).resolve().parent.parent
@@ -2054,3 +2076,149 @@ class TranslationCoverageTests(TestCase):
                     f"{lang} is missing {len(missing)} translations: "
                     f"{missing[:10]}",
                 )
+
+class ConfirmationDialogTests(TestCase):
+    """Destructive actions must ask first, and cancelling must change nothing.
+
+    window.confirm() was unusable here: the message is always English, it cannot
+    be styled, and some mobile browsers suppress it outside a user gesture. The
+    offline "Remove download" button in particular deleted the cached audio
+    immediately, with no way back.
+    """
+
+    def setUp(self):
+        self.admin = make_user("deleter", is_staff=True, is_superuser=True)
+        Profile.objects.filter(user=self.admin).update(access_level=Profile.Access.WRITE)
+        self.video = make_video(
+            self.admin,
+            title="Precious",
+            audio_file_id="audio/p.mp3",
+            audio_url="https://example.com/p.mp3",
+            audio_status="ready",
+        )
+        self.client.login(username="deleter", password="pw12345678")
+
+    @staticmethod
+    def _asset(name: str) -> str:
+        root = Path(__file__).resolve().parent.parent
+        return (root / "static" / name).read_text(encoding="utf-8")
+
+    def detail_page(self):
+        return self.client.get(
+            reverse("videos:detail", args=[self.video.id])
+        ).content.decode()
+
+    def test_confirm_script_is_loaded_on_every_page(self):
+        body = self.client.get(reverse("videos:list")).content.decode()
+        self.assertIn("/static/js/confirm.js", body)
+        self.assertIn("/static/css/confirm.css", body)
+
+    def test_confirm_script_is_loaded_before_offline_js(self):
+        # offline.js calls fazakkirConfirm when removing a download, so the
+        # helper has to be defined first.
+        body = self.client.get(reverse("videos:list")).content.decode()
+        self.assertLess(
+            body.index("/static/js/confirm.js"),
+            body.index("/static/js/offline.js"),
+        )
+
+    def test_confirm_script_exposes_a_promise_api(self):
+        script = self._asset("js/confirm.js")
+        self.assertIn("window.fazakkirConfirm", script)
+        self.assertIn("Promise", script)
+
+    def test_dialog_offers_cancel_and_a_destructive_default(self):
+        script = self._asset("js/confirm.js")
+        self.assertIn("confirm-cancel", script)
+        self.assertIn("is-danger", script)
+
+    def test_escape_cancels_rather_than_confirms(self):
+        script = self._asset("js/confirm.js")
+        self.assertIn('event.key === "Escape"', script)
+        # The Escape branch must resolve false, not true.
+        escape_line = script[script.index('event.key === "Escape"'):]
+        self.assertIn("close(false)", escape_line[:200])
+
+    def test_clicking_the_backdrop_cancels(self):
+        script = self._asset("js/confirm.js")
+        self.assertIn("if (event.target === parts.root) finish(false)", script)
+
+    def test_video_delete_asks_before_calling_the_endpoint(self):
+        body = self.detail_page()
+        self.assertIn("function deleteVideo", body)
+        self.assertIn("fazakkirConfirm({", body)
+        # The old blocking confirm() must be gone.
+        self.assertNotIn('confirm("', body)
+
+    def test_no_raw_confirm_calls_remain_anywhere(self):
+        for template in (
+            "videos/templates/videos/detail.html",
+            "videos/templates/videos/playlist_detail.html",
+            "dashboard/templates/dashboard/home.html",
+            "dashboard/templates/dashboard/comments.html",
+        ):
+            path = Path(__file__).resolve().parent.parent / template
+            with self.subTest(template=template):
+                self.assertNotIn("!confirm(", path.read_text(encoding="utf-8"))
+
+    def test_offline_removal_asks_first(self):
+        script = self._asset("js/offline.js")
+        self.assertIn("fazakkirConfirm", script)
+        # Cancelling must return before anything is dropped from the cache.
+        self.assertIn("if (!ok) return", script)
+
+    def test_offline_library_remove_asks_first(self):
+        script = self._asset("js/offline.js")
+        library = script[script.index("function renderLibrary"):]
+        self.assertIn("fazakkirConfirm", library)
+
+    def test_saving_offline_does_not_ask(self):
+        # Saving is not destructive and must stay a single tap: the dialog is
+        # only requested when the item is already saved.
+        script = self._asset("js/offline.js")
+        toggle = script[script.index("function setupToggle"):script.index("/* --- /offline/ page")]
+        self.assertIn("var ask = saved", toggle)
+        self.assertIn(": Promise.resolve(true)", toggle)
+        self.assertLess(toggle.index("var ask = saved"), toggle.index("fazakkirConfirm"))
+
+
+class PlayerLayoutTests(TestCase):
+    """The control bar must stay inside the player on a desktop.
+
+    The bar was absolutely positioned but its parent had no position, so it
+    resolved against an ancestor further up the page: it stretched to the full
+    window width and overlapped the download buttons underneath.
+    """
+
+    @staticmethod
+    def _css(name: str) -> str:
+        root = Path(__file__).resolve().parent.parent / "static" / "css"
+        return (root / name).read_text(encoding="utf-8")
+
+    def test_player_container_is_the_positioning_context(self):
+        css = self._css("videos.css")
+        start = css.index(".video-player-container {")
+        block = css[start:css.index("}", start)]
+        self.assertIn("position: relative", block)
+
+    def test_control_bar_is_positioned_against_its_container(self):
+        css = self._css("videoplayer.css")
+        start = css.index(".player-bar {")
+        block = css[start:css.index("}", start)]
+        self.assertIn("position: absolute", block)
+        self.assertIn("left: 0", block)
+        self.assertIn("right: 0", block)
+
+    def test_light_mode_controls_do_not_rely_on_white_on_white(self):
+        css = self._css("videoplayer.css")
+        mobile = css[css.index("@media (max-width: 768px)"):]
+        self.assertIn("--bar-btn:", mobile)
+        self.assertIn("var(--bg-tertiary)", mobile)
+        self.assertIn("var(--text-primary)", mobile)
+
+    def test_desktop_bar_stays_light_on_dark_over_the_picture(self):
+        css = self._css("videoplayer.css")
+        start = css.index(".player-bar {")
+        block = css[start:css.index("}", start)]
+        self.assertIn("--bar-fg: #fff", block)
+        self.assertIn("rgba(0, 0, 0, 0.85)", block)

@@ -968,3 +968,56 @@ msgstr "تم تغيير كلمة المرور الخاصة بك"
 
 msgid "for"
 msgstr "عن"
+
+msgid "%(counter)s result"
+msgid_plural "%(counter)s result"
+msgstr[0] "%(counter)s نتيجة"
+msgstr[1] "%(counter)s نتائج"
+
+msgid "Delete permanently"
+msgstr "حذف نهائي"
+
+msgid "Delete this video?"
+msgstr "هل تريد حذف هذا الفيديو؟"
+
+msgid "Delete unused files"
+msgstr "حذف الملفات غير المستخدمة"
+
+msgid "Every object in Cloudflare R2 that no video references is deleted permanently. Videos, their MP3s and their thumbnails are kept, and offline copies on visitors' devices are not affected."
+msgstr "يُحذف كل عنصر في Cloudflare R2 لا يشير إليه أي فيديو نهائيًا. تُحفظ الفيديوهات وملفات MP3 الخاصة بها وصورها المصغّرة، ولا تتأثر النسخ المحفوظة دون اتصال على أجهزة الزوار."
+
+msgid "The comment will be removed and cannot be recovered."
+msgstr "سيُحذف التعليق ولا يمكن استرجاعه."
+
+msgid "The playlist is removed. The videos in it are not deleted."
+msgstr "تُحذف قائمة التشغيل. الفيديوهات التي بداخلها لا تُحذف."
+
+msgid "The subtitles and lyrics for this language will be deleted."
+msgstr "سيتم حذف الترجمة والكلمات لهذه اللغة."
+
+msgid "This permanently removes the recording, its MP3 and its thumbnail from Cloudflare storage. This cannot be undone."
+msgstr "يؤدي هذا إلى حذف التسجيل وملف MP3 والصورة المصغّرة نهائيًا من تخزين Cloudflare. لا يمكن التراجع عن ذلك."
+
+msgid "This permanently removes the recording, its MP3 and its thumbnail from Cloudflare storage. Visitors who saved it offline keep their local copy until they remove it."
+msgstr "يؤدي هذا إلى حذف التسجيل وملف MP3 والصورة المصغّرة نهائيًا من تخزين Cloudflare. يحتفظ الزوار الذين حفظوه دون اتصال بنسختهم المحلية حتى يقرّرون حذفها."
+
+msgid "Remove this download?"
+msgstr "هل تريد إزالة هذا التنزيل؟"
+
+msgid "The saved audio will be deleted from this device. You can download it again later."
+msgstr "سيُحذف الصوت المحفوظ من هذا الجهاز. يمكنك تنزيله مرة أخرى لاحقًا."
+
+msgid "Are you sure?"
+msgstr "هل أنت متأكد؟"
+
+msgid "Reset your Fazakkir password"
+msgstr "أعد تعيين كلمة مرور حسابك في فَذَكِّرْ"
+
+msgid "Someone asked to reset the password for your Fazakkir account."
+msgstr "طلب أحدهم إعادة تعيين كلمة المرور لحسابك في فَذَكِّرْ."
+
+msgid "If an account exists for %(email)s, a message with a reset link is on its way. The link expires shortly, so use it soon."
+msgstr "إذا كان هناك حساب مرتبط بـ %(email)s، فقد أُرسلت رسالة تحتوي على رابط إعادة التعيين. تنتهي صلاحية الرابط قريبًا، لذا استخدمه بسرعة."
+
+msgid "Search results for %(query)s"
+msgstr "نتائج البحث عن %(query)s"

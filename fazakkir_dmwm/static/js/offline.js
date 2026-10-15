@@ -106,19 +106,36 @@
         isSaved(url).then(render);
 
         button.addEventListener("click", function () {
-            button.disabled = true;
             var saved = button.getAttribute("data-saved") === "1";
-            var action = saved ? drop(url) : save(url, title);
-            action
-                .then(function () {
-                    render(!saved);
-                })
-                .catch(function () {
-                    window.alert(labelError);
-                })
-                .then(function () {
-                    button.disabled = false;
-                });
+
+            // Removing a saved track throws away data the visitor downloaded on
+            // purpose, possibly over a metered connection. Ask first, and do
+            // nothing at all if they cancel.
+            var ask = saved
+                ? window.fazakkirConfirm({
+                      title: labelRemove,
+                      message: button.getAttribute("data-label-remove-detail") ||
+                          "The saved audio will be deleted from this device and " +
+                          "will need to be downloaded again to listen offline.",
+                      confirmLabel: labelRemove,
+                  })
+                : Promise.resolve(true);
+
+            ask.then(function (ok) {
+                if (!ok) return;
+                button.disabled = true;
+                var action = saved ? drop(url) : save(url, title);
+                return action
+                    .then(function () {
+                        render(!saved);
+                    })
+                    .catch(function () {
+                        window.alert(labelError);
+                    })
+                    .then(function () {
+                        button.disabled = false;
+                    });
+            });
         });
     }
 
@@ -127,6 +144,11 @@
     function renderLibrary(container) {
         var list = readStore();
         var removeLabel = container.getAttribute("data-remove") || "Remove download";
+        var removeTitle =
+            container.getAttribute("data-remove-title") || "Remove this download?";
+        var removeMessage =
+            container.getAttribute("data-remove-message") ||
+            "The saved audio will be deleted from this device. You can download it again later.";
         container.innerHTML = "";
 
         if (!list.length) {
@@ -157,9 +179,21 @@
             removeBtn.title = removeLabel;
             removeBtn.setAttribute("aria-label", removeLabel);
             removeBtn.addEventListener("click", function () {
-                removeBtn.disabled = true;
-                drop(item.url).then(function () {
-                    renderLibrary(container);
+                // Never destroy a download without an explicit yes.
+                window.fazakkirConfirm({
+                    title: removeTitle,
+                    message: removeMessage + "\n\n" + (item.title || ""),
+                    confirmLabel: removeLabel,
+                }).then(function (ok) {
+                    if (!ok) return;
+                    removeBtn.disabled = true;
+                    return drop(item.url)
+                        .then(function () {
+                            renderLibrary(container);
+                        })
+                        .then(function () {
+                            removeBtn.disabled = false;
+                        });
                 });
             });
             head.appendChild(removeBtn);

@@ -73,14 +73,20 @@ const dashCsrf = '{{ csrf_token }}';
 const COMMENT_DELETE_URL = "{% url 'videos:comment_delete' 0 %}";
 
 function deleteComment(commentId) {
-    if (!confirm("{% trans 'Delete this comment?' %}")) return;
-    fetch(COMMENT_DELETE_URL.replace("/0/", `/${commentId}/`), {
-        method: "POST",
-        headers: { "X-CSRFToken": dashCsrf },
-    })
-        .then(r => r.json())
-        .then(data => { if (data.success) location.reload(); else alert(data.error || "{% trans 'Failed.' %}"); })
-        .catch(() => alert("{% trans 'Failed.' %}"));
+    fazakkirConfirm({
+        title: "{% trans 'Delete this comment?' %}",
+        message: "{% trans 'The comment will be removed and cannot be recovered.' %}",
+        confirmLabel: "{% trans 'Delete' %}",
+    }).then(function (ok) {
+        if (!ok) return;
+        fetch(COMMENT_DELETE_URL.replace("/0/", `/${commentId}/`), {
+            method: "POST",
+            headers: { "X-CSRFToken": dashCsrf },
+        })
+            .then(r => r.json())
+            .then(data => { if (data.success) location.reload(); else alert(data.error || "{% trans 'Failed.' %}"); })
+            .catch(() => alert("{% trans 'Failed.' %}"));
+    });
 }
 </script>
 {% endif %}

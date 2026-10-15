@@ -799,14 +799,23 @@ applySubtitle(currentSubtitle)
 const csrf = '{{ csrf_token }}'
 
 function deleteVideo(videoId) {
-    if (!confirm("{% trans 'Are you sure you want to delete this video?' %}")) return
-    fetch(`/${videoId}/delete/`, {method: "POST", headers: { "X-CSRFToken": csrf }})
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) window.location.href = '{% url "videos:list" %}'
-            else alert(data.error || "{% trans 'Failed to delete.' %}")
-        })
-        .catch(() => alert("{% trans 'Failed to delete.' %}"))
+    const title = document.querySelector(".video-details h1")
+    fazakkirConfirm({
+        title: "{% trans 'Delete this video?' %}",
+        message: "{% blocktrans %}This permanently removes the recording, its MP3 and its thumbnail from Cloudflare storage. Visitors who saved it offline keep their local copy until they remove it.{% endblocktrans %}"
+            + (title ? "\n\n" + title.textContent.trim() : ""),
+        confirmLabel: "{% trans 'Delete permanently' %}",
+    }).then(function (ok) {
+        // Cancelling changes nothing at all.
+        if (!ok) return
+        fetch(`/${videoId}/delete/`, {method: "POST", headers: { "X-CSRFToken": csrf }})
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) window.location.href = '{% url "videos:list" %}'
+                else alert(data.error || "{% trans 'Failed to delete.' %}")
+            })
+            .catch(() => alert("{% trans 'Failed to delete.' %}"))
+    })
 }
 
 function uploadSubtitle(event) {
@@ -832,13 +841,19 @@ function uploadSubtitle(event) {
 }
 
 function deleteSubtitle(language) {
-    if (!confirm("{% trans 'Remove this subtitle track?' %}")) return
-    fetch(`/${videoId}/subtitles/${language}/delete/`, {
-        method: "POST", headers: { "X-CSRFToken": csrf }
+    fazakkirConfirm({
+        title: "{% trans 'Remove this subtitle track?' %}",
+        message: "{% trans 'The subtitles and lyrics for this language will be deleted.' %}",
+        confirmLabel: "{% trans 'Remove' %}",
+    }).then(function (ok) {
+        if (!ok) return
+        fetch(`/${videoId}/subtitles/${language}/delete/`, {
+            method: "POST", headers: { "X-CSRFToken": csrf }
+        })
+            .then(r => r.json())
+            .then(data => { if (data.success) location.reload() })
+            .catch(() => alert("{% trans 'Failed to delete.' %}"))
     })
-        .then(r => r.json())
-        .then(data => { if (data.success) location.reload() })
-        .catch(() => alert("{% trans 'Failed to delete.' %}"))
 }
 
 // --- Automatic subtitles ---------------------------------------------------
@@ -1174,18 +1189,24 @@ function addCommentToDom(comment) {
 }
 
 function deleteComment(commentId) {
-    if (!confirm("{% trans 'Delete this comment?' %}")) return
-    fetch(withId(COMMENT_DELETE_URL, commentId), {
-        method: "POST", headers: { "X-CSRFToken": csrf },
-    })
-        .then(r => r.json())
-        .then(data => {
-            if (!data.success) { alert(data.error || "{% trans 'Failed.' %}"); return }
-            const el = document.querySelector(`.comment[data-comment="${commentId}"]`)
-            if (el) el.remove()
-            document.getElementById("commentsCount").textContent = data.comment_count
+    fazakkirConfirm({
+        title: "{% trans 'Delete this comment?' %}",
+        message: "{% trans 'The comment will be removed and cannot be recovered.' %}",
+        confirmLabel: "{% trans 'Delete' %}",
+    }).then(function (ok) {
+        if (!ok) return
+        fetch(withId(COMMENT_DELETE_URL, commentId), {
+            method: "POST", headers: { "X-CSRFToken": csrf },
         })
-        .catch(() => alert("{% trans 'Failed.' %}"))
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) { alert(data.error || "{% trans 'Failed.' %}"); return }
+                const el = document.querySelector(`.comment[data-comment="${commentId}"]`)
+                if (el) el.remove()
+                document.getElementById("commentsCount").textContent = data.comment_count
+            })
+            .catch(() => alert("{% trans 'Failed.' %}"))
+    })
 }
 </script>
 {% endblock %}

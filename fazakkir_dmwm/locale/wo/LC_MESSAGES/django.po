@@ -944,3 +944,56 @@ msgstr "Mbirtee bu yër bi buute"
 
 msgid "for"
 msgstr "bu"
+
+msgid "%(counter)s result"
+msgid_plural "%(counter)s result"
+msgstr[0] "%(counter)s biy bu nekk"
+msgstr[1] "%(counter)s yi nekk"
+
+msgid "Delete permanently"
+msgstr "Fucc bu bees"
+
+msgid "Delete this video?"
+msgstr "Facc video bi?"
+
+msgid "Delete unused files"
+msgstr "Fucc fiili yi amu fës"
+
+msgid "Every object in Cloudflare R2 that no video references is deleted permanently. Videos, their MP3s and their thumbnails are kept, and offline copies on visitors' devices are not affected."
+msgstr "Li bees ci Cloudflare R2 ma kenn video teg mooy fucc bu bees. Video yi, MP3 yi te thumbnail yi di tigid, te kopp yi teg tees tekk yi ala ayoba wul_bindu bu marseen te ma dhil."
+
+msgid "The comment will be removed and cannot be recovered."
+msgstr "Comment bi laye dugg, te kenn it tegit ul i seen."
+
+msgid "The playlist is removed. The videos in it are not deleted."
+msgstr "Playlist bi laye fucc. Video yi te leem ci makkan gu dugga."
+
+msgid "The subtitles and lyrics for this language will be deleted."
+msgstr "Subtitle yi ak baat yi bu lann bi laye dugg."
+
+msgid "This permanently removes the recording, its MP3 and its thumbnail from Cloudflare storage. This cannot be undone."
+msgstr "Mi laye nga def dicc recording bi, MP3 bi ak thumbnail bi ci tekk Cloudflare. Li mana dug it."
+
+msgid "This permanently removes the recording, its MP3 and its thumbnail from Cloudflare storage. Visitors who saved it offline keep their local copy until they remove it."
+msgstr "Mi laye nga def dicc recording bi, MP3 bi ak thumbnail bi ci tekk Cloudflare. Marseen yi yeccu ko tekkin teg maamaral ngi kenn tegit."
+
+msgid "Remove this download?"
+msgstr "Leyy teg bir bi?"
+
+msgid "The saved audio will be deleted from this device. You can download it again later."
+msgstr "Sag bu yóbbu laye dugg ci sa mbir mi. Mëddi laye wala ngi sax te it."
+
+msgid "Are you sure?"
+msgstr "Dëgg ding?"
+
+msgid "Reset your Fazakkir password"
+msgstr "Sala mbirtee bu konto bu Fazakkir"
+
+msgid "Someone asked to reset the password for your Fazakkir account."
+msgstr "Kennu kennu nekk sala mbirtee bu konto bu yër bu Fazakkir."
+
+msgid "If an account exists for %(email)s, a message with a reset link is on its way. The link expires shortly, so use it soon."
+msgstr "Su kennu konto bi amu email %(email)s, araama bi lay doyiba ci biy gu sala mbirtee. Link bi di woy tegora, tambali seddu ci waxtaan."
+
+msgid "Search results for %(query)s"
+msgstr "Nettiya lu lah mbir %(query)s"

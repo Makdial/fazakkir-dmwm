@@ -155,6 +155,10 @@
 .video-player-container {
     max-width: 1000px;
     margin: 0 auto;
+    /* The control bar is absolutely positioned against this box. Without this
+       it resolves against some ancestor further up the page, which made the bar
+       span the full window width and overlap the download buttons. */
+    position: relative;
 }
 
 .video-player {

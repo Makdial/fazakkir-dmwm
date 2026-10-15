@@ -947,3 +947,56 @@ msgstr "Votre mot de passe a été modifié"
 
 msgid "for"
 msgstr "pour"
+
+msgid "%(counter)s result"
+msgid_plural "%(counter)s result"
+msgstr[0] "%(counter)s résultat"
+msgstr[1] "%(counter)s résultats"
+
+msgid "Delete permanently"
+msgstr "Supprimer définitivement"
+
+msgid "Delete this video?"
+msgstr "Supprimer cette vidéo ?"
+
+msgid "Delete unused files"
+msgstr "Supprimer les fichiers inutilisés"
+
+msgid "Every object in Cloudflare R2 that no video references is deleted permanently. Videos, their MP3s and their thumbnails are kept, and offline copies on visitors' devices are not affected."
+msgstr "Tout objet de Cloudflare R2 auquel aucune vidéo ne fait référence est supprimé définitivement. Les vidéos, leurs MP3 et leurs miniatures sont conservés, et les copies hors ligne sur les appareils des visiteurs ne sont pas affectées."
+
+msgid "The comment will be removed and cannot be recovered."
+msgstr "Le commentaire sera supprimé et ne pourra pas être récupéré."
+
+msgid "The playlist is removed. The videos in it are not deleted."
+msgstr "La playlist est supprimée. Les vidéos qu'elle contient ne sont pas supprimées."
+
+msgid "The subtitles and lyrics for this language will be deleted."
+msgstr "Les sous-titres et paroles dans cette langue seront supprimés."
+
+msgid "This permanently removes the recording, its MP3 and its thumbnail from Cloudflare storage. This cannot be undone."
+msgstr "Cela supprime définitivement l'enregistrement, son MP3 et sa miniature du stockage Cloudflare. Cette action est irréversible."
+
+msgid "This permanently removes the recording, its MP3 and its thumbnail from Cloudflare storage. Visitors who saved it offline keep their local copy until they remove it."
+msgstr "Cela supprime définitivement l'enregistrement, son MP3 et sa miniature du stockage Cloudflare. Les visiteurs qui l'ont enregistré hors ligne conservent leur copie locale jusqu'à ce qu'ils la suppriment."
+
+msgid "Remove this download?"
+msgstr "Supprimer ce téléchargement ?"
+
+msgid "The saved audio will be deleted from this device. You can download it again later."
+msgstr "L'audio enregistré sera supprimé de cet appareil. Vous pourrez le télécharger à nouveau plus tard."
+
+msgid "Are you sure?"
+msgstr "Êtes-vous sûr ?"
+
+msgid "Reset your Fazakkir password"
+msgstr "Réinitialisez votre mot de passe Fazakkir"
+
+msgid "Someone asked to reset the password for your Fazakkir account."
+msgstr "Quelqu'un a demandé à réinitialiser le mot de passe de votre compte Fazakkir."
+
+msgid "If an account exists for %(email)s, a message with a reset link is on its way. The link expires shortly, so use it soon."
+msgstr "Si un compte existe pour %(email)s, un message contenant un lien de réinitialisation est en route. Le lien expire rapidement, utilisez-le bientôt."
+
+msgid "Search results for %(query)s"
+msgstr "Résultats de recherche pour %(query)s"

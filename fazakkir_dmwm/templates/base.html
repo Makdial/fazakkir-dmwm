@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="{% static 'css/rtl.css' %}">
     <link rel="stylesheet" href="{% static 'css/navbar.css' %}">
     <link rel="stylesheet" href="{% static 'css/search.css' %}">
+    <link rel="stylesheet" href="{% static 'css/confirm.css' %}">
     <link rel="stylesheet" href="{% static 'css/messages.css' %}">
     <link rel="stylesheet" href="{% static 'css/buttons.css' %}">
     <link rel="stylesheet" href="{% static 'css/forms.css' %}">
@@ -120,6 +121,8 @@
     </main>
 
     <script src="{% static 'js/theme.js' %}"></script>
+    {# Loaded before offline.js so a page can confirm a removal straight away. #}
+    <script src="{% static 'js/confirm.js' %}"></script>
     <script src="{% static 'js/navbar.js' %}"></script>
     <script src="{% static 'js/offline.js' %}"></script>
     {% block extra_js %}{% endblock %}

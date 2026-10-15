@@ -225,8 +225,14 @@ function postJson(url, body, onSuccess, onError) {
 }
 
 function deleteVideo(videoId, title) {
-    if (!confirm(`{% trans "Delete" %} "${title}"? {% trans 'This cannot be undone.' %}`)) return;
-    postJson(VIDEO_DELETE_URL.replace("/0/", `/${videoId}/`), null, () => location.reload());
+    fazakkirConfirm({
+        title: "{% trans 'Delete this video?' %}",
+        message: "{% blocktrans %}This permanently removes the recording, its MP3 and its thumbnail from Cloudflare storage. This cannot be undone.{% endblocktrans %}\n\n" + title,
+        confirmLabel: "{% trans 'Delete permanently' %}",
+    }).then(function (ok) {
+        if (!ok) return;
+        postJson(VIDEO_DELETE_URL.replace("/0/", `/${videoId}/`), null, () => location.reload());
+    });
 }
 
 {% if can_write %}
@@ -252,10 +258,20 @@ if (testEmailBtn) {
 const cleanupBtn = document.getElementById("cleanupBtn");
 if (cleanupBtn) {
     cleanupBtn.addEventListener("click", function () {
-        if (!confirm("{% trans 'Delete the files that no video uses?' %}")) return;
-        postJson(CLEANUP_URL, null, (data) => {
-            alert("{% trans 'Space freed:' %} " + data.freed_display);
-            location.reload();
+        // This permanently removes objects from Cloudflare storage with no way
+        // back, so spell out exactly what is at stake and leave the safe
+        // choice on the cancel path.
+        fazakkirConfirm({
+            title: "{% trans 'Delete the files that no video uses?' %}",
+            message: "{% blocktrans %}Every object in Cloudflare R2 that no video references is deleted permanently. Videos, their MP3s and their thumbnails are kept, and offline copies on visitors' devices are not affected.{% endblocktrans %}",
+            confirmLabel: "{% trans 'Delete unused files' %}",
+        }).then(function (ok) {
+            if (!ok) return;
+            cleanupBtn.disabled = true;
+            postJson(CLEANUP_URL, null, (data) => {
+                alert("{% trans 'Space freed:' %} " + data.freed_display);
+                location.reload();
+            });
         });
     });
 }

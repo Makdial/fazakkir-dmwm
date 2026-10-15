@@ -104,11 +104,17 @@ document.getElementById("editPlaylistForm").addEventListener("submit", function 
 });
 
 function deletePlaylist() {
-    if (!confirm("{% trans 'Delete this playlist?' %}")) return;
-    fetch(deleteUrl, { method: "POST", headers: { "X-CSRFToken": csrf } })
-        .then(r => r.json())
-        .then(data => { if (data.success) window.location.href = "{% url 'videos:playlists' %}"; })
-        .catch(() => alert("{% trans 'Failed.' %}"));
+    fazakkirConfirm({
+        title: "{% trans 'Delete this playlist?' %}",
+        message: "{% trans 'The playlist is removed. The videos in it are not deleted.' %}",
+        confirmLabel: "{% trans 'Delete playlist' %}",
+    }).then(function (ok) {
+        if (!ok) return;
+        fetch(deleteUrl, { method: "POST", headers: { "X-CSRFToken": csrf } })
+            .then(r => r.json())
+            .then(data => { if (data.success) window.location.href = "{% url 'videos:playlists' %}"; })
+            .catch(() => alert("{% trans 'Failed.' %}"));
+    });
 }
 
 function removeFromPlaylist(videoId) {
