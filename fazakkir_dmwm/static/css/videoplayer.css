@@ -19,6 +19,39 @@
     object-fit: contain;
 }
 
+/* Large centred play button, shown whenever playback is paused. */
+.player-bigplay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    width: 76px;
+    height: 76px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 1.9rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 5px;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.player-bigplay:hover {
+    background: rgba(0, 0, 0, 0.78);
+    transform: translate(-50%, -50%) scale(1.06);
+}
+
+.player-bigplay[hidden] {
+    display: none;
+}
+
 /* --- Control bar --------------------------------------------------------- */
 
 /* Full-bleed tap target over the picture. It shows and hides the bar, and is

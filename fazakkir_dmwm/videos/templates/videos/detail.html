@@ -58,6 +58,8 @@
         </div>
         <button type="button" class="player-tapzone" id="tapZone"
                 aria-label="{% trans 'Show or hide the player controls' %}"></button>
+        <button type="button" class="player-bigplay" id="bigPlay"
+                aria-label="{% trans 'Play' %}">▶</button>
     </div>
 
     <div class="player-bar" id="playerBar">
@@ -733,6 +735,15 @@ function toggleControls() {
 
 function wireAutoHide() {
     const tapZone = document.getElementById("tapZone")
+    const bigPlay = document.getElementById("bigPlay")
+
+    if (bigPlay) {
+        bigPlay.addEventListener("click", event => {
+            event.stopPropagation()
+            togglePlayPause()
+            showControls()
+        })
+    }
 
     if (tapZone) {
         // Tapping the picture plays or pauses it, the way every other player
@@ -743,6 +754,16 @@ function wireAutoHide() {
             togglePlayPause()
             showControls()
         })
+    }
+
+    // A paused video shows a large centred play button. Without the poster
+    // attribute the picture does not load until playback starts, so without
+    // this the player is a black rectangle with nothing to indicate that
+    // tapping it does anything.
+    function refreshBigPlay() {
+        if (!bigPlay) return
+        const paused = !activePlayer || activePlayer.paused || activePlayer.ended
+        bigPlay.hidden = !paused
     }
 
     if (playerStage) {
@@ -774,14 +795,19 @@ function wireAutoHide() {
         el.addEventListener("play", () => {
             // Out of the way while the picture is moving, unless the viewer is
             // already hovering and probably wants the controls.
+            refreshBigPlay()
             if (shouldAutoHide()) hideControls()
             refreshPlayPauseIcon()
         })
         el.addEventListener("pause", () => {
+            refreshBigPlay()
             showControls()
             refreshPlayPauseIcon()
         })
-        el.addEventListener("ended", () => showControls())
+        el.addEventListener("ended", () => {
+            refreshBigPlay()
+            showControls()
+        })
     })
 
     document.addEventListener("fullscreenchange", () => {
@@ -790,8 +816,9 @@ function wireAutoHide() {
 }
 
 wireControls()
-// Start hidden so the very first frame is unobstructed.
-hideControls()
+// A paused video must never look inert: show the bar and the big play
+// button straight away, then let them fade only once playback starts.
+showControls()
 
 // --- Subtitles / lyrics ---------------------------------------------------
 

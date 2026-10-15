@@ -763,6 +763,31 @@ class AutoHidingControlsTests(TestCase):
         play = self.body[self.body.index('el.addEventListener("play"'):]
         self.assertIn("if (shouldAutoHide()) hideControls()", play[:400])
 
+    def test_a_paused_player_is_never_left_inert(self):
+        # Removing the poster means no picture loads until playback starts, so
+        # the player used to open as a black rectangle with hidden controls.
+        self.assertIn('id="bigPlay"', self.body)
+        self.assertIn("function refreshBigPlay()", self.body)
+        self.assertIn(".player-bigplay", self._player_css())
+
+    def test_big_play_button_starts_playback(self):
+        handler = self.body[
+            self.body.index("if (bigPlay) {"):self.body.index("if (tapZone) {")
+        ]
+        self.assertIn("togglePlayPause()", handler)
+
+    def test_big_play_is_hidden_while_playing(self):
+        helper = self.body[
+            self.body.index("function refreshBigPlay()"):self.body.index("if (playerStage)")
+        ]
+        self.assertIn("bigPlay.hidden = !paused", helper)
+
+    def test_controls_start_visible_not_hidden(self):
+        # A paused video must show its bar; only playback hides it.
+        tail = self.body[self.body.index("wireControls()\n"):]
+        self.assertIn("showControls()", tail[:200])
+        self.assertNotIn("hideControls()", tail[:200])
+
     def test_mobile_puts_the_bar_below_the_picture(self):
         css = self._player_css()
         self.assertIn("@media (max-width: 768px)", css)
