@@ -14,7 +14,7 @@ from core.permissions import login_required, user_can_write, write_required
 
 from .audio import AudioExtractionError, extract_mp3, materialize
 from .audio_tasks import clear_stale_jobs, schedule_audio_generation
-from .forms import VideoUploadForm
+from .forms import VideoEditForm, VideoUploadForm
 from .models import Comment, Playlist, PlaylistItem, SubtitleTrack, Video, VideoLike
 from .r2_storage import (
     StorageError,
@@ -86,6 +86,7 @@ def video_detail(request, video_id):
             "audio_pending": audio_pending,
             "audio_failed": audio_failed,
             "audio_none": audio_none,
+            "can_edit": user_can_write(request.user),
             "subtitles_configured": subtitles_configured(),
             "subtitles_pending": video.auto_subtitle_status
             in ("", "processing"),
@@ -330,6 +331,122 @@ def _remove_path(path):
             os.remove(path)
         except OSError:
             pass
+
+
+@write_required
+def video_edit(request, video_id):
+    """Edit every editable field of an existing video.
+
+    Text fields are always saved. The thumbnail and the video file are only
+    touched when a new file is supplied, so correcting a typo never re-uploads
+    a large file. Replacing the video discards the derived media (MP3 and
+    subtitles) because they describe the footage that was just removed.
+    """
+    video = get_object_or_404(Video, id=video_id)
+
+    if request.method == "POST":
+        form = VideoEditForm(request.POST, request.FILES)
+        if not form.is_valid():
+            return render(
+                request,
+                "videos/edit.html",
+                {"video": video, "form": form},
+                status=400,
+            )
+
+        video.title = form.cleaned_data["title"].strip()
+        video.description = form.cleaned_data["description"]
+
+        new_thumbnail = form.cleaned_data.get("thumbnail_file")
+        new_video = form.cleaned_data.get("video_file")
+        remove_thumbnail = form.cleaned_data.get("remove_thumbnail")
+
+        if new_video:
+            audio_file_id, audio_url, audio_status = _extract_audio_track(
+                new_video, new_video.name
+            )
+            try:
+                new_video.seek(0)
+                result = upload_video(
+                    file_data=new_video, file_name=new_video.name
+                )
+            except StorageError as exc:
+                # The MP3 just built from the new file would otherwise be left
+                # orphaned in the bucket.
+                if audio_file_id:
+                    try:
+                        delete_file(audio_file_id)
+                    except StorageError:
+                        pass
+                form.add_error("video_file", str(exc))
+                return render(
+                    request,
+                    "videos/edit.html",
+                    {"video": video, "form": form},
+                    status=400,
+                )
+
+            # Everything derived from the old footage is now wrong.
+            delete_file(video.file_id)
+            delete_file(video.audio_file_id)
+            video.subtitle_tracks.all().delete()
+
+            video.file_id = result["path"]
+            video.video_url = result["url"]
+            video.audio_file_id = audio_file_id
+            video.audio_url = audio_url
+            video.audio_status = audio_status
+            video.audio_error = ""
+            video.auto_subtitle_status = ""
+            video.auto_subtitle_error = ""
+            video.job_started_at = None
+            video.save()
+
+            if not audio_file_id and audio_status == "":
+                schedule_audio_generation(video.id)
+        elif new_thumbnail:
+            try:
+                thumb = upload_thumbnail(
+                    file_data=new_thumbnail.read(),
+                    file_name=new_thumbnail.name or "thumbnail.jpg",
+                )
+            except StorageError as exc:
+                form.add_error("thumbnail_file", str(exc))
+                return render(
+                    request,
+                    "videos/edit.html",
+                    {"video": video, "form": form},
+                    status=400,
+                )
+
+            old_thumbnail = video.thumbnail_file_id
+            video.thumbnail_file_id = thumb["path"]
+            video.thumbnail_url = thumb["url"]
+            video.save()
+            if old_thumbnail:
+                delete_file(old_thumbnail)
+        elif remove_thumbnail:
+            old_thumbnail = video.thumbnail_file_id
+            video.thumbnail_file_id = ""
+            video.thumbnail_url = ""
+            video.save()
+            if old_thumbnail:
+                delete_file(old_thumbnail)
+        else:
+            video.save()
+
+        return redirect(f"{reverse('videos:detail', args=[video.id])}?saved=1")
+
+    return render(
+        request,
+        "videos/edit.html",
+        {
+            "video": video,
+            "form": VideoEditForm(
+                initial={"title": video.title, "description": video.description}
+            ),
+        },
+    )
 
 
 @write_required

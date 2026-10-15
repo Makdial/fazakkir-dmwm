@@ -119,6 +119,9 @@
                     ＋ {% trans "Save" %}
                 </button>
                 {% endif %}
+                {% if can_edit %}
+                <a class="vote-btn" href="{% url 'videos:edit' video.id %}">✎ {% trans "Edit" %}</a>
+                {% endif %}
             </div>
         </div>
 

@@ -1,8 +1,10 @@
 from datetime import timedelta
 from io import StringIO
+from pathlib import Path
 from unittest import mock
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
@@ -240,8 +242,270 @@ class VideoDeletionTests(TestCase):
         self.assertTrue(Video.objects.filter(id=self.video.id).exists())
 
 
+class VideoEditTests(TestCase):
+    """Administrators can change every editable field of a stored video."""
+
+    def setUp(self):
+        self.admin = make_user("editor", is_staff=True, is_superuser=True)
+        Profile.objects.filter(user=self.admin).update(access_level=Profile.Access.WRITE)
+        self.video = make_video(
+            self.admin,
+            title="Old title",
+            description="Old description",
+            thumbnail_file_id="thumbnails/old.jpg",
+            thumbnail_url="https://example.com/old.jpg",
+            audio_file_id="audio/old.mp3",
+            audio_url="https://example.com/old.mp3",
+            audio_status="ready",
+        )
+        SubtitleTrack.objects.create(
+            video=self.video,
+            language_code="fr",
+            label="French",
+            content="WEBVTT",
+        )
+        self.client.login(username="editor", password="pw12345678")
+
+    def test_edit_page_loads_with_current_values(self):
+        response = self.client.get(reverse("videos:edit", args=[self.video.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Old title")
+        self.assertContains(response, "Old description")
+
+    def test_member_cannot_reach_the_edit_page(self):
+        make_user("regular")
+        self.client.login(username="regular", password="pw12345678")
+        response = self.client.get(reverse("videos:edit", args=[self.video.id]))
+        self.assertEqual(response.status_code, 403)
+
+    def test_anonymous_is_sent_to_login(self):
+        self.client.logout()
+        response = self.client.get(reverse("videos:edit", args=[self.video.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response["Location"])
+
+    def test_title_and_description_are_saved(self):
+        response = self.client.post(
+            reverse("videos:edit", args=[self.video.id]),
+            {"title": "New title", "description": "New description"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.title, "New title")
+        self.assertEqual(self.video.description, "New description")
+        # Nothing else should have moved.
+        self.assertEqual(self.video.file_id, "videos/sample.mp4")
+        self.assertEqual(self.video.thumbnail_file_id, "thumbnails/old.jpg")
+        self.assertEqual(self.video.audio_file_id, "audio/old.mp3")
+
+    def test_empty_title_is_rejected(self):
+        response = self.client.post(
+            reverse("videos:edit", args=[self.video.id]),
+            {"title": "", "description": "x"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.title, "Old title")
+
+    @mock.patch("videos.views.delete_file")
+    @mock.patch("videos.views.upload_thumbnail")
+    def test_replacing_the_thumbnail_swaps_and_deletes_the_old_object(
+        self, upload_thumbnail, delete_file
+    ):
+        upload_thumbnail.return_value = {
+            "path": "thumbnails/new.jpg",
+            "url": "https://example.com/new.jpg",
+        }
+        image = SimpleUploadedFile(
+            "new.jpg", b"\xff\xd8\xff\xe0fakejpeg", content_type="image/jpeg"
+        )
+        response = self.client.post(
+            reverse("videos:edit", args=[self.video.id]),
+            {"title": "Old title", "description": "Old description", "thumbnail_file": image},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.thumbnail_file_id, "thumbnails/new.jpg")
+        # The previous object must not be left behind in the bucket.
+        delete_file.assert_called_once_with("thumbnails/old.jpg")
+
+    @mock.patch("videos.views.delete_file")
+    def test_removing_the_thumbnail_clears_and_deletes(self, delete_file):
+        response = self.client.post(
+            reverse("videos:edit", args=[self.video.id]),
+            {
+                "title": "Old title",
+                "description": "Old description",
+                "remove_thumbnail": "on",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.thumbnail_file_id, "")
+        self.assertEqual(self.video.thumbnail_url, "")
+        delete_file.assert_called_once_with("thumbnails/old.jpg")
+
+    def test_new_thumbnail_and_removal_together_is_rejected(self):
+        image = SimpleUploadedFile(
+            "new.jpg", b"\xff\xd8\xff\xe0fakejpeg", content_type="image/jpeg"
+        )
+        response = self.client.post(
+            reverse("videos:edit", args=[self.video.id]),
+            {
+                "title": "Old title",
+                "description": "Old description",
+                "thumbnail_file": image,
+                "remove_thumbnail": "on",
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.thumbnail_file_id, "thumbnails/old.jpg")
+
+    def test_non_image_thumbnail_is_rejected(self):
+        image = SimpleUploadedFile(
+            "bad.txt", b"not an image", content_type="text/plain"
+        )
+        response = self.client.post(
+            reverse("videos:edit", args=[self.video.id]),
+            {"title": "Old title", "description": "Old description", "thumbnail_file": image},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.thumbnail_file_id, "thumbnails/old.jpg")
+
+    @mock.patch("videos.views.schedule_audio_generation")
+    @mock.patch("videos.views.delete_file")
+    @mock.patch("videos.views.upload_video")
+    @mock.patch("videos.views._extract_audio_track")
+    def test_replacing_the_video_resets_derived_media(
+        self, extract, upload_video, delete_file, schedule_audio
+    ):
+        extract.return_value = ("audio/new.mp3", "https://example.com/new.mp3", "ready")
+        upload_video.return_value = {
+            "path": "videos/new.mp4",
+            "url": "https://example.com/new.mp4",
+        }
+        replacement = SimpleUploadedFile(
+            "new.mp4", b"\x00\x00\x00\x18ftypmp42fake", content_type="video/mp4"
+        )
+        response = self.client.post(
+            reverse("videos:edit", args=[self.video.id]),
+            {
+                "title": "Renamed",
+                "description": "d",
+                "video_file": replacement,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.file_id, "videos/new.mp4")
+        self.assertEqual(self.video.audio_file_id, "audio/new.mp3")
+        self.assertEqual(self.video.audio_status, "ready")
+        # The stale objects and the subtitles of the old footage are gone.
+        self.assertIn("videos/sample.mp4", delete_file.call_args_list[0][0])
+        self.assertIn("audio/old.mp3", [call.args[0] for call in delete_file.call_args_list])
+        self.assertEqual(SubtitleTrack.objects.filter(video=self.video).count(), 0)
+        self.assertEqual(self.video.auto_subtitle_status, "")
+        # The MP3 is already there, so no regeneration is scheduled.
+        schedule_audio.assert_not_called()
+
+    @mock.patch("videos.views.schedule_audio_generation")
+    @mock.patch("videos.views.delete_file")
+    @mock.patch("videos.views.upload_video")
+    @mock.patch("videos.views._extract_audio_track")
+    def test_replacing_the_video_schedules_mp3_when_extraction_is_deferred(
+        self, extract, upload_video, delete_file, schedule_audio
+    ):
+        extract.return_value = ("", "", "")
+        upload_video.return_value = {
+            "path": "videos/new.mp4",
+            "url": "https://example.com/new.mp4",
+        }
+        replacement = SimpleUploadedFile(
+            "new.mp4", b"\x00\x00\x00\x18ftypmp42fake", content_type="video/mp4"
+        )
+        response = self.client.post(
+            reverse("videos:edit", args=[self.video.id]),
+            {
+                "title": "Renamed",
+                "description": "d",
+                "video_file": replacement,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.audio_file_id, "")
+        self.assertEqual(self.video.audio_status, "")
+        schedule_audio.assert_called_once_with(self.video.id)
+
+    @mock.patch("videos.views.upload_video")
+    @mock.patch("videos.views._extract_audio_track")
+    def test_failed_video_upload_keeps_the_original(
+        self, extract, upload_video
+    ):
+        extract.return_value = ("", "", "")
+        upload_video.side_effect = StorageError("bucket is full")
+        replacement = SimpleUploadedFile(
+            "new.mp4", b"\x00\x00\x00\x18ftypmp42fake", content_type="video/mp4"
+        )
+        response = self.client.post(
+            reverse("videos:edit", args=[self.video.id]),
+            {
+                "title": "Renamed",
+                "description": "d",
+                "video_file": replacement,
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.file_id, "videos/sample.mp4")
+        self.assertEqual(self.video.title, "Old title")
+
+    def test_detail_page_shows_edit_link_to_administrators(self):
+        response = self.client.get(reverse("videos:detail", args=[self.video.id]))
+        self.assertContains(response, reverse("videos:edit", args=[self.video.id]))
+
+    def test_detail_page_hides_edit_link_from_members(self):
+        make_user("regular")
+        self.client.login(username="regular", password="pw12345678")
+        response = self.client.get(reverse("videos:detail", args=[self.video.id]))
+        self.assertNotContains(response, reverse("videos:edit", args=[self.video.id]))
+
+
+class ThumbnailOverlayTests(TestCase):
+    """The hover play overlay must never permanently cover a thumbnail.
+
+    Touch devices report ``hover: none``, and the card is already one big tap
+    target there, so the overlay is hidden rather than forced visible.
+    """
+
+    def setUp(self):
+        root = Path(__file__).resolve().parent.parent / "static" / "css" / "videos.css"
+        self.css = root.read_text(encoding="utf-8")
+
+    def test_touch_rule_hides_the_overlay_instead_of_showing_it(self):
+        touch_block = self._hover_none_block()
+        self.assertIn("display: none", touch_block)
+        self.assertNotIn("opacity: 1", touch_block)
+
+    def test_overlay_still_appears_on_hover_capable_devices(self):
+        self.assertIn(".video-card:hover .play-icon", self.css)
+
+    def _hover_none_block(self) -> str:
+        start = self.css.index("@media (hover: none)")
+        depth = 0
+        for index in range(start, len(self.css)):
+            if self.css[index] == "{":
+                depth += 1
+            elif self.css[index] == "}":
+                depth -= 1
+                if depth == 0:
+                    return self.css[start:index]
+        raise AssertionError("unterminated @media (hover: none) block")
+
+
 class FakeBody:
-    """Minimal stand-in for a botocore ``StreamingBody``."""
 
     def __init__(self, chunks):
         self._chunks = list(chunks)

@@ -110,10 +110,12 @@
     opacity: 1;
 }
 
-/* Touch devices have no hover, so show the play affordance permanently. */
+/* Touch devices never fire hover, so leaving the overlay at opacity 1 made it
+   sit permanently on top of the thumbnail and hide it. Hide it there instead:
+   on a phone or tablet the whole card is already a single tap target. */
 @media (hover: none) {
     .play-icon {
-        opacity: 1;
+        display: none;
     }
 }
 
@@ -387,6 +389,56 @@
     font-size: 1.5rem;
     font-weight: 700;
     margin: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Edit form                                                           */
+/* ------------------------------------------------------------------ */
+
+.edit-current-thumb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.edit-current-thumb img {
+    max-width: 100%;
+    max-height: 180px;
+    border-radius: var(--radius-medium, 8px);
+    background: #000;
+}
+
+.edit-current-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.form-check {
+    margin: 4px 0 16px;
+}
+
+.form-check label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.form-help {
+    margin: 6px 0 0;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.edit-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
 }
 
 /* ------------------------------------------------------------------ */

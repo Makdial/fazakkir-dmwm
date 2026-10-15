@@ -26,6 +26,7 @@ urlpatterns = [
     path("<int:video_id>/audio-generate/", views.audio_generate, name="audio_generate"),
     path("channel/<str:username>/", views.channel_videos, name="channel"),
     path("<int:video_id>/delete/", views.delete_video, name="delete"),
+    path("<int:video_id>/edit/", views.video_edit, name="edit"),
     path("<int:video_id>/vote/", views.video_vote, name="vote"),
     path("<int:video_id>/comments/add/", views.comment_add, name="comment_add"),
     path(
