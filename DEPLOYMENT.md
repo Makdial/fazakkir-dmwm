@@ -166,9 +166,8 @@ python manage.py compiletranslations
 python manage.py createsuperuser
 ```
 
-Use the same credentials you use locally (`admin` / `admin12345` for now) so
-your existing uploads, playlists and comments come across. **Change the
-password immediately afterwards.**
+Use the same credentials you use locally so your existing uploads, playlists and
+comments come across. **Change the password immediately afterwards.**
 
 ### Step 8 — Point the web app at the virtual environment
 

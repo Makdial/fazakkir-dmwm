@@ -187,6 +187,10 @@ Behind a TLS-terminating proxy also set `USE_X_FORWARDED_PROTO=1`, and once the
 site is served over HTTPS everywhere `SECURE_SSL_REDIRECT=1` and
 `SECURE_HSTS_SECONDS=31536000`.
 
+> **If the host serves plain HTTP**, set `FORCE_HTTPS_COOKIES=0`. Otherwise the
+> session and CSRF cookies are marked `Secure`, the browser refuses to send them
+> back over `http://`, and **every login fails with a 403**.
+
 ### Keep the database backed up
 
 Videos and MP3s live in Cloudflare R2, so the only irreplaceable state is the
@@ -201,7 +205,7 @@ python manage.py dumpdata --natural-foreign --natural-primary > backup.json
 
 - Put the app behind HTTPS. The PWA (install prompt, offline listening) and the
   background playback controls only work in a **secure context**.
-- Replace the `admin` / `admin12345` credentials created in step 6.
+- Replace the administrator credentials created in step 6 with your own.
 - Set `EMAIL_HOST` and friends so the storage alerts actually leave the server;
   until then they are printed to the console.
 

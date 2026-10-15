@@ -30,9 +30,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # file, which is git-ignored.
 SECRET_KEY = os.environ.get("SECRET_KEY") or "django-insecure-dev-only-do-not-use-in-production"
 
-# Debug is off unless explicitly switched on. Turning it off in production is
-# what stops Django from leaking settings and tracebacks to visitors.
-DEBUG = os.environ.get("DEBUG", "0").lower() in ("1", "true", "yes", "on")
+# Debug defaults to ON so that a fresh clone runs on the development server
+# without any configuration. Set DEBUG=0 in production: that is what stops
+# Django leaking settings and tracebacks to visitors.
+DEBUG = os.environ.get("DEBUG", "1").strip().lower() in ("1", "true", "yes", "on")
 
 if not DEBUG and SECRET_KEY.startswith("django-insecure-"):
     raise RuntimeError(
@@ -62,15 +63,22 @@ CSRF_TRUSTED_ORIGINS = [
 if os.environ.get("USE_X_FORWARDED_PROTO", "0").lower() in ("1", "true", "yes", "on"):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+def _env_flag(name, default="0"):
+    return os.environ.get(name, default).strip().lower() in ("1", "true", "yes", "on")
+
+
 if not DEBUG:
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_REFERRER_POLICY = "same-origin"
     X_FRAME_OPTIONS = "DENY"
-    # Redirect http:// to https://. Only turn this on when the host really
-    # terminates TLS for every request.
-    if os.environ.get("SECURE_SSL_REDIRECT", "0").lower() in ("1", "true", "yes", "on"):
+    # Marking cookies "Secure" only makes sense when the site is really served
+    # over HTTPS: on plain HTTP the browser then refuses to send the session
+    # and CSRF cookies back, and every login fails with a 403. Default it on
+    # for production, and set FORCE_HTTPS_COOKIES=0 for an HTTP-only host.
+    if _env_flag("FORCE_HTTPS_COOKIES", "1"):
+        SESSION_COOKIE_SECURE = True
+        CSRF_COOKIE_SECURE = True
+    if _env_flag("SECURE_SSL_REDIRECT"):
         SECURE_SSL_REDIRECT = True
     # Only enable HSTS once the site is really served over HTTPS everywhere.
     if os.environ.get("SECURE_HSTS_SECONDS", "0").isdigit():
