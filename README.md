@@ -148,8 +148,14 @@ Open <http://127.0.0.1:8000/>.
 ## Deploying to production
 
 The app is a standard WSGI Django project (`fazakkir_dmwm.wsgi:application`), so
-it runs on any host that supports Python. Four things must change from the
-development defaults, and all of them are driven by `.env`:
+it runs on any host that supports Python.
+
+> **Full walkthrough:** see **[DEPLOYMENT.md](DEPLOYMENT.md)** for a comparison of
+> the free hosting options (and which one suits this app), plus step-by-step
+> instructions for getting the site live.
+
+Four things must change from the development defaults, and all of them are
+driven by `.env`:
 
 | Variable                     | Development          | Production                                     |
 | ---------------------------- | -------------------- | ---------------------------------------------- |
