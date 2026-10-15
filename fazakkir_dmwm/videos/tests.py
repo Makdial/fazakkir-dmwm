@@ -2285,6 +2285,29 @@ class PlayerLayoutTests(TestCase):
         self.assertIn("position: absolute", block)
         self.assertIn("left: 0", block)
         self.assertIn("right: 0", block)
+        # bottom: 0 against a container exactly as tall as the picture is what
+        # keeps the bar attached to the video instead of the page.
+        self.assertIn("bottom: 0", block)
+
+    def test_positioning_context_is_declared_next_to_the_bar(self):
+        # The bar lives in videoplayer.css but its positioning context was only
+        # in videos.css. The two load separately, so the declaration is repeated
+        # here; without it the bar anchors to the page and lands over the
+        # comments, far below the video.
+        css = self._css("videoplayer.css")
+        self.assertIn(".video-player-container", css)
+        start = css.index(".video-player-container {")
+        block = css[start:css.index("}", start)]
+        self.assertIn("position: relative", block)
+        # The rule must appear before the bar's own absolute positioning.
+        self.assertLess(start, css.index(".player-bar {"))
+
+    def test_desktop_play_button_does_not_cover_the_thumbnail(self):
+        css = self._css("videoplayer.css")
+        desktop = css[css.index("@media (min-width: 769px)"):]
+        block = desktop[:desktop.index("}")]
+        self.assertIn("background: transparent", block)
+        self.assertIn("box-shadow", block)
 
     def test_light_mode_controls_do_not_rely_on_white_on_white(self):
         css = self._css("videoplayer.css")

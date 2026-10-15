@@ -52,7 +52,32 @@
     display: none;
 }
 
+/* On a desktop the button sits over the thumbnail, and a filled circle hid the
+   very image it was announcing. Keep only a ring and the glyph so the picture
+   shows through. */
+@media (min-width: 769px) {
+    .player-bigplay {
+        background: transparent;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.75);
+        text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95);
+    }
+
+    .player-bigplay:hover {
+        background: rgba(0, 0, 0, 0.25);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9);
+    }
+}
+
 /* --- Control bar --------------------------------------------------------- */
+
+/* The bar is absolutely positioned against this box, which is exactly as tall
+   as the picture, so it sits flush against the bottom of the video. Declared
+   here as well as in videos.css because the two stylesheets load separately and
+   must not drift apart: without it the bar anchors to the page instead and
+   ends up over the comments far below the video. */
+.video-player-container {
+    position: relative;
+}
 
 /* Full-bleed tap target over the picture. It shows and hides the bar, and is
    the only place a tap lands when the bar itself is hidden. */
@@ -83,6 +108,10 @@
     z-index: 2;
     padding: 8px 10px 10px;
     background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+    /* Match the picture's rounded corners so the bar reads as attached to it
+       rather than floating a little below. */
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 6px;
