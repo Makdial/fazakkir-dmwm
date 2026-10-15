@@ -6,6 +6,9 @@ dist/
 wheels/
 *.egg-info
 
+# Collected by `manage.py collectstatic` (generated at deploy time)
+staticfiles/
+
 # Virtual environments
 .venv
 

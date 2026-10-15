@@ -145,6 +145,60 @@ python manage.py runserver
 
 Open <http://127.0.0.1:8000/>.
 
+## Deploying to production
+
+The app is a standard WSGI Django project (`fazakkir_dmwm.wsgi:application`), so
+it runs on any host that supports Python. Four things must change from the
+development defaults, and all of them are driven by `.env`:
+
+| Variable                     | Development          | Production                                     |
+| ---------------------------- | -------------------- | ---------------------------------------------- |
+| `DEBUG`                      | `1`                  | `0`                                            |
+| `SECRET_KEY`                 | dev fallback         | a private key, unique per deployment           |
+| `ALLOWED_HOSTS`              | `127.0.0.1,localhost`| your real hostnames, comma separated           |
+| `CSRF_TRUSTED_ORIGINS`       | empty                | `https://your-domain` when served over HTTPS   |
+
+```bash
+# 1. A private secret key. Never reuse the development one, and never commit it.
+python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"
+
+# 2. Production settings in .env
+DEBUG=0
+SECRET_KEY=<the key you just generated>
+ALLOWED_HOSTS=your-domain.example
+CSRF_TRUSTED_ORIGINS=https://your-domain.example
+
+# 3. Bring the database up to date and collect the static files.
+python manage.py migrate
+python manage.py collectstatic --noinput
+python manage.py compiletranslations
+```
+
+Django **refuses to start** with `DEBUG=0` while still using the development
+secret key, so a forgotten key cannot silently ship to production.
+
+Behind a TLS-terminating proxy also set `USE_X_FORWARDED_PROTO=1`, and once the
+site is served over HTTPS everywhere `SECURE_SSL_REDIRECT=1` and
+`SECURE_HSTS_SECONDS=31536000`.
+
+### Keep the database backed up
+
+Videos and MP3s live in Cloudflare R2, so the only irreplaceable state is the
+SQLite database. Copy it periodically:
+
+```bash
+python manage.py dumpdata --natural-foreign --natural-primary > backup.json
+# or simply copy db.sqlite3 while the app is not writing to it
+```
+
+### Before you go live
+
+- Put the app behind HTTPS. The PWA (install prompt, offline listening) and the
+  background playback controls only work in a **secure context**.
+- Replace the `admin` / `admin12345` credentials created in step 6.
+- Set `EMAIL_HOST` and friends so the storage alerts actually leave the server;
+  until then they are printed to the console.
+
 ## Roles & permissions
 
 Every account has a `Profile` with one of three access levels:

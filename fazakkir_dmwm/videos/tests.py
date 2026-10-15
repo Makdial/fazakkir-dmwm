@@ -428,14 +428,19 @@ class AudioGenerationTests(TestCase):
         video = make_video(self.user, title="Needs audio")
         Video.objects.filter(id=video.id).update(audio_status="processing")
 
-        self.assertTrue(generate_audio(video.id))
+        # Pin the resolved URL: presigned URLs embed a timestamp, so comparing
+        # against a freshly generated one would be flaky across a second
+        # boundary.
+        source = "https://r2.example.com/videos/sample.mp4?signed=1"
+        with mock.patch.object(Video, "playback_url", source):
+            self.assertTrue(generate_audio(video.id))
 
         video.refresh_from_db()
         self.assertTrue(video.has_audio)
         self.assertEqual(video.audio_file_id, "audio/track.mp3")
         self.assertEqual(video.audio_status, "ready")
         # ffmpeg streams the video straight from its (presigned) URL.
-        self.assertEqual(extract.call_args.args[0], video.playback_url)
+        self.assertEqual(extract.call_args.args[0], source)
 
     @mock.patch("videos.audio_tasks.extract_mp3_from_url")
     def test_generate_audio_records_videos_without_an_audio_stream(self, extract):

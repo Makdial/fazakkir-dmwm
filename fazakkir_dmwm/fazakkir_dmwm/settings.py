@@ -24,13 +24,58 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_w&ju46!w31%o9)-(2_x6^i!2s_w!^w23canbr(qxmd#&2fiwb'
+# The secret key signs sessions, cookies and CSRF tokens. NEVER reuse the
+# development fallback in production: generate a private one for every
+# deployment (see README, "Deploying to production") and keep it in the .env
+# file, which is git-ignored.
+SECRET_KEY = os.environ.get("SECRET_KEY") or "django-insecure-dev-only-do-not-use-in-production"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Debug is off unless explicitly switched on. Turning it off in production is
+# what stops Django from leaking settings and tracebacks to visitors.
+DEBUG = os.environ.get("DEBUG", "0").lower() in ("1", "true", "yes", "on")
 
-ALLOWED_HOSTS = []
+if not DEBUG and SECRET_KEY.startswith("django-insecure-"):
+    raise RuntimeError(
+        "Refusing to start with DEBUG=False and the development SECRET_KEY. "
+        "Generate a real one with "
+        "'python -c \"from django.core.management.utils import "
+        "get_random_secret_key as k; print(k())\"' and set SECRET_KEY in .env."
+    )
+
+# Comma-separated hostnames, e.g. "example.com,www.example.com".
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+] or (["*"] if DEBUG else [])
+
+# Comma-separated schemes://host[:port] entries, needed behind HTTPS in
+# production for the CSRF cookie and secure form submission to line up.
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
+# Behind a reverse proxy (nginx, a PaaS router) the proxy is the one talking
+# to us over plain HTTP, so tell Django to trust its forwarding headers.
+if os.environ.get("USE_X_FORWARDED_PROTO", "0").lower() in ("1", "true", "yes", "on"):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
+    X_FRAME_OPTIONS = "DENY"
+    # Redirect http:// to https://. Only turn this on when the host really
+    # terminates TLS for every request.
+    if os.environ.get("SECURE_SSL_REDIRECT", "0").lower() in ("1", "true", "yes", "on"):
+        SECURE_SSL_REDIRECT = True
+    # Only enable HSTS once the site is really served over HTTPS everywhere.
+    if os.environ.get("SECURE_HSTS_SECONDS", "0").isdigit():
+        SECURE_HSTS_SECONDS = int(os.environ["SECURE_HSTS_SECONDS"])
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 
 
 # Application definition
@@ -141,6 +186,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static"
 ]
+# Collected by `manage.py collectstatic`; needed by every host that does not
+# serve static files itself.
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
