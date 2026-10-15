@@ -13,7 +13,7 @@ from django.views.decorators.http import require_GET, require_POST
 from core.permissions import login_required, user_can_write, write_required
 
 from .audio import AudioExtractionError, extract_mp3, materialize
-from .audio_tasks import schedule_audio_generation
+from .audio_tasks import clear_stale_jobs, schedule_audio_generation
 from .forms import VideoUploadForm
 from .models import Comment, Playlist, PlaylistItem, SubtitleTrack, Video, VideoLike
 from .r2_storage import (
@@ -179,6 +179,8 @@ def audio_stream(request, video_id):
 @require_GET
 def audio_status(request, video_id):
     """JSON endpoint the video page polls while an MP3 is being generated."""
+    # A sleeping host can kill the worker; release any job it abandoned.
+    clear_stale_jobs()
     video = get_object_or_404(Video.objects, id=video_id)
     return JsonResponse(
         {
@@ -505,6 +507,7 @@ def subtitles_generate(request, video_id):
 @require_GET
 def subtitles_status(request, video_id):
     """Report the state of the automatic subtitle run for a video."""
+    clear_stale_jobs()
     video = get_object_or_404(Video, id=video_id)
     return JsonResponse(
         {

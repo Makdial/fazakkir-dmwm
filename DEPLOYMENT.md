@@ -1,311 +1,311 @@
 # Deploying Fazakkir
 
-This is a hands-on guide. It covers where to host the app, and step-by-step
-instructions for getting it live.
+This guide covers **where to host the site**, with a focus on the platforms that
+behave like Replit: **connect a GitHub repository and the app deploys itself on
+every push.**
 
 ---
 
-## 1. Which free host should you use?
+## 1. Short answer
 
-**Short answer: [PythonAnywhere](https://www.pythonanywhere.com/)'s free
-(Beginner) plan is the best fit for this specific project, and
-[Render](https://render.com/)'s free tier is a usable fallback.**
+**Use [Render](https://render.com/) with a free [Neon](https://neon.com/)
+Postgres database.** That combination is free forever, deploys from your GitHub
+repo with no manual server work, and — critically — does not lose your data.
 
-Nothing is "forever", so it is worth being precise about what each option really
-gives you and where it will hurt this particular app.
-
-### Why the fit matters for *this* project
-
-Fazakkir has four unusual requirements that rule out most free hosts:
-
-1. **It talks to Cloudflare R2 over the network** on nearly every request
-   (presigned URLs, MP3 streaming, thumbnails).
-2. **It writes to a SQLite database file** that must survive restarts.
-3. **It runs background jobs** — `ffmpeg` MP3 extraction and the automatic
-   subtitle/translation pipeline — triggered by ordinary page views.
-4. **It streams MP3s through Django** (`/<id>/audio-stream/`), so *your* host's
-   bandwidth, not just R2's, is being used.
-
-### The candidates compared
-
-| | **PythonAnywhere (Beginner, $0)** | **Render (Free)** | **Fly.io / Railway / Heroku** |
-|---|---|---|---|
-| Always-on | Yes | **No** — sleeps after 15 min idle, ~1 min cold start | Yes |
-| Persistent disk (SQLite survives) | Yes, 512 MB | **No** — ephemeral, wiped on redeploy | Yes |
-| Reaches Cloudflare R2 | **Yes** (`r2.cloudflarestorage.com` is allowlisted) | Yes | Yes |
-| CPU to run `ffmpeg` | 100 CPU-s/day (web requests excluded) | 750 h/month shared | Metered |
-| Custom domain | No (needs paid) | No | Yes |
-| Bandwidth | Low | 5 GB/month | Metered |
-| SSL | Yes (free, own domain only) | Yes | Yes |
-
-### The three real problems with free hosting, and how to handle them
-
-**1. "Forever" is not a thing.**
-PythonAnywhere's free accounts have historically required re-confirming, and
-free tiers get cut. Render cut free bandwidth from 100 GB to 5 GB in 2026.
-Treat any free host as *temporary*: the code is on GitHub and the media is on
-R2, so moving hosts is a 15-minute operation, not a rebuild. That is exactly
-why the storage is already in R2 and not on the app server.
-
-**2. Sleepy servers break the background jobs.**
-Render's free tier spins the app down after 15 minutes of inactivity. Your MP3
-extraction and subtitle generation run in a background thread of the *web
-process* — if the process is killed mid-`ffmpeg`, the job dies and the status is
-stuck on "processing". PythonAnywhere's free tier does not sleep, so this is
-the main reason it is the better fit.
-
-**3. Bandwidth goes through the app, not just R2.**
-This is the subtle one. Videos stream **directly from R2**, which has free
-egress. But the MP3 is proxied through Django, so every listener consumes
-*PythonAnywhere's* bandwidth, and its free tier is explicitly "Low". Expect it
-to be the first limit you hit with a popular video.
-
-> **Fix, when that day comes:** serve the MP3 directly from R2 instead of
-> proxying it. It costs a one-line change in `videos/views.py:audio_stream`
-> (redirect to `video.audio_playback_url` instead of streaming) and would make
-> your host's bandwidth usage essentially zero. The trade-off is that seeking
-> and the service-worker offline cache are slightly less reliable, so it is a
-> deliberate switch rather than the default.
-
-### Recommendation
-
-1. **Start on PythonAnywhere free** — it is the only option where the app is
-   always on, SQLite persists, and R2 is reachable.
-2. **Upgrade to the $10/month Developer plan** when you want a custom domain,
-   more CPU, and no allowlist anxiety. This is the cheapest reliable step-up
-   and is what this app actually deserves once it has real users.
-3. **Migrate to Render/VPS** only if you outgrow it — and at that point switch
-   SQLite to Postgres and move the background jobs to a real task queue.
+There is one non-obvious trap in that combination, explained in the next
+section. Read it before you deploy, because getting it wrong deletes your
+accounts, playlists and comments.
 
 ---
 
-## 2. Step-by-step: deploy to PythonAnywhere (free)
+## 2. The trap: free hosts have an ephemeral filesystem
 
-### Step 1 — Create the account
+Render's free tier documents this plainly:
 
-1. Go to <https://www.pythonanywhere.com/user/signup/> and sign up.
-2. Choose the **Beginner** (free) account.
-3. Verify your email address — the account is not usable until you do.
+> Free web services have an ephemeral filesystem. This means that any changes to
+> your web service's filesystem (local SQLite databases, etc.) are lost every
+> time the service restarts.
 
-### Step 2 — Open a Bash console
+Fazakkir stores its accounts, playlists, comments and video metadata in a local
+SQLite file. On Render free that file is destroyed **every time the service
+sleeps (15 min idle) or redeploys**. You would lose all your data within hours —
+while the videos themselves survived, because those are in Cloudflare R2.
 
-On the PythonAnywhere dashboard click **Bash console**. This is a real Linux
-shell; the rest of the commands run here.
+**The fix is one environment variable:** point `DATABASE_URL` at a hosted
+Postgres. The app already supports this (it was added for exactly this reason),
+and falls back to SQLite when the variable is absent, so nothing changes for
+local development.
 
-### Step 3 — Get the code
+Neon's free tier is permanent: **1 GB storage, 100 compute-hours/month, no credit
+card required.** Your database is a few megabytes.
 
-Your repository is public, so a plain clone works:
+---
 
-```bash
-git clone https://github.com/Makdial/fazakkir-dmwm.git
-cd fazakkir-dmwm
-```
+## 3. Deploying to Render (step by step)
 
-The Django project lives in the `fazakkir_dmwm/` subdirectory:
+### Step 1 — Create your free Postgres
 
-```bash
-cd fazakkir_dmwm
-```
+1. Sign up at <https://neon.com> (free, no card).
+2. Click **Create project**, name it `fazakkir`, pick a region close to you.
+3. Choose the **Free** plan when asked.
+4. Neon shows a **connection string** that looks like
+   `postgresql://user:password@ep-xxx.region.neon.tech/fazakkir?sslmode=require`.
+   Keep it — you need it in step 5. (Connection strings can also be found later
+   under **Connection string** in the dashboard.)
 
-### Step 4 — Create a virtual environment
+### Step 2 — Push the code
 
-PythonAnywhere's free plan ships Python 3.13, which matches this project
-(`requires-python = ">=3.13"`).
+Already done: the repository is at
+<https://github.com/Makdial/fazakkir-dmwm> and the current work is pushed.
 
-```bash
-python3.13 -m venv /home/<yourusername>/fazakkir-venv
-source /home/<yourusername>/fazakkir-venv/bin/activate
-pip install --upgrade pip
-pip install -e .
-```
+### Step 3 — Create the Render service
 
-### Step 5 — Create the `.env` file
+1. Sign up at <https://render.com> using your **GitHub account**.
+2. Click **New → Web Service**, then **connect a repository**.
+3. Authorise Render to read `Makdial/fazakkir-dmwm`.
+4. Fill in the form. The repository ships a `render.yaml` blueprint, so most
+   fields fill in automatically:
 
-**This is the important step, and the one to do carefully.**
+   | Field | Value |
+   | --- | --- |
+   | Name | `fazakkir` |
+   | Branch | `master` |
+   | Runtime | Python |
+   | Build command | see `render.yaml` |
+   | Start command | `gunicorn fazakkir_dmwm.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120` |
+   | Instance type | Free |
 
-```bash
-nano .env
-```
+5. Click **Create Web Service**.
 
-Fill in at least:
+### Step 4 — Add the secret environment variables
 
-```ini
-DEBUG=0
-SECRET_KEY=<paste the key you generated>
-ALLOWED_HOSTS=<yourusername>.pythonanywhere.com
-CSRF_TRUSTED_ORIGINS=
+Render marks these **Sync: false**, so you must paste them in yourself under
+**Environment**:
 
-R2_ACCOUNT_ID=2422fc0c3eb620c18c237c952b9eccd6
-R2_ACCESS_KEY_ID=<your R2 key id>
-R2_SECRET_ACCESS_KEY=<your R2 secret>
-R2_BUCKET=fazakkir
-R2_PUBLIC_BASE_URL=
-```
+| Variable | Where to get it |
+| --- | --- |
+| `DATABASE_URL` | The Neon connection string from step 1 |
+| `SECRET_KEY` | Generate: `python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"` |
+| `ALLOWED_HOSTS` | `fazakkir.onrender.com` (your Render hostname) |
+| `CSRF_TRUSTED_ORIGINS` | `https://fazakkir.onrender.com` |
+| `R2_ACCOUNT_ID` | your local `fazakkir_dmwm/.env` |
+| `R2_ACCESS_KEY_ID` | your local `fazakkir_dmwm/.env` |
+| `R2_SECRET_ACCESS_KEY` | your local `fazakkir_dmwm/.env` |
 
-Generate a fresh secret key for this deployment (never reuse the one from your
-machine, and never commit it):
+Optionally, if you have them:
 
-```bash
-python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"
-```
+| Variable | Notes |
+| --- | --- |
+| `OPENAI_API_KEY` | enables automatic subtitles |
+| `EMAIL_HOST_PASSWORD` | Gmail **App password**, enables storage alerts |
 
-> Copy the R2 values from your local `fazakkir_dmwm/.env`. They are
-> git-ignored, which is exactly why they are not in the GitHub repository.
+The R2 values are not in the GitHub repository — they are git-ignored on purpose.
+Copy them from your own `.env`.
 
-### Step 6 — Create the database, collect static files, build translations
+### Step 5 — Deploy
+
+Render deploys automatically. Watch the **Logs** tab. When it finishes you get
+a URL like `https://fazakkir.onrender.com`.
+
+### Step 6 — Create the database tables and your admin
+
+The Render shell is under **Shell**, or run it locally against the hosted
+database:
 
 ```bash
 python manage.py migrate
-python manage.py collectstatic --noinput
 python manage.py compiletranslations
-```
-
-### Step 7 — Create your administrator
-
-```bash
 python manage.py createsuperuser
 ```
 
-Use the same credentials you use locally so your existing uploads, playlists and
-comments come across. **Change the password immediately afterwards.**
+### Step 7 — Verify
 
-### Step 8 — Point the web app at the virtual environment
+Open your URL and check:
 
-On the **Web** tab:
+- the home page loads and the CSS is styled (static files were collected);
+- a video plays (R2 credentials are right);
+- `https://fazakkir.onrender.com/manage/` loads after signing in.
 
-1. **Add a new web app** → **Manual configuration** → Python 3.13.
-2. Open the web app's **Virtualenv** section, set the path to
-   `/home/<yourusername>/fazakkir-venv`.
-3. Open the **Static files** section and add one mapping:
+---
+
+## 4. What to expect from Render's free tier
+
+| | Behaviour | Why it matters here |
+| --- | --- | --- |
+| Cold start | ~1 minute after 15 min idle | First visitor waits; afterwards it is normal |
+| Database | **Not ephemeral** (Neon) | Your data is safe |
+| Bandwidth | 5 GB/month | Fine while videos stream from R2; the proxied MP3 uses this |
+| SSL | Automatic | Needed for the PWA and background playback |
+| Custom domain | Paid only | You get `*.onrender.com` for free |
+| Background jobs | **Killed on sleep** | See below |
+
+### Background jobs and sleeping hosts
+
+The MP3 extraction and the automatic subtitles run as background threads inside
+the web process. When Render sleeps or redeploys, those threads are killed
+mid-`ffmpeg`.
+
+The app handles this: a job that has been "processing" for longer than
+`JOB_STALE_MINUTES` (30 by default) is considered abandoned, marked retryable,
+and picked up again on the next page view. You do not have to intervene, but a
+very long conversion of a large file may need to be started twice.
+
+---
+
+## 5. The alternatives, honestly
+
+| Option | GitHub deploy | Always on | Persistent data | Verdict |
+| --- | :---: | :---: | :---: | --- |
+| **Render + Neon** | Yes | No (sleeps) | Yes, with Neon | **Best match for what you asked** |
+| **Northflank** | Yes | **Yes** (free Sandbox tier) | Yes | Better uptime, slightly clunkier UI |
+| **PythonAnywhere** | No | Yes | Yes | Easiest of all, but manual, no GitHub link |
+| Railway | Yes | Yes | Yes | **No free tier** (trial credits only) |
+| Koyeb | Yes | — | Volumes now **paid** ($29/mo) | Pivoted to AI hosting; no longer free |
+| Replit | Yes | Yes | Yes | Free tier publishes **one** app and is credit-metered; not intended as a production home |
+| Fly.io / Heroku | Yes | Yes | Yes | No free tier |
+
+### If you want zero setup: PythonAnywhere
+
+It does **not** connect to GitHub — you clone and configure once by hand — but it
+needs no database service, no build command and no secrets dashboard, and it does
+not sleep. The full walkthrough is in [the original section below](#6-pythonanywhere-walkthrough-free).
+
+### If you want GitHub + always-on: Northflank
+
+Free Sandbox tier: 2 services, 1 database, 2 cron jobs, **always-on compute (no
+sleeping)**, GitHub/GitLab/Bitbucket integration, and buildpacks so no Dockerfile
+is needed. The trade-off is a busier UI than Render's.
+
+---
+
+## 6. PythonAnywhere walkthrough (free)
+
+1. Sign up at <https://www.pythonanywhere.com/user/signup/> → **Beginner** (free)
+   plan, then verify your email.
+2. Open a **Bash console**:
+
+   ```bash
+   git clone https://github.com/Makdial/fazakkir-dmwm.git
+   cd fazakkir-dmwm/fazakkir_dmwm
+   python3.13 -m venv ~/fazakkir-venv
+   source ~/fazakkir-venv/bin/activate
+   pip install -e .
+   ```
+
+3. Create `.env`:
+
+   ```ini
+   DEBUG=0
+   SECRET_KEY=<generated>
+   ALLOWED_HOSTS=<yourusername>.pythonanywhere.com
+   R2_ACCOUNT_ID=...
+   R2_ACCESS_KEY_ID=...
+   R2_SECRET_ACCESS_KEY=...
+   R2_BUCKET=fazakkir
+   ```
+
+4. Prepare the database and static files:
+
+   ```bash
+   python manage.py migrate
+   python manage.py collectstatic --noinput
+   python manage.py compiletranslations
+   python manage.py createsuperuser
+   ```
+
+5. On the **Web** tab: add a **Manual configuration** Python 3.13 app, set the
+   virtualenv to `/home/<yourusername>/fazakkir-venv`, and map static files:
 
    | URL | Directory |
    | --- | --- |
    | `/static/` | `/home/<yourusername>/fazakkir-dmwm/fazakkir_dmwm/staticfiles` |
 
-### Step 9 — Set the WSGI file
+6. Replace the **WSGI configuration file** with:
 
-Click **WSGI configuration file**. Replace the whole contents with:
+   ```python
+   import os
+   import sys
 
-```python
-import os
-import sys
+   sys.path.insert(0, "/home/<yourusername>/fazakkir-venv/bin")
+   sys.path.insert(1, "/home/<yourusername>/fazakkir-venv/lib/python3.13/site-packages")
+   os.environ["DJANGO_SETTINGS_MODULE"] = "fazakkir_dmwm.settings"
+   sys.path.insert(0, "/home/<yourusername>/fazakkir-dmwm/fazakkir_dmwm")
 
-# Point the virtual environment at the project.
-path = "/home/<yourusername>/fazakkir-venv/bin"
-site_packages = "/home/<yourusername>/fazakkir-venv/lib/python3.13/site-packages"
-
-sys.path.insert(0, path)
-sys.path.insert(1, site_packages)
-
-os.environ["DJANGO_SETTINGS_MODULE"] = "fazakkir_dmwm.settings"
-sys.path.insert(0, "/home/<yourusername>/fazakkir-dmwm/fazakkir_dmwm")
-
-from fazakkir_dmwm.wsgi import application
-```
-
-### Step 10 — Reload and verify
-
-Hit the big green **Reload** button, then open
-`https://<yourusername>.pythonanywhere.com/`.
-
-Check `/manage/` loads and your video plays. If you get a 400, `ALLOWED_HOSTS`
-is the usual cause.
-
-### Step 11 — Schedule the storage check (optional but recommended)
-
-On the **Tasks** tab, add a daily task at 08:00 UTC:
-
-```
-/home/<yourusername>/fazakkir-venv/bin/python /home/<yourusername>/fazakkir-dmwm/fazakkir_dmwm/manage.py checkstorage
-```
-
----
-
-## 3. Important: your PWA and background playback need HTTPS
-
-You may have noticed this from the README, but it matters a great deal for
-hosting, so repeating it here:
-
-- The **install prompt**, **offline listening**, and the **lock-screen /
-  background playback controls** only work in a *secure context* — i.e. real
-  HTTPS. On the PythonAnywhere free subdomain you do get HTTPS, so this is
-  fine.
-- **Videos stream straight from R2**, so they work regardless of your host's
-  bandwidth.
-
----
-
-## 4. Going further: a custom domain
-
-A custom domain requires the paid Developer plan ($10/month). Once you have it:
-
-1. Buy a domain (Cloudflare Registrar is cheapest).
-2. Add a **CNAME** record pointing at `<yourusername>.pythonanywhere.com`.
-3. In PythonAnywhere, open the web app's **DOMAINS** tab and add your domain.
-4. Update `.env`:
-
-   ```ini
-   ALLOWED_HOSTS=your-domain.com,www.your-domain.com
-   CSRF_TRUSTED_ORIGINS=https://your-domain.com
-   USE_X_FORWARDED_PROTO=1
+   from fazakkir_dmwm.wsgi import application
    ```
 
-5. Reload the web app.
+7. Press **Reload** and open `https://<yourusername>.pythonanywhere.com/`.
+
+> PythonAnywhere free can only reach an allowlist of external sites over
+> HTTP(S). Cloudflare R2 (`r2.cloudflarestorage.com`) and GitHub are both on
+> that list, so storage and deploys work.
 
 ---
 
-## 5. Operating notes
+## 7. Updating the site later
 
-### Backups
-
-The videos and MP3s are in R2 and are safe. **The only irreplaceable state is
-the SQLite database.** Back it up regularly:
+With Render and GitHub connected this is just:
 
 ```bash
-python manage.py dumpdata --natural-foreign --natural-primary > backup.json
+git push
 ```
 
-### Updating the site later
+Render rebuilds and redeploys automatically. To also run migrations, add a
+**pre-deploy command** in the Render dashboard:
+
+```
+python fazakkir_dmwm/manage.py migrate --noinput
+```
+
+Manually (PythonAnywhere or SSH):
 
 ```bash
-cd fazakkir-dmwm
 git pull
-source /home/<yourusername>/fazakkir-venv/bin/activate
-cd fazakkir_dmwm
+source ~/fazakkir-venv/bin/activate
 pip install -e .
 python manage.py migrate
 python manage.py collectstatic --noinput
 python manage.py compiletranslations
 ```
 
-Then press **Reload** on the Web tab.
+---
 
-### Email alerts
+## 8. Operations
 
-Until `EMAIL_HOST` is set in `.env`, storage alerts are printed to the console
-instead of being emailed. For Gmail you need an **App password** (requires
-2-Step Verification), then:
+### Backups
 
-```ini
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_HOST_USER=makhoutech@gmail.com
-EMAIL_HOST_PASSWORD=<app password>
-EMAIL_USE_TLS=1
+Videos and MP3s are in R2 and are safe. On Render the database is in Neon, so use
+**Neon's automatic backups** (they are included on the free plan) or dump it:
+
+```bash
+python manage.py dumpdata --natural-foreign --natural-primary > backup.json
 ```
 
-Test it from `/manage/` with the **Send test email** button.
+On PythonAnywhere (SQLite), copy `db.sqlite3`.
+
+### HTTPS
+
+Render and PythonAnywhere both provide HTTPS automatically. The PWA install
+prompt, offline listening and the background playback controls only work in a
+secure context, so this is required, not optional.
+
+### Before you go live
+
+- Set a private `SECRET_KEY` (never reuse the development one).
+- Set your own administrator credentials.
+- Add `EMAIL_HOST_PASSWORD` (a Gmail **App password**) so storage alerts are
+  actually sent; until then they print to the log.
 
 ---
 
 ## Quick reference
 
-| Task | Command (from the host) |
+| Task | How |
 | --- | --- |
-| Restart the app | Web tab → **Reload** |
-| Update the code | `git pull && pip install -e . && python manage.py migrate` |
+| Deploy a change | `git push` |
+| Apply migrations | Render pre-deploy command, or `manage.py migrate` |
+| Back up the database | `manage.py dumpdata > backup.json` (Neon: built-in backups) |
 | Create an admin | `python manage.py createsuperuser` |
-| Back up the database | `python manage.py dumpdata > backup.json` |
 | Convert missing MP3s | `python manage.py generateaudio` |
 | Generate subtitles | `python manage.py generatesubtitles` |
 | Check storage | `python manage.py checkstorage` |

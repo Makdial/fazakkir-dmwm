@@ -1,3 +1,4 @@
+from datetime import timedelta
 from io import StringIO
 from unittest import mock
 
@@ -5,6 +6,7 @@ from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import Profile
 
@@ -1089,3 +1091,64 @@ class AudioSweepTests(TestCase):
         self.assertFalse(audio_tasks.start_audio_sweep())
         thread.assert_called_once()
         self.assertTrue(audio_tasks.audio_sweep_status()["running"])
+
+
+class StaleJobTests(TestCase):
+    """A host that sleeps can kill a worker, leaving a job stuck 'processing'."""
+
+    def setUp(self):
+        self.user = make_user("owner")
+        # A video mid-conversion has no MP3 yet.
+        self.video = make_video(self.user, title="Needs audio")
+
+    def _stuck(self, minutes):
+        Video.objects.filter(id=self.video.id).update(
+            audio_status="processing",
+            job_started_at=timezone.now() - timedelta(minutes=minutes),
+        )
+
+    def test_recent_job_is_left_alone(self):
+        self._stuck(1)
+        self.assertEqual(audio_tasks.clear_stale_jobs(), 0)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.audio_status, "processing")
+
+    def test_abandoned_job_is_released(self):
+        self._stuck(audio_tasks.stale_minutes() + 10)
+        self.assertEqual(audio_tasks.clear_stale_jobs(), 1)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.audio_status, "failed")
+        self.assertIsNone(self.video.job_started_at)
+        # ...and it can now be retried.
+        with mock.patch("videos.audio_tasks.threading.Thread") as thread:
+            self.assertTrue(
+                audio_tasks.schedule_audio_generation(self.video.id, retry=True)
+            )
+        thread.assert_called_once()
+
+    def test_finished_subtitles_are_not_reset_by_a_stuck_audio_job(self):
+        Video.objects.filter(id=self.video.id).update(
+            auto_subtitle_status="ready",
+        )
+        self._stuck(audio_tasks.stale_minutes() + 10)
+        audio_tasks.clear_stale_jobs()
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.auto_subtitle_status, "ready")
+        self.assertEqual(self.video.audio_status, "failed")
+
+    def test_stuck_subtitle_job_is_released(self):
+        Video.objects.filter(id=self.video.id).update(
+            audio_file_id="audio/a.mp3",
+            auto_subtitle_status="processing",
+            job_started_at=timezone.now()
+            - timedelta(minutes=audio_tasks.stale_minutes() + 10),
+        )
+        self.assertEqual(audio_tasks.clear_stale_jobs(), 1)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.auto_subtitle_status, "failed")
+
+    def test_status_endpoint_clears_stuck_jobs(self):
+        self._stuck(audio_tasks.stale_minutes() + 10)
+        self.client.get(reverse("videos:audio_status", args=[self.video.id]))
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.audio_status, "failed")

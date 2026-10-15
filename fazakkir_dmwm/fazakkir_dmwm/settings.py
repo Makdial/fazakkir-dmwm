@@ -137,12 +137,44 @@ WSGI_APPLICATION = 'fazakkir_dmwm.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# SQLite is the default so the project runs with no configuration. On a host
+# with an ephemeral filesystem (Render free, most container PaaS) that file is
+# wiped on every deploy, restart or spin-down, which would destroy the account,
+# playlist and comment data, so set DATABASE_URL to a hosted Postgres instead.
+# Neon and Supabase both have a permanent free tier; see DEPLOYMENT.md.
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+
+if DATABASE_URL:
+    if DATABASE_URL.startswith("postgres://"):
+        # Heroku-style scheme; the driver itself expects "postgresql".
+        DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
+
+    try:
+        import dj_database_url
+    except ImportError:  # pragma: no cover - depends on environment
+        raise RuntimeError(
+            "DATABASE_URL is set but dj-database-url is not installed. "
+            "Run: pip install dj-database-url"
+        )
+
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=int(os.environ.get("DB_CONN_MAX_AGE", "600")),
+            ssl_require=(
+                os.environ.get("DB_SSL_REQUIRE", "1")
+                if DATABASE_URL.startswith("postgresql")
+                else False
+            ),
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -262,6 +294,12 @@ SUBTITLE_TARGET_LANGUAGES = os.environ.get("SUBTITLE_TARGET_LANGUAGES", "fr,en")
 # timestamps; gpt-4o-transcribe does not support timestamp_granularities.
 SUBTITLE_TRANSCRIBE_MODEL = os.environ.get("SUBTITLE_TRANSCRIBE_MODEL", "whisper-1")
 SUBTITLE_TRANSLATE_MODEL = os.environ.get("SUBTITLE_TRANSLATE_MODEL", "gpt-4o-mini")
+
+# How long a background MP3 / subtitle job may stay "processing" before it is
+# assumed abandoned and marked retryable. Free hosts such as Render kill the web
+# process while a conversion is still running, so without this a video could sit
+# on "processing" forever.
+JOB_STALE_MINUTES = int(os.environ.get("JOB_STALE_MINUTES", "30"))
 
 
 # Speed up the test suite: hashing every fixture password with PBKDF2 is slow

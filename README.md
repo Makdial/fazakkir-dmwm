@@ -153,6 +153,15 @@ it runs on any host that supports Python.
 > **Full walkthrough:** see **[DEPLOYMENT.md](DEPLOYMENT.md)** for a comparison of
 > the free hosting options (and which one suits this app), plus step-by-step
 > instructions for getting the site live.
+>
+> **Shortest path:** Render + a free Neon Postgres. The repository ships a
+> `render.yaml` blueprint, so connecting the repo on <https://render.com> fills in
+> the build and start commands automatically, and every `git push` redeploys.
+>
+> ⚠️ Render's free tier has an **ephemeral filesystem**, which would delete the
+> local SQLite database on every restart or sleep. Set `DATABASE_URL` to a hosted
+> Postgres (Neon and Supabase both have a permanent free tier), or your accounts,
+> playlists and comments will be lost within hours.
 
 Four things must change from the development defaults, and all of them are
 driven by `.env`:
@@ -163,6 +172,7 @@ driven by `.env`:
 | `SECRET_KEY`                 | dev fallback         | a private key, unique per deployment           |
 | `ALLOWED_HOSTS`              | `127.0.0.1,localhost`| your real hostnames, comma separated           |
 | `CSRF_TRUSTED_ORIGINS`       | empty                | `https://your-domain` when served over HTTPS   |
+| `DATABASE_URL`               | empty (SQLite)       | hosted Postgres on hosts with ephemeral disks  |
 
 ```bash
 # 1. A private secret key. Never reuse the development one, and never commit it.

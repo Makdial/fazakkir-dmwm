@@ -12,15 +12,53 @@ import logging
 import os
 import tempfile
 import threading
+from datetime import timedelta
 from pathlib import Path
 
+from django.conf import settings
 from django.db import close_old_connections
+from django.utils import timezone
 
 from .audio import AudioExtractionError, extract_mp3_from_url
 from .models import Video
 from .r2_storage import StorageError, upload_audio
 
 logger = logging.getLogger(__name__)
+
+
+def stale_minutes() -> int:
+    """How long a job may stay "processing" before it counts as abandoned."""
+    return int(getattr(settings, "JOB_STALE_MINUTES", 30))
+
+
+def clear_stale_jobs() -> int:
+    """Release job flags left behind by a worker that was killed mid-job.
+
+    Free PaaS hosts (Render in particular) spin the web process down while a
+    background ``ffmpeg`` or transcription is still running. Without this the
+    video would stay "processing" forever and never be retried.
+
+    Each status is cleared only if that particular job was the stuck one, so a
+    finished subtitle track is not marked failed by an unrelated audio job.
+    """
+    cutoff = timezone.now() - timedelta(minutes=stale_minutes())
+    stale = {"job_started_at__lt": cutoff}
+
+    released = Video.objects.filter(**stale, audio_status="processing").update(
+        audio_status="failed",
+        audio_error="The conversion was interrupted. Please try again.",
+        job_started_at=None,
+    )
+    released += Video.objects.filter(
+        **stale, auto_subtitle_status="processing"
+    ).exclude(job_started_at__isnull=True).update(
+        auto_subtitle_status="failed",
+        auto_subtitle_error="The conversion was interrupted. Please try again.",
+        job_started_at=None,
+    )
+    if released:
+        logger.info("Released %s abandoned background job(s)", released)
+    return released
 
 
 def _remove(path: str) -> None:
@@ -44,7 +82,9 @@ def generate_audio(video_id: int) -> bool:
         return False
 
     if video.has_audio:
-        Video.objects.filter(id=video_id).update(audio_status="ready", audio_error="")
+        Video.objects.filter(id=video_id).update(
+            audio_status="ready", audio_error="", job_started_at=None
+        )
         return True
 
     source = video.playback_url
@@ -52,6 +92,7 @@ def generate_audio(video_id: int) -> bool:
         Video.objects.filter(id=video_id).update(
             audio_status="failed",
             audio_error="No playable video URL is available.",
+            job_started_at=None,
         )
         return False
 
@@ -63,7 +104,9 @@ def generate_audio(video_id: int) -> bool:
         if not extract_mp3_from_url(source, mp3_path):
             # The video genuinely has no audio stream; remember that so we do
             # not try again on every page view.
-            Video.objects.filter(id=video_id).update(audio_status="none", audio_error="")
+            Video.objects.filter(id=video_id).update(
+                audio_status="none", audio_error="", job_started_at=None
+            )
             return False
 
         file_name = (Path(video.file_id).stem or "audio") + ".mp3"
@@ -75,12 +118,15 @@ def generate_audio(video_id: int) -> bool:
             audio_url=result["url"],
             audio_status="ready",
             audio_error="",
+            job_started_at=None,
         )
         return True
     except (AudioExtractionError, StorageError, OSError) as exc:
         logger.warning("MP3 generation failed for video %s", video_id, exc_info=True)
         Video.objects.filter(id=video_id).update(
-            audio_status="failed", audio_error=str(exc)[:500]
+            audio_status="failed",
+            audio_error=str(exc)[:500],
+            job_started_at=None,
         )
         return False
     finally:
@@ -110,7 +156,7 @@ def schedule_audio_generation(video_id: int, retry: bool = False) -> bool:
     else:
         queryset = queryset.filter(audio_status="")
 
-    if not queryset.update(audio_status="processing"):
+    if not queryset.update(audio_status="processing", job_started_at=timezone.now()):
         return False
 
     threading.Thread(target=_worker, args=(video_id,), daemon=True).start()

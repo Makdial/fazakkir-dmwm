@@ -56,6 +56,11 @@ class Video(models.Model):
     )
     auto_subtitle_error = models.CharField(max_length=500, blank=True, default="")
 
+    # When the current MP3 / subtitle job started. A host that sleeps or
+    # restarts can kill the worker mid-job, so a "processing" flag older than
+    # the stale threshold is treated as abandoned and may be retried.
+    job_started_at = models.DateTimeField(null=True, blank=True)
+
     views = models.PositiveIntegerField(default=0)
     likes = models.PositiveIntegerField(default=0)
     dislikes = models.PositiveIntegerField(default=0)

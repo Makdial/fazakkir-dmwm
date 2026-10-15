@@ -26,6 +26,7 @@ from dataclasses import dataclass
 
 from django.conf import settings
 from django.db import close_old_connections
+from django.utils import timezone
 
 from . import r2_storage
 from .models import SubtitleTrack, Video
@@ -456,7 +457,9 @@ def schedule_subtitle_generation(video_id: int, retry: bool = False) -> bool:
     if not retry:
         queryset = queryset.filter(auto_subtitle_status="")
 
-    if not queryset.update(auto_subtitle_status="processing"):
+    if not queryset.update(
+        auto_subtitle_status="processing", job_started_at=timezone.now()
+    ):
         return False
 
     threading.Thread(target=_run_for_video, args=(video_id,), daemon=True).start()
@@ -493,7 +496,9 @@ def generate_and_record(video_id: int) -> bool:
     except TranscriptionError as exc:
         logger.warning("Subtitle generation failed for video %s: %s", video_id, exc)
         Video.objects.filter(id=video_id).update(
-            auto_subtitle_status="failed", auto_subtitle_error=str(exc)[:500]
+            auto_subtitle_status="failed",
+            auto_subtitle_error=str(exc)[:500],
+            job_started_at=None,
         )
         return False
     except Exception:  # noqa: BLE001 - keep the sweep going
@@ -501,10 +506,11 @@ def generate_and_record(video_id: int) -> bool:
         Video.objects.filter(id=video_id).update(
             auto_subtitle_status="failed",
             auto_subtitle_error="Unexpected error while generating subtitles.",
+            job_started_at=None,
         )
         return False
     Video.objects.filter(id=video_id).update(
-        auto_subtitle_status="ready", auto_subtitle_error=""
+        auto_subtitle_status="ready", auto_subtitle_error="", job_started_at=None
     )
     return True
 
