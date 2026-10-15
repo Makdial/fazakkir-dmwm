@@ -121,7 +121,7 @@ The site is deployed and running:
 | Database | `fazakkir-db` (PostgreSQL 18, free tier, europe-west) |
 | Admin | `MakhouTech` (superuser, read & write) |
 
-Two gotchas learned during the real deployment, worth remembering for any
+Three gotchas learned during the real deployment, worth remembering for any
 similar host:
 
 - **`ALLOWED_HOSTS` must include `127.0.0.1` and `localhost`.** Northflank's
@@ -131,6 +131,32 @@ similar host:
 - **The port must be `public`.** A port created with `"public": false` has no
   live DNS record, so the `code.run` name never resolves even though the
   container is healthy.
+- **`POST /runtime-environment` replaces, it does not merge.** Every call wipes
+  the variables set by previous calls, so the last write wins and everything
+  else silently disappears. Send the **complete** map in one request. Losing
+  `DATABASE_URL` this way is especially nasty: the service falls back to SQLite
+  on the container's ephemeral disk, `/healthz/` still answers
+  `{"status": "ok", "database": true}`, and all data is erased on the next
+  deploy — while looking perfectly healthy.
+
+  Always confirm afterwards by reading the environment back, and check the
+  engine the app actually resolved:
+
+  ```bash
+  northflank exec service --project fazakkir --service fazakkir-web \
+    --cmd 'python -c "import django;django.setup();from django.conf import settings;print(settings.DATABASES[\"default\"][\"ENGINE\"])"'
+  ```
+
+### `SECURE_SSL_REDIRECT` must stay off on Northflank
+
+Northflank terminates TLS at its load balancer and forwards plain HTTP to the
+container. `USE_X_FORWARDED_PROTO=1` makes Django treat public requests as
+HTTPS, so the redirect is not needed — and turning it on actively breaks the
+health probe, which arrives at `127.0.0.1:8000` with no `X-Forwarded-Proto`
+header and would be bounced to `https://127.0.0.1:8000`, where nothing is
+listening on TLS. The container then restarts in a loop.
+
+Keep `FORCE_HTTPS_COOKIES=1` and `SECURE_SSL_REDIRECT=0`.
 
 ### Driving Northflank from the CLI
 
