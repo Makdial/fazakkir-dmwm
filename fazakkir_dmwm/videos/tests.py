@@ -712,7 +712,23 @@ class AutoHidingControlsTests(TestCase):
 
     def test_tap_zone_brings_the_controls_back(self):
         self.assertIn('id="tapZone"', self.body)
-        self.assertIn("if (!controlsAreShowing())", self.body)
+
+    def test_tapping_the_picture_plays_and_pauses(self):
+        # Tapping used to only reveal the bar, which left no tap anywhere on
+        # the video able to start playback.
+        self.assertIn("tapZone.addEventListener", self.body)
+        handler = self.body[
+            self.body.index("tapZone.addEventListener"):self.body.index("if (playerStage)")
+        ]
+        self.assertIn("togglePlayPause()", handler)
+        self.assertIn("showControls()", handler)
+
+    def test_refused_playback_reveals_the_bar_instead_of_failing_silently(self):
+        toggle = self.body[
+            self.body.index("function togglePlayPause"):self.body.index("function seekBy")
+        ]
+        self.assertIn("showControls()", toggle)
+        self.assertIn(".catch(", toggle)
 
     def test_play_hides_and_pause_shows(self):
         self.assertIn('el.addEventListener("play"', self.body)

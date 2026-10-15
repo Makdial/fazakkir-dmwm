@@ -567,7 +567,12 @@ function refreshAllControls() {
 function togglePlayPause() {
     if (!activePlayer) return
     if (activePlayer.paused) {
-        activePlayer.play().catch(() => {})
+        activePlayer.play().catch(err => {
+            // Usually the browser's autoplay policy. Reveal the bar so the
+            // play button is reachable rather than failing silently.
+            if (typeof showControls === "function") showControls()
+            if (window.console) console.warn("playback was refused", err)
+        })
     } else {
         activePlayer.pause()
     }
@@ -712,15 +717,13 @@ function wireAutoHide() {
     const tapZone = document.getElementById("tapZone")
 
     if (tapZone) {
-        // First tap brings the controls back, a second tap pauses, which is the
-        // convention every phone player follows.
+        // Tapping the picture plays or pauses it, the way every other player
+        // behaves. It used to only reveal the bar, which meant there was no
+        // tap anywhere on the video that could start playback at all.
         tapZone.addEventListener("click", event => {
             event.preventDefault()
-            if (!controlsAreShowing()) {
-                showControls()
-                return
-            }
-            if (activePlayer && !activePlayer.paused) activePlayer.pause()
+            togglePlayPause()
+            showControls()
         })
     }
 
