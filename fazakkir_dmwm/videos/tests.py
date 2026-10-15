@@ -350,6 +350,69 @@ class VideoCardDownloadTests(TestCase):
         self.assertNotIn("card-download", content)
 
 
+class LanguageToggleTests(TestCase):
+    """The four languages offered by the in-app switcher."""
+
+    LANGUAGES = ("en", "fr", "ar", "wo")
+
+    def setUp(self):
+        self.user = make_user("viewer")
+        # A video so the page exercises the card markup (the MP3 button) as well
+        # as the navbar.
+        self.video = make_video(
+            self.user, title="Listen", audio_file_id="audio/track.mp3"
+        )
+
+    def _page(self, language):
+        self.client.cookies["django_language"] = language
+        return self.client.get(reverse("videos:list")).content.decode()
+
+    def test_all_four_languages_are_offered(self):
+        content = self._page("en")
+        for code in self.LANGUAGES:
+            self.assertIn(f'value="{code}"', content)
+
+    def test_language_is_marked_active(self):
+        # The button attributes wrap across lines in the template, so match with
+        # a whitespace-tolerant pattern rather than one literal string.
+        self.assertRegex(
+            self._page("ar"),
+            r'value="ar"\s+class="lang-option active"',
+        )
+
+    def test_arabic_renders_right_to_left(self):
+        self.assertIn('<html lang="ar" dir="rtl">', self._page("ar"))
+
+    def test_other_languages_render_left_to_right(self):
+        for code in ("en", "fr", "wo"):
+            self.assertIn(f'<html lang="{code}" dir="ltr">', self._page(code))
+
+    def test_french_translations_are_applied(self):
+        self.assertIn("Télécharger le MP3", self._page("fr"))
+
+    def test_arabic_translations_are_applied(self):
+        self.assertIn("تحميل MP3", self._page("ar"))
+
+    def test_wolof_translations_are_applied(self):
+        self.assertIn("Yees MP3", self._page("wo"))
+
+    def test_arabic_text_is_not_left_as_english(self):
+        # Guards against a catalogue that exists but is never loaded.
+        self.assertNotIn("Download MP3", self._page("ar"))
+
+    def test_each_language_has_a_compiled_catalog(self):
+        from django.utils import translation
+
+        samples = {
+            "fr": "Télécharger le MP3",
+            "ar": "تحميل MP3",
+            "wo": "Yees MP3",
+        }
+        for code, expected in samples.items():
+            with translation.override(code):
+                self.assertEqual(translation.gettext("Download MP3"), expected)
+
+
 class OfflineSupportTests(TestCase):
     def setUp(self):
         self.user = make_user("viewer")

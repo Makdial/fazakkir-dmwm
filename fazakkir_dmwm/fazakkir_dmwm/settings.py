@@ -209,7 +209,14 @@ LANGUAGE_CODE = 'en'
 LANGUAGES = [
     ('en', 'English'),
     ('fr', 'Français'),
+    ('ar', 'العربية'),
+    ('wo', 'Wolof'),
 ]
+
+# Right-to-left languages. The base template flips <html dir="rtl"> and the
+# stylesheet mirrors the layout for these, which keeps the player, the navbar
+# and every card readable without maintaining a second design.
+LANGUAGE_BIDI = ['ar', 'he', 'fa', 'ur']
 
 # Where compiled translation files (.po / .mo) live.
 LOCALE_PATHS = [

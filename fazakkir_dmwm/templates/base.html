@@ -1,6 +1,7 @@
-{% load static i18n %}
-<!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE|default:'en' }}">
+{% load static i18n %}<!DOCTYPE html>
+{# `dir` flips the whole layout for Arabic (a right-to-left language).
+   LANGUAGE_BIDI is a boolean supplied by Django's i18n context processor. #}
+<html lang="{{ LANGUAGE_CODE|default:'en' }}" dir="{% if LANGUAGE_BIDI %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -22,6 +23,8 @@
 
     <link rel="stylesheet" href="{% static 'css/variables.css' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {# Mirrors the layout for Arabic (right-to-left); inert for other languages. #}
+    <link rel="stylesheet" href="{% static 'css/rtl.css' %}">
     <link rel="stylesheet" href="{% static 'css/navbar.css' %}">
     <link rel="stylesheet" href="{% static 'css/messages.css' %}">
     <link rel="stylesheet" href="{% static 'css/buttons.css' %}">

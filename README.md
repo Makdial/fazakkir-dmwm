@@ -15,7 +15,8 @@ videos; every visitor can browse and play them.
   never sit in server memory.
 - **SQLite** database for titles, views, likes and users — zero configuration.
 - **Light / dark theme toggle**, remembered per browser.
-- **English / French** language toggle (Django i18n).
+- **Four languages**: English, French, Arabic and Wolof, switchable from the navbar
+  (Django i18n). Arabic is right-to-left and the whole layout mirrors for it.
 - **Role-based access**: every account is either a *member*, *read-only staff*
   or *read & write staff*. Only read & write staff can upload or delete videos.
 - **Playlists**: any signed-in user (administrators included) can create private
@@ -126,6 +127,19 @@ python manage.py compiletranslations
 ```
 
 Run this again whenever you edit a file in `locale/*/LC_MESSAGES/*.po`.
+
+The site ships **four languages**: English, French, Arabic and Wolof. They live in
+`locale/fr`, `locale/ar` and `locale/wo` (English is the source language, so it
+has no catalogue). To add or change a language:
+
+1. Add it to `LANGUAGES` in `fazakkir_dmwm/settings.py`.
+2. Copy an existing `locale/<lang>/LC_MESSAGES/django.po` as a starting point and
+   fill in the `msgstr` lines.
+3. Run `python manage.py compiletranslations`.
+
+Arabic is right-to-left, so `<html>` gains `dir="rtl"` and `static/css/rtl.css`
+mirrors the navbar, cards, tables and player controls. If you add another
+right-to-left language, add its code to `LANGUAGE_BIDI` in the settings.
 
 ### 6. Create an administrator
 
@@ -399,8 +413,8 @@ fazakkir_dmwm/
 │   ├── audio_tasks.py        # background MP3 generation, on-play + bulk sweeps
 │   ├── r2_storage.py         # Cloudflare R2 (S3) storage client
 │   └── decorators.py         # admin_required (alias of write_required)
-├── locale/fr/           # French translation (.po source + compiled .mo)
-├── static/css|js/       # styling + theme toggle, offline.js, social/manage/dashboard CSS
+├── locale/{fr,ar,wo}/  # translations (.po source + compiled .mo), see compiletranslations
+├── static/css|js/       # styling + theme toggle, rtl.css, offline.js, social/manage/dashboard CSS
 ├── static/icons/        # app icon (used by the web app manifest)
 └── templates/base.html  # layout, navbar, theme + language toggles
 ```
