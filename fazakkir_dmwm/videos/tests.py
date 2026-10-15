@@ -735,6 +735,34 @@ class AutoHidingControlsTests(TestCase):
         self.assertIn('el.addEventListener("pause"', self.body)
         self.assertIn("CONTROLS_IDLE_MS", self.body)
 
+    def test_hover_reveals_the_bar_on_a_pointer_device(self):
+        # Entering the picture must be enough, without needing to move.
+        self.assertIn('addEventListener("mouseenter"', self.body)
+        self.assertIn('addEventListener("mouseleave"', self.body)
+
+    def test_hover_behaviour_is_limited_to_real_pointers(self):
+        # A tablet reports hover: none even with a mouse attached; without this
+        # guard a synthesised mouseenter would latch the bar open.
+        self.assertIn("(hover: hover) and (pointer: fine)", self.body)
+        self.assertIn("const canHover", self.body)
+
+    def test_bar_never_hides_while_the_pointer_is_resting_on_it(self):
+        guard = self.body[
+            self.body.index("function hideControls()"):self.body.index("function toggleControls()")
+        ]
+        self.assertIn("if (pointerInsideStage && canHover) return", guard)
+
+    def test_playing_hides_only_when_nobody_is_hovering(self):
+        self.assertIn("function shouldAutoHide()", self.body)
+        helper = self.body[
+            self.body.index("function shouldAutoHide()"):self.body.index("function showControls()")
+        ]
+        self.assertIn("pointerInsideStage", helper)
+        # A paused video must always keep its controls up.
+        self.assertIn("return playing && !pointerInsideStage", helper)
+        play = self.body[self.body.index('el.addEventListener("play"'):]
+        self.assertIn("if (shouldAutoHide()) hideControls()", play[:400])
+
     def test_mobile_puts_the_bar_below_the_picture(self):
         css = self._player_css()
         self.assertIn("@media (max-width: 768px)", css)

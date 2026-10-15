@@ -691,19 +691,37 @@ function controlsAreShowing() {
     return playerBar.classList.contains("is-visible")
 }
 
+// Only a device with a real pointer gets hover behaviour. A tablet reports
+// hover: none even with a mouse attached, and without this guard the bar would
+// latch open the moment a tap synthesised a mouseenter.
+const canHover = window.matchMedia
+    ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    : false
+
+let pointerInsideStage = false
+
+// The bar stays up while paused or while the pointer is over it, and fades away
+// only when the video is playing and nobody is aiming at anything.
+function shouldAutoHide() {
+    if (!activePlayer) return false
+    const playing = !activePlayer.paused && !activePlayer.ended
+    return playing && !pointerInsideStage
+}
+
 function showControls() {
     if (!playerBar || !playerStage) return
     playerBar.classList.add("is-visible")
     playerStage.classList.add("controls-visible")
     clearTimeout(hideTimer)
-    // A paused video keeps its controls; a playing one lets them fade.
-    if (activePlayer && !activePlayer.paused && !activePlayer.ended) {
+    if (shouldAutoHide()) {
         hideTimer = setTimeout(hideControls, CONTROLS_IDLE_MS)
     }
 }
 
 function hideControls() {
     if (!playerBar || !playerStage) return
+    // Never yank the bar away from a pointer that is still resting on it.
+    if (pointerInsideStage && canHover) return
     playerBar.classList.remove("is-visible")
     playerStage.classList.remove("controls-visible")
 }
@@ -728,8 +746,18 @@ function wireAutoHide() {
     }
 
     if (playerStage) {
-        // Any mouse movement means the viewer is aiming at something.
-        playerStage.addEventListener("mousemove", () => showControls())
+        if (canHover) {
+            // Entering the video is enough; no wiggling required.
+            playerStage.addEventListener("mouseenter", () => {
+                pointerInsideStage = true
+                showControls()
+            })
+            playerStage.addEventListener("mouseleave", () => {
+                pointerInsideStage = false
+                if (shouldAutoHide()) hideControls()
+            })
+            playerStage.addEventListener("mousemove", () => showControls())
+        }
         playerStage.addEventListener(
             "touchstart", () => showControls(), { passive: true }
         )
@@ -744,8 +772,9 @@ function wireAutoHide() {
     ;[videoPlayer, audioPlayer].forEach(el => {
         if (!el) return
         el.addEventListener("play", () => {
-            // Do not sit on top of the picture while it is moving.
-            hideControls()
+            // Out of the way while the picture is moving, unless the viewer is
+            // already hovering and probably wants the controls.
+            if (shouldAutoHide()) hideControls()
             refreshPlayPauseIcon()
         })
         el.addEventListener("pause", () => {
