@@ -473,6 +473,81 @@ class VideoEditTests(TestCase):
         self.assertNotContains(response, reverse("videos:edit", args=[self.video.id]))
 
 
+class VideoSharingTests(TestCase):
+    """Visitors can share the video page and the MP3 as never-expiring links."""
+
+    def setUp(self):
+        self.admin = make_user("sharer", is_staff=True, is_superuser=True)
+        Profile.objects.filter(user=self.admin).update(access_level=Profile.Access.WRITE)
+        self.with_audio = make_video(
+            self.admin,
+            title="Shareable",
+            audio_file_id="audio/share.mp3",
+            audio_url="https://example.com/share.mp3",
+            audio_status="ready",
+        )
+        self.silent = make_video(self.admin, title="No audio")
+
+    def test_share_panel_is_visible_to_anonymous_visitors(self):
+        response = self.client.get(reverse("videos:detail", args=[self.with_audio.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="sharePanel"')
+        self.assertContains(response, 'id="shareToggle"')
+
+    def test_video_share_link_is_absolute(self):
+        response = self.client.get(reverse("videos:detail", args=[self.with_audio.id]))
+        self.assertContains(response, "testserver" + reverse("videos:detail", args=[self.with_audio.id]))
+
+    def test_mp3_share_link_uses_the_permanent_audio_route(self):
+        response = self.client.get(reverse("videos:detail", args=[self.with_audio.id]))
+        body = self._share_links(response.content.decode())
+        self.assertIn("testserver" + reverse("videos:audio_stream", args=[self.with_audio.id]), body)
+
+    def test_mp3_share_link_is_never_the_expiring_presigned_url(self):
+        # The download button legitimately signs a URL that dies after twelve
+        # hours, but the link handed to a friend must never be one of those.
+        response = self.client.get(reverse("videos:detail", args=[self.with_audio.id]))
+        share_block = self._share_links(response.content.decode())
+        self.assertNotIn("X-Amz-Signature", share_block)
+        self.assertNotIn("share.mp3?", share_block)
+
+    @staticmethod
+    def _share_links(body: str) -> str:
+        """Return just the SHARE_LINKS map, with JS escaping undone.
+
+        ``escapejs`` turns ``/`` into ``\\/`` and ``-`` into ``\\u002D``. Both are
+        valid inside a JavaScript string literal, so the browser decodes them
+        back to the intended URL; the test just has to compare the decoded form.
+        """
+        import re
+
+        start = body.index("const SHARE_LINKS")
+        end = body.index("}", body.index("audio:", start))
+        block = body[start:end].replace("\\/", "/")
+        return re.sub(r"\\u00([0-9A-Fa-f]{2})", lambda m: chr(int(m.group(1), 16)), block)
+
+    def test_video_without_audio_hides_the_mp3_target(self):
+        response = self.client.get(reverse("videos:detail", args=[self.silent.id]))
+        self.assertContains(response, 'id="sharePanel"')
+        self.assertNotContains(response, 'data-share="audio"')
+
+    def test_share_networks_are_prefilled_with_the_link(self):
+        response = self.client.get(reverse("videos:detail", args=[self.with_audio.id]))
+        body = response.content.decode()
+        self.assertIn("wa.me", body)
+        self.assertIn("t.me/share/url", body)
+        self.assertIn("facebook.com/sharer", body)
+        self.assertIn("twitter.com/intent/tweet", body)
+
+    def test_share_panel_javascript_is_present(self):
+        response = self.client.get(reverse("videos:detail", args=[self.with_audio.id]))
+        body = response.content.decode()
+        self.assertIn("function shareKind", body)
+        self.assertIn("function toggleShareMenu", body)
+        # A dismissal must not be reported as a failure.
+        self.assertIn("AbortError", body)
+
+
 class ThumbnailOverlayTests(TestCase):
     """The hover play overlay must never permanently cover a thumbnail.
 

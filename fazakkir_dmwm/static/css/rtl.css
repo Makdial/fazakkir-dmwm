@@ -124,6 +124,7 @@
 /* --- Playlists ------------------------------------------------------------ */
 
 [dir="rtl"] .save-panel,
+[dir="rtl"] .share-panel,
 [dir="rtl"] .playlist-item {
     text-align: right;
 }

@@ -262,6 +262,80 @@
     -webkit-box-orient: vertical;
 }
 
+/* --- Share panel -------------------------------------------------------- */
+
+.share-panel {
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.share-panel-head {
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+.share-targets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.share-target {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background var(--transition-normal);
+}
+
+.share-target:hover {
+    background: var(--bg-hover, var(--bg-primary));
+}
+
+.share-target-icon {
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+.share-networks {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.share-network {
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fff;
+    text-decoration: none;
+}
+
+/* Brand colours double as the visual cue for each target app. */
+.share-network-whatsapp { background: #25d366; }
+.share-network-telegram { background: #229ed9; }
+.share-network-facebook { background: #1877f2; }
+.share-network-x { background: #000; }
+
+.share-hint {
+    margin: 12px 0 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    word-break: break-all;
+}
+
 /* --- Save-to-playlist panel -------------------------------------------- */
 
 .save-panel {

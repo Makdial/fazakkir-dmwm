@@ -119,7 +119,11 @@
                     ＋ {% trans "Save" %}
                 </button>
                 {% endif %}
-                {% if can_edit %}
+                <button type="button" class="vote-btn" id="shareToggle" aria-expanded="false"
+                        aria-controls="sharePanel" onclick="toggleShareMenu()">
+                    ↗ {% trans "Share" %}
+                </button>
+                {% if can_write %}
                 <a class="vote-btn" href="{% url 'videos:edit' video.id %}">✎ {% trans "Edit" %}</a>
                 {% endif %}
             </div>
@@ -150,6 +154,33 @@
             </form>
         </div>
         {% endif %}
+
+        <div class="share-panel" id="sharePanel" hidden>
+            <div class="share-panel-head">{% trans "Share this video" %}</div>
+            <div class="share-targets">
+                <button type="button" class="share-target" data-share="video">
+                    <span class="share-target-icon">🎬</span>
+                    <span class="share-target-label">{% trans "Video link" %}</span>
+                </button>
+                {% if share_audio_url %}
+                <button type="button" class="share-target" data-share="audio">
+                    <span class="share-target-icon">🎵</span>
+                    <span class="share-target-label">{% trans "MP3 link" %}</span>
+                </button>
+                {% endif %}
+            </div>
+            <div class="share-networks">
+                <a class="share-network share-network-whatsapp" target="_blank" rel="noopener"
+                   data-share-network="video">WhatsApp</a>
+                <a class="share-network share-network-telegram" target="_blank" rel="noopener"
+                   data-share-network="video">Telegram</a>
+                <a class="share-network share-network-facebook" target="_blank" rel="noopener"
+                   data-share-network="video">Facebook</a>
+                <a class="share-network share-network-x" target="_blank" rel="noopener"
+                   data-share-network="video">X</a>
+            </div>
+            <p class="share-hint" id="shareHint" hidden></p>
+        </div>
 
         <div class="video-channel">
             <div class="channel-avatar">{{ video.user.username|slice:":1" }}</div>
@@ -580,6 +611,146 @@ function toggleSaveMenu() {
         if (btn) btn.setAttribute("aria-expanded", "false")
     }
 }
+
+// --- Sharing ------------------------------------------------------------------
+// Two links can be shared: the video page, and the MP3 on its own. Both are
+// absolute URLs built server side. The MP3 uses the audio-stream route rather
+// than the presigned download URL, so the link a friend receives does not
+// expire twelve hours later.
+const SHARE_LINKS = {
+    video: "{{ share_video_url|escapejs }}",
+    audio: "{{ share_audio_url|escapejs }}",
+}
+const SHARE_TITLE = "{{ video.title|escapejs }}"
+
+function shareMessage(kind) {
+    return kind === "audio"
+        ? `${SHARE_TITLE} — MP3`
+        : SHARE_TITLE
+}
+
+function shareUrl(kind) {
+    return SHARE_LINKS[kind] || ""
+}
+
+function toggleShareMenu() {
+    const panel = document.getElementById("sharePanel")
+    const btn = document.getElementById("shareToggle")
+    if (!panel) return
+    const willOpen = panel.hasAttribute("hidden")
+    if (willOpen) {
+        panel.removeAttribute("hidden")
+        if (btn) btn.setAttribute("aria-expanded", "true")
+    } else {
+        panel.setAttribute("hidden", "")
+        if (btn) btn.setAttribute("aria-expanded", "false")
+    }
+}
+
+function flashShareHint(text) {
+    const hint = document.getElementById("shareHint")
+    if (!hint) return
+    hint.textContent = text
+    hint.removeAttribute("hidden")
+    clearTimeout(flashShareHint.timer)
+    flashShareHint.timer = setTimeout(() => hint.setAttribute("hidden", ""), 2500)
+}
+
+// Clipboard API first, then a hidden textarea for older mobile browsers, then
+// tell the visitor to copy by hand rather than failing silently.
+function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text)
+    }
+    const area = document.createElement("textarea")
+    area.value = text
+    area.setAttribute("readonly", "")
+    area.style.position = "fixed"
+    area.style.opacity = "0"
+    document.body.appendChild(area)
+    area.select()
+    area.setSelectionRange(0, text.length)
+    let copied = false
+    try {
+        copied = document.execCommand("copy")
+    } catch (e) {
+        copied = false
+    }
+    document.body.removeChild(area)
+    return copied ? Promise.resolve() : Promise.reject(new Error("copy failed"))
+}
+
+async function shareKind(kind) {
+    const url = shareUrl(kind)
+    if (!url) return
+
+    // The native sheet is the best experience on a phone: it lists WhatsApp,
+    // Messages, and whatever else the visitor already uses.
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: SHARE_TITLE,
+                text: shareMessage(kind),
+                url: url,
+            })
+            return
+        } catch (err) {
+            // The visitor dismissing the sheet is not a failure worth reporting.
+            if (err && err.name === "AbortError") return
+        }
+    }
+
+    try {
+        await copyToClipboard(url)
+        flashShareHint(
+            kind === "audio"
+                ? "{% trans 'MP3 link copied' %}"
+                : "{% trans 'Link copied' %}"
+        )
+    } catch (e) {
+        flashShareHint("{% trans 'Copy this link:' %} " + url)
+    }
+}
+
+const SHARE_NETWORK_URLS = {
+    whatsapp: (url, text) => "https://wa.me/?text=" + encodeURIComponent(text + " " + url),
+    telegram: (url, text) =>
+        "https://t.me/share/url?url=" + encodeURIComponent(url) +
+        "&text=" + encodeURIComponent(text),
+    facebook: (url, text) =>
+        "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url),
+    x: (url, text) =>
+        "https://twitter.com/intent/tweet?url=" + encodeURIComponent(url) +
+        "&text=" + encodeURIComponent(text),
+}
+
+function wireSharing() {
+    const panel = document.getElementById("sharePanel")
+    if (!panel) return
+
+    panel.querySelectorAll("[data-share]").forEach(button => {
+        button.addEventListener("click", () => shareKind(button.dataset.share))
+    })
+
+    panel.querySelectorAll("[data-share-network]").forEach(link => {
+        const kind = link.dataset.shareNetwork
+        const url = shareUrl(kind)
+        if (!url) return
+        link.href = SHARE_NETWORK_URLS[kind](url, shareMessage(kind))
+    })
+
+    // Close the panel when the visitor clicks elsewhere.
+    document.addEventListener("click", event => {
+        if (panel.hasAttribute("hidden")) return
+        if (panel.contains(event.target)) return
+        if (event.target.closest("#shareToggle")) return
+        panel.setAttribute("hidden", "")
+        const btn = document.getElementById("shareToggle")
+        if (btn) btn.setAttribute("aria-expanded", "false")
+    })
+}
+
+wireSharing()
 
 function togglePlaylist(playlistId, checkbox) {
     fetch(withId(PLAYLIST_TOGGLE_URL, playlistId), {

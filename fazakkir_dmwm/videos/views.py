@@ -73,6 +73,18 @@ def video_detail(request, video_id):
             ).values_list("playlist_id", flat=True)
         )
 
+    # Absolute links a visitor can send to a friend. The MP3 is shared through
+    # our own audio-stream route rather than the presigned download URL, because
+    # a presigned link expires after 12 hours and would be dead on arrival.
+    share_video_url = request.build_absolute_uri(
+        reverse("videos:detail", args=[video.id])
+    )
+    share_audio_url = ""
+    if video.has_audio:
+        share_audio_url = request.build_absolute_uri(
+            reverse("videos:audio_stream", args=[video.id])
+        )
+
     return render(
         request,
         "videos/detail.html",
@@ -86,7 +98,8 @@ def video_detail(request, video_id):
             "audio_pending": audio_pending,
             "audio_failed": audio_failed,
             "audio_none": audio_none,
-            "can_edit": user_can_write(request.user),
+            "share_video_url": share_video_url,
+            "share_audio_url": share_audio_url,
             "subtitles_configured": subtitles_configured(),
             "subtitles_pending": video.auto_subtitle_status
             in ("", "processing"),
