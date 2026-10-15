@@ -1,9 +1,10 @@
 import logging
 import os
+import re
 import tempfile
 from pathlib import Path
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -100,6 +101,7 @@ def video_detail(request, video_id):
             "audio_none": audio_none,
             "share_video_url": share_video_url,
             "share_audio_url": share_audio_url,
+            "is_audio_only": video.is_audio_only,
             "subtitles_configured": subtitles_configured(),
             "subtitles_pending": video.auto_subtitle_status
             in ("", "processing"),
@@ -118,6 +120,46 @@ def video_detail(request, video_id):
 def video_list(request):
     videos = Video.objects.all()
     return render(request, "videos/list.html", {"videos": videos})
+
+
+def video_search(request):
+    """Search videos by any word in the title or description, the uploader's
+    name, or the year they were uploaded.
+
+    Typing a bare year such as "2000" finds everything uploaded that year even
+    though no field stores the year as text. Each word is matched separately so
+    "mame 2000" narrows to the 2000 recordings by that uploader rather than
+    looking for the literal phrase.
+    """
+    query = (request.GET.get("q") or "").strip()
+    words = [w for w in re.split(r"\s+", query) if w]
+
+    # With nothing typed there is no search to run, so show no results rather
+    # than quietly dumping the whole library under an empty search box.
+    videos = Video.objects.none() if not words else Video.objects.select_related("user")
+
+    for word in words:
+        clause = (
+            Q(title__icontains=word)
+            | Q(description__icontains=word)
+            | Q(user__username__icontains=word)
+        )
+        # A four-digit run inside a plausible range is treated as an upload
+        # year; anything else (a title that happens to contain digits) is left
+        # to the text search above.
+        if word.isdigit() and len(word) == 4:
+            year = int(word)
+            if 1900 <= year <= 2200:
+                clause = clause | Q(created_at__year=year)
+        videos = videos.filter(clause)
+
+    videos = videos.distinct()
+
+    return render(
+        request,
+        "videos/search.html",
+        {"videos": videos, "query": query, "words": words},
+    )
 
 
 def channel_videos(request, username):
@@ -242,8 +284,35 @@ def video_upload(request):
                 errors.append(error if field == "__all__" else f"{field}: {error}")
         return JsonResponse({"success": False, "errors": "; ".join(errors)})
 
-    video_file = form.cleaned_data["video_file"]
+    video_file = form.cleaned_data.get("video_file")
+    audio_file = form.cleaned_data.get("audio_file")
+    media_type = form.cleaned_data["media_type"]
     thumbnail_data = request.POST.get("thumbnail_data", "")
+
+    # Audio-only upload: store the MP3 itself, with no picture behind it.
+    if media_type == "audio":
+        try:
+            result = upload_audio(audio_file, Path(audio_file.name).stem + ".mp3")
+        except StorageError as exc:
+            return JsonResponse({"success": False, "error": str(exc)})
+
+        video = Video.objects.create(
+            user=request.user,
+            title=form.cleaned_data["title"],
+            description=form.cleaned_data["description"],
+            media_type="audio",
+            file_id="",
+            video_url="",
+            audio_file_id=result["path"],
+            audio_url=result["url"],
+            audio_status="ready",
+        )
+        _notify_storage_after_upload()
+        return JsonResponse({
+            "success": True,
+            "video_id": video.id,
+            "message": _("Audio uploaded successfully"),
+        })
 
     # Extract the audio first: uploading the video to R2 closes the temporary
     # file Django saved the upload to, so it is gone afterwards.
@@ -278,6 +347,7 @@ def video_upload(request):
         user=request.user,
         title=form.cleaned_data["title"],
         description=form.cleaned_data["description"],
+        media_type="video",
         file_id=result["path"],
         video_url=result["url"],
         thumbnail_file_id=thumbnail_file_id,
@@ -287,20 +357,27 @@ def video_upload(request):
         audio_status=audio_status,
     )
 
-    # Warn the administrator when the storage is getting full. Imported lazily
-    # to avoid an import cycle, and never allowed to break the upload.
-    try:
-        from dashboard.storage import check_and_notify
-
-        check_and_notify()
-    except Exception:  # noqa: BLE001 - a storage check must not fail an upload
-        logger.warning("Storage check after upload failed", exc_info=True)
+    _notify_storage_after_upload()
 
     return JsonResponse({
         "success": True,
         "video_id": video.id,
         "message": _("Video uploaded successfully"),
     })
+
+
+def _notify_storage_after_upload() -> None:
+    """Warn the administrator when the storage is getting full.
+
+    Imported lazily to avoid an import cycle, and never allowed to break the
+    upload itself.
+    """
+    try:
+        from dashboard.storage import check_and_notify
+
+        check_and_notify()
+    except Exception:  # noqa: BLE001 - a storage check must not fail an upload
+        logger.warning("Storage check after upload failed", exc_info=True)
 
 
 def _extract_audio_track(uploaded_file, original_name: str) -> tuple[str, str, str]:

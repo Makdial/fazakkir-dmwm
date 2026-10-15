@@ -24,6 +24,7 @@
     {# Mirrors the layout for Arabic (right-to-left); inert for other languages. #}
     <link rel="stylesheet" href="{% static 'css/rtl.css' %}">
     <link rel="stylesheet" href="{% static 'css/navbar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/search.css' %}">
     <link rel="stylesheet" href="{% static 'css/messages.css' %}">
     <link rel="stylesheet" href="{% static 'css/buttons.css' %}">
     <link rel="stylesheet" href="{% static 'css/forms.css' %}">
@@ -52,6 +53,13 @@
         </button>
 
         <div class="navbar-actions" id="navMenu">
+            <form action="{% url 'videos:search' %}" method="get" class="nav-search" role="search">
+                <input type="search" name="q" class="nav-search-input"
+                       value="{{ request.GET.q|default:'' }}"
+                       placeholder="{% trans 'Search' %}"
+                       aria-label="{% trans 'Search videos' %}">
+            </form>
+
             <form action="{% url 'set_language' %}" method="post" class="language-form">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">

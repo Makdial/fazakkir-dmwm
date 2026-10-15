@@ -88,3 +88,27 @@
 #thumbPreview.visible {
     display: block !important;
 }
+/* --- Video vs audio-only picker ----------------------------------------- */
+
+.upload-type-choice {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.upload-type-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 0.92rem;
+}
+
+.upload-type-option:has(input:checked) {
+    border-color: var(--accent-red);
+    font-weight: 600;
+}

@@ -12,7 +12,7 @@
 {% block content %}
 
 <div class="video-player-container">
-    <div class="video-player" id="playerStage">
+    <div class="video-player{% if is_audio_only %} audio-mode{% endif %}" id="playerStage">
         {% comment %}
             No poster and no native controls. The browser drew its own centred
             play button straight over the poster image, hiding the very frame it
@@ -20,9 +20,13 @@
             the control bar below puts every control where we want it. The Media
             Session wiring (see further down) is independent of the `controls`
             attribute, so background playback still works.
+
+            An audio-only upload has no picture at all, so it starts in the same
+            cover-art layout that "Listen (MP3)" switches into.
         {% endcomment %}
         <video id="video-player" playsinline preload="metadata"
-               src="{{ video.playback_url }}">
+               src="{{ video.playback_url }}"
+               {% if is_audio_only %}style="display: none;"{% endif %}>
             {% for track in subtitle_tracks %}
             <track id="track-{{ track.language_code }}"
                    kind="subtitles"
@@ -31,7 +35,9 @@
                    src="{% url 'videos:subtitle_file' video.id track.language_code %}">
             {% endfor %}
         </video>
-        <audio id="audio-player" preload="none" class="audio-player" style="display: none;">
+        <audio id="audio-player" preload="metadata" class="audio-player"
+               {% if not is_audio_only %}style="display: none;"{% endif %}
+               src="{% if is_audio_only %}{% url 'videos:audio_stream' video.id %}{% endif %}">
             {% for track in subtitle_tracks %}
             <track id="atrack-{{ track.language_code }}"
                    kind="subtitles"
@@ -122,7 +128,7 @@
 
     {% if video.has_audio or video.video_download_url %}
     <div class="player-controls">
-        {% if video.has_audio %}
+        {% if video.has_audio and not is_audio_only %}
         <div class="mode-toggle" role="group" aria-label="{% trans 'Playback mode' %}">
             <button type="button" id="mode-video" class="mode-btn active"
                     onclick="setMode('video')">{% trans "Video" %}</button>
@@ -131,7 +137,9 @@
         </div>
         {% endif %}
         <div class="player-downloads">
+            {% if video.video_download_url %}
             <a class="download-btn" href="{{ video.video_download_url }}" download>⬇ {% trans "Download video" %}</a>
+            {% endif %}
             {% if video.has_audio %}
             <a class="download-btn" href="{{ video.audio_download_url }}" download>⬇ {% trans "Download MP3" %}</a>
             <button type="button" class="download-btn offline-btn" id="offlineToggle"
@@ -425,7 +433,10 @@ function setMode(mode) {
 // notification-panel controls work on mobile, tablet and desktop alike.
 // Without this some browsers pause or hide the player when the page is hidden.
 const mediaSession = navigator.mediaSession || null
-let activePlayer = videoPlayer
+// An audio-only upload has no picture, so the controls must drive the MP3 from
+// the outset rather than a hidden <video>.
+const audioOnly = "{% if is_audio_only %}true{% else %}false{% endif %}"
+let activePlayer = audioOnly ? audioPlayer : videoPlayer
 
 function mediaMetadata() {
     const metadata = {

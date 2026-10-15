@@ -46,6 +46,15 @@
             </div>
 
             <div class="form-group">
+                <label for="id_media_type_0">{{ form.media_type.label }}</label>
+                <div class="upload-type-choice">
+                    {% for radio in form.media_type %}
+                        <label class="upload-type-option">{{ radio }} <span>{{ radio.choice_label }}</span></label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label for="id_title">{% trans "Title" %}</label>
                 <input type="text" name="title" id="id_title" class="form-input"
                        placeholder="{% trans 'Enter video title' %}"
@@ -58,17 +67,26 @@
                           placeholder="{% trans 'Enter video description' %}" rows="3">{{ form.description.value|default:'' }}</textarea>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="videoFieldGroup">
                 <label for="id_video_file">{% trans "Video File" %}</label>
                 <label class="file-input-wrapper" for="id_video_file">
                     <span id="video-label">{% trans "Click to select a video file" %}</span>
                 </label>
-                <input type="file" name="video_file" id="id_video_file" accept="video/*" required style="display:none;"/>
+                <input type="file" name="video_file" id="id_video_file" accept="video/*" style="display:none;"/>
                 <span class="help-text">{% trans "MP4, WebM, MOV or AVI. Max 3 GB." %}</span>
                 <span class="help-text">{% trans "An MP3 audio file is generated automatically." %}</span>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="audioFieldGroup" hidden>
+                <label for="id_audio_file">{% trans "Audio File (MP3)" %}</label>
+                <label class="file-input-wrapper" for="id_audio_file">
+                    <span id="audio-label">{% trans "Click to select an MP3 file" %}</span>
+                </label>
+                <input type="file" name="audio_file" id="id_audio_file" accept="audio/*" style="display:none;"/>
+                <span class="help-text">{% trans "MP3 only. This becomes the track friends can stream and download." %}</span>
+            </div>
+
+            <div class="form-group" id="customThumbnailGroup">
                 <label for="customThumbnail">{% trans "Thumbnail (optional)" %}</label>
                 <label class="file-input-wrapper thumb-wrapper" for="customThumbnail">
                     <img id="thumbPreview" alt="">
@@ -143,6 +161,25 @@ $("id_video_file").onchange = async e => {
     }
 };
 
+$("id_audio_file").onchange = e => {
+    const file = e.target.files[0];
+    $("audio-label").textContent = file ? file.name : "{% trans 'Click to select an MP3 file' %}";
+};
+
+// Show only the file input the chosen upload type needs, and keep the
+// thumbnail picker hidden for audio, which has no frame to sample.
+function applyUploadType() {
+    const audioOnly = ($("id_media_type_0").checked === true) ||
+                      ($("id_media_type_1") && $("id_media_type_1").checked === true);
+    $("videoFieldGroup").hidden = audioOnly;
+    $("audioFieldGroup").hidden = !audioOnly;
+    if (audioOnly) $("customThumbnailGroup").hidden = false;
+}
+document.querySelectorAll('input[name="media_type"]').forEach(input => {
+    input.addEventListener("change", applyUploadType);
+});
+applyUploadType();
+
 $("customThumbnail").onchange = e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -155,7 +192,9 @@ $("customThumbnail").onchange = e => {
 $("uploadForm").onsubmit = async e => {
     e.preventDefault();
 
-    if (!$("id_video_file").files.length || !$("id_title").value.trim()) return;
+    const isAudio = $("id_audio_file") && !$("audioFieldGroup").hidden;
+    const fileInput = isAudio ? $("id_audio_file") : $("id_video_file");
+    if (!fileInput.files.length || !$("id_title").value.trim()) return;
 
     $("uploadOverlay").classList.add("active");
     $("submitBtn").disabled = true;

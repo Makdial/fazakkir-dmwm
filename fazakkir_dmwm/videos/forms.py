@@ -19,6 +19,18 @@ ALLOWED_IMAGE_TYPES = [
 
 
 class VideoUploadForm(forms.Form):
+    MEDIA_TYPE_CHOICES = [
+        ("video", _("Video")),
+        ("audio", _("Audio only (MP3)")),
+    ]
+
+    media_type = forms.ChoiceField(
+        choices=MEDIA_TYPE_CHOICES,
+        initial="video",
+        label=_("Upload type"),
+        widget=forms.RadioSelect,
+    )
+
     title = forms.CharField(
         max_length=200,
         label=_("Title"),
@@ -42,11 +54,39 @@ class VideoUploadForm(forms.Form):
     )
     video_file = forms.FileField(
         label=_("Video File"),
+        required=False,
         widget=forms.FileInput(attrs={
             "class": "form-input",
             "accept": "video/*",
         }),
+        help_text=_("Required for a video upload. Leave empty for an audio-only upload."),
     )
+
+    audio_file = forms.FileField(
+        label=_("Audio File (MP3)"),
+        required=False,
+        widget=forms.FileInput(attrs={
+            "class": "form-input",
+            "accept": "audio/*",
+        }),
+        help_text=_("Required for an audio-only upload. Leave empty for a video upload, "
+                    "where the MP3 is extracted automatically."),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("media_type") == "audio":
+            if not cleaned.get("audio_file"):
+                self.add_error(
+                    "audio_file", _("Please choose an MP3 file for an audio upload.")
+                )
+            if cleaned.get("video_file"):
+                self.add_error(
+                    "video_file", _("An audio-only upload must not include a video file.")
+                )
+        elif not cleaned.get("video_file"):
+            self.add_error("video_file", _("Please choose a video file."))
+        return cleaned
 
     def clean_video_file(self):
         video = self.cleaned_data.get("video_file")

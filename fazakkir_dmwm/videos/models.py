@@ -18,10 +18,20 @@ class Video(models.Model):
     title = models.CharField(max_length=120)
     description = models.TextField(blank=True)
 
+    # An audio-only upload (a recitation with no recording) has no video file
+    # at all, so these two are blank for it and ``media_type`` says so.
+    MEDIA_TYPE_CHOICES = [
+        ("video", _("Video")),
+        ("audio", _("Audio only")),
+    ]
+    media_type = models.CharField(
+        max_length=10, choices=MEDIA_TYPE_CHOICES, default="video"
+    )
+
     # ``file_id`` stores the Cloudflare R2 object path (used for deletion),
     # while ``video_url`` is the public URL used by the player.
-    file_id = models.CharField(max_length=200)
-    video_url = models.URLField(max_length=500)
+    file_id = models.CharField(max_length=200, blank=True, default="")
+    video_url = models.URLField(max_length=500, blank=True, default="")
 
     # Same idea for the optional/auto-generated thumbnail.
     thumbnail_file_id = models.CharField(max_length=200, blank=True, default="")
@@ -90,13 +100,25 @@ class Video(models.Model):
         return bool(self.audio_file_id)
 
     @property
+    def is_audio_only(self):
+        """True for an audio upload with no picture behind it."""
+        return self.media_type == "audio" or not self.file_id
+
+    @property
+    def has_video(self):
+        """True when there is a picture to play."""
+        return not self.is_audio_only and bool(self.file_id)
+
+    @property
     def audio_playback_url(self):
         """A URL the browser can play the MP3 from, or an empty string."""
         return r2_storage.resolve_url(self.audio_file_id, self.audio_url)
 
     @property
     def video_download_url(self):
-        """A URL that downloads the video with a sensible file name."""
+        """A URL that downloads the video, or an empty string for audio-only."""
+        if not self.file_id:
+            return ""
         suffix = Path(self.file_id).suffix or ".mp4"
         return r2_storage.download_url(
             self.file_id, f"{self.title}{suffix}", self.video_url

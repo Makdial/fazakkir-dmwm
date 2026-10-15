@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% if query %}{% blocktrans %}Search results for {{ query }}{% endblocktrans %}{% else %}{% trans "Search" %}{% endif %} - Fazakkir{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/videos.css' %}">
+<link rel="stylesheet" href="{% static 'css/search.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="search-page">
+    <form action="{% url 'videos:search' %}" method="get" class="search-page-form" role="search">
+        <input type="search" name="q" value="{{ query }}" class="search-page-input"
+               placeholder="{% trans 'Search by title, name or year' %}"
+               aria-label="{% trans 'Search videos' %}" autofocus>
+        <button type="submit" class="search-page-button">{% trans "Search" %}</button>
+    </form>
+
+    {% if not query %}
+        <p class="search-hint">
+            {% trans "Type a few words from a title, the uploader's name, or a year such as 2000." %}
+        </p>
+    {% else %}
+        <h1 class="search-summary">
+            {% blocktrans count counter=videos.count with query=query %}{{ counter }} result{% plural %}{{ counter }} results{% endblocktrans %}
+            {% if words %}· {% trans "for" %} {{ query }}{% endif %}
+        </h1>
+
+        {% if videos %}
+        <div class="video-grid">
+            {% for video in videos %}
+                <div class="video-card-wrap">
+                    <a href="{% url 'videos:detail' video.id %}" class="video-card">
+                        <div class="video-thumbnail">
+                            {% if video.display_thumbnail_url %}
+                                <img src="{{ video.display_thumbnail_url }}" alt="{{ video.title }}" loading="lazy">
+                            {% else %}
+                                <span class="thumbnail-placeholder">▶</span>
+                            {% endif %}
+                            <span class="play-icon">▶</span>
+                        </div>
+                        <div class="video-info">
+                            <h3 class="video-title">{{ video.title }}</h3>
+                            <p class="video-meta">
+                                {{ video.user.username }} |
+                                {% blocktrans count counter=video.views %}{{ counter }} view{% plural %}{{ counter }} views{% endblocktrans %}
+                                | {{ video.created_at|date:"Y" }}
+                            </p>
+                        </div>
+                    </a>
+                    {% if video.has_audio %}
+                    <a class="card-download" href="{{ video.audio_download_url }}" download
+                       title="{% trans 'Download MP3' %}" aria-label="{% trans 'Download MP3' %}">⬇ MP3</a>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">🔍</span>
+            <h2>{% trans "No results" %}</h2>
+            <p>{% trans "Nothing matched. Try a different word, or a year such as 2000." %}</p>
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

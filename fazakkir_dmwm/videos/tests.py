@@ -1,4 +1,5 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 from io import StringIO
 from pathlib import Path
 from unittest import mock
@@ -1841,3 +1842,164 @@ class StaleJobTests(TestCase):
         self.client.get(reverse("videos:audio_status", args=[self.video.id]))
         self.video.refresh_from_db()
         self.assertEqual(self.video.audio_status, "failed")
+
+class VideoSearchTests(TestCase):
+    """Search matches any word in the title or description, the uploader, or a year."""
+
+    def setUp(self):
+        self.alice = make_user("alice")
+        self.bob = make_user("bob")
+        self.a = make_video(
+            self.alice,
+            title="Mame Cheikh Capitaine",
+            description="Recitation recorded in Diourbel",
+        )
+        self.b = make_video(self.bob, title="Serigne Moustapha Sy", description="Wedding")
+        # created_at is auto_now_add, so pin the year directly on the row.
+        Video.objects.filter(pk=self.b.pk).update(
+            created_at=datetime(2000, 8, 19, tzinfo=dt_timezone.utc)
+        )
+
+    def found(self, query):
+        response = self.client.get(reverse("videos:search"), {"q": query})
+        self.assertEqual(response.status_code, 200)
+        return list(response.context["videos"])
+
+    def test_search_page_renders_without_a_query(self):
+        response = self.client.get(reverse("videos:search"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["videos"]), [])
+
+    def test_matches_a_word_in_the_title(self):
+        self.assertEqual(self.found("mame"), [self.a])
+
+    def test_title_search_is_case_insensitive(self):
+        self.assertEqual(self.found("MAME"), [self.a])
+
+    def test_matches_a_word_in_the_description(self):
+        self.assertEqual(self.found("diourbel"), [self.a])
+
+    def test_matches_the_uploaders_name(self):
+        self.assertEqual(self.found("bob"), [self.b])
+
+    def test_matches_a_year_of_upload(self):
+        # Nothing stores "2000" as text, so this only works via created_at.
+        self.assertEqual(self.found("2000"), [self.b])
+
+    def test_year_that_matches_nothing_returns_nothing(self):
+        self.assertEqual(self.found("1999"), [])
+
+    def test_words_are_combined_rather_than_matched_as_a_phrase(self):
+        # "mame 2000" should return nothing: neither video satisfies both.
+        self.assertEqual(self.found("mame 2000"), [])
+        self.assertEqual(self.found("mame diourbel"), [self.a])
+
+    def test_unknown_word_returns_nothing(self):
+        self.assertEqual(self.found("zzzznotathing"), [])
+
+    def test_query_is_echoed_back_for_the_search_box(self):
+        response = self.client.get(reverse("videos:search"), {"q": "mame"})
+        self.assertEqual(response.context["query"], "mame")
+
+    def test_blank_query_returns_nothing_rather_than_everything(self):
+        response = self.client.get(reverse("videos:search"), {"q": "   "})
+        self.assertEqual(list(response.context["videos"]), [])
+
+    def test_search_box_appears_in_the_navigation(self):
+        response = self.client.get(reverse("videos:list"))
+        self.assertContains(response, reverse("videos:search"))
+        self.assertContains(response, 'name="q"')
+
+
+class AudioOnlyUploadTests(TestCase):
+    """An administrator can upload an MP3 with no video behind it."""
+
+    def setUp(self):
+        self.admin = make_user("uploader", is_staff=True, is_superuser=True)
+        Profile.objects.filter(user=self.admin).update(access_level=Profile.Access.WRITE)
+        self.client.login(username="uploader", password="pw12345678")
+
+    def audio_post(self, **extra):
+        payload = {
+            "media_type": "audio",
+            "title": "Recitation",
+            "description": "",
+            "audio_file": SimpleUploadedFile(
+                "recitation.mp3", b"ID3\x03\x00fake", content_type="audio/mpeg"
+            ),
+        }
+        payload.update(extra)
+        # None cannot be encoded into multipart, so drop the key instead.
+        payload = {k: v for k, v in payload.items() if v is not None}
+        return self.client.post(reverse("videos:upload_submit"), payload)
+
+    @mock.patch("videos.views.upload_audio")
+    def test_audio_upload_creates_an_audio_only_record(self, upload_audio):
+        upload_audio.return_value = {
+            "path": "audio/rec.mp3",
+            "url": "https://example.com/rec.mp3",
+        }
+        response = self.audio_post()
+        self.assertTrue(response.json()["success"])
+
+        video = Video.objects.get()
+        self.assertEqual(video.media_type, "audio")
+        self.assertEqual(video.file_id, "")
+        self.assertEqual(video.audio_file_id, "audio/rec.mp3")
+        self.assertEqual(video.audio_status, "ready")
+        self.assertTrue(video.is_audio_only)
+        self.assertFalse(video.has_video)
+
+    @mock.patch("videos.views.upload_audio")
+    def test_audio_only_has_no_video_download_link(self, upload_audio):
+        upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
+        self.audio_post()
+        video = Video.objects.get()
+        self.assertEqual(video.video_download_url, "")
+        # The MP3 link is what people actually want.
+        self.assertTrue(video.audio_download_url)
+
+    def test_audio_upload_without_a_file_is_rejected(self):
+        response = self.audio_post(audio_file=None)
+        self.assertFalse(response.json()["success"])
+
+    def test_audio_upload_rejects_a_video_file_too(self):
+        response = self.audio_post(
+            video_file=SimpleUploadedFile(
+                "v.mp4", b"\x00\x00\x00\x18ftypmp42", content_type="video/mp4"
+            )
+        )
+        self.assertFalse(response.json()["success"])
+
+    def test_video_upload_without_a_video_file_is_rejected(self):
+        response = self.client.post(
+            reverse("videos:upload_submit"),
+            {"media_type": "video", "title": "No file", "description": ""},
+        )
+        self.assertFalse(response.json()["success"])
+
+    @mock.patch("videos.views.upload_audio")
+    def test_audio_page_shows_cover_and_no_mode_toggle(self, upload_audio):
+        upload_audio.return_value = {
+            "path": "audio/rec.mp3",
+            "url": "https://example.com/rec.mp3",
+        }
+        self.audio_post()
+        video = Video.objects.get()
+        video.thumbnail_file_id = "thumbnails/t.jpg"
+        video.thumbnail_url = "https://example.com/t.jpg"
+        video.save()
+
+        body = self.client.get(
+            reverse("videos:detail", args=[video.id])
+        ).content.decode()
+        # No picture to switch back to, so the Video / Listen toggle is gone.
+        self.assertNotIn('id="mode-video"', body)
+        self.assertNotIn('id="mode-audio"', body)
+        self.assertIn("audio-mode", body)
+
+    def test_upload_page_offers_both_types(self):
+        response = self.client.get(reverse("videos:upload"))
+        self.assertContains(response, 'name="media_type"')
+        self.assertContains(response, 'name="audio_file"')
+        self.assertContains(response, 'name="video_file"')
