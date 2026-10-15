@@ -103,6 +103,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Serves the collected static files from inside the container. Required on
+    # Northflank, Render, Fly.io and anywhere else that does not have a
+    # separate static-file server.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -229,6 +233,20 @@ STATICFILES_DIRS = [
 # Collected by `manage.py collectstatic`; needed by every host that does not
 # serve static files itself.
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# In production WhiteNoise serves the collected files (gzipped, with far-future
+# caching). The manifest adds a content hash to every filename so a deploy can
+# never serve a stale CSS or JS file to the service worker's cache.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+            if not DEBUG
+            else "django.contrib.staticfiles.storage.StaticFilesStorage"
+        )
+    },
+}
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"

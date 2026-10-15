@@ -150,18 +150,21 @@ Open <http://127.0.0.1:8000/>.
 The app is a standard WSGI Django project (`fazakkir_dmwm.wsgi:application`), so
 it runs on any host that supports Python.
 
-> **Full walkthrough:** see **[DEPLOYMENT.md](DEPLOYMENT.md)** for a comparison of
-> the free hosting options (and which one suits this app), plus step-by-step
-> instructions for getting the site live.
+> **Full walkthrough:** see **[DEPLOYMENT.md](DEPLOYMENT.md)** for a step-by-step
+> deployment and a comparison of the free hosting options.
 >
-> **Shortest path:** Render + a free Neon Postgres. The repository ships a
-> `render.yaml` blueprint, so connecting the repo on <https://render.com> fills in
-> the build and start commands automatically, and every `git push` redeploys.
+> **Recommended: [Northflank](https://northflank.com/).** Sign in with GitHub,
+> connect `Makdial/fazakkir-dmwm`, and every `git push` redeploys. Its free tier
+> includes a PostgreSQL database and — unlike Render's — **does not sleep**, so
+> the background MP3 and subtitle conversions are never interrupted.
 >
-> ⚠️ Render's free tier has an **ephemeral filesystem**, which would delete the
-> local SQLite database on every restart or sleep. Set `DATABASE_URL` to a hosted
-> Postgres (Neon and Supabase both have a permanent free tier), or your accounts,
-> playlists and comments will be lost within hours.
+> The repository ships a `Dockerfile`, a `requirements.txt` and a `/healthz/`
+> probe, so there is nothing extra to write.
+>
+> ⚠️ On hosts whose filesystem is **ephemeral** (Render free and most container
+> platforms), the local SQLite database is deleted on every restart. Set
+> `DATABASE_URL` to a hosted Postgres or your accounts, playlists and comments
+> will be lost.
 
 Four things must change from the development defaults, and all of them are
 driven by `.env`:

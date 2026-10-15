@@ -8,144 +8,140 @@ every push.**
 
 ## 1. Short answer
 
-**Use [Render](https://render.com/) with a free [Neon](https://neon.com/)
-Postgres database.** That combination is free forever, deploys from your GitHub
-repo with no manual server work, and — critically — does not lose your data.
+**Use [Northflank](https://northflank.com/)'s free Sandbox tier.** It connects
+straight to your GitHub repo, **never sleeps** (so the background MP3 and
+subtitle jobs are not interrupted), includes a **free PostgreSQL database**, and
+gives you a real HTTPS `*.code.run` URL.
 
-There is one non-obvious trap in that combination, explained in the next
-section. Read it before you deploy, because getting it wrong deletes your
-accounts, playlists and comments.
-
----
-
-## 2. The trap: free hosts have an ephemeral filesystem
-
-Render's free tier documents this plainly:
-
-> Free web services have an ephemeral filesystem. This means that any changes to
-> your web service's filesystem (local SQLite databases, etc.) are lost every
-> time the service restarts.
-
-Fazakkir stores its accounts, playlists, comments and video metadata in a local
-SQLite file. On Render free that file is destroyed **every time the service
-sleeps (15 min idle) or redeploys**. You would lose all your data within hours —
-while the videos themselves survived, because those are in Cloudflare R2.
-
-**The fix is one environment variable:** point `DATABASE_URL` at a hosted
-Postgres. The app already supports this (it was added for exactly this reason),
-and falls back to SQLite when the variable is absent, so nothing changes for
-local development.
-
-Neon's free tier is permanent: **1 GB storage, 100 compute-hours/month, no credit
-card required.** Your database is a few megabytes.
+The repository already contains everything needed: a `Dockerfile`, a
+`requirements.txt`, and a `/healthz/` probe for the platform's health check.
 
 ---
 
-## 3. Deploying to Render (step by step)
+## 2. Deploying to Northflank (step by step)
 
-### Step 1 — Create your free Postgres
+### Step 1 — Create the account and project
 
-1. Sign up at <https://neon.com> (free, no card).
-2. Click **Create project**, name it `fazakkir`, pick a region close to you.
-3. Choose the **Free** plan when asked.
-4. Neon shows a **connection string** that looks like
-   `postgresql://user:password@ep-xxx.region.neon.tech/fazakkir?sslmode=require`.
-   Keep it — you need it in step 5. (Connection strings can also be found later
-   under **Connection string** in the dashboard.)
+1. Sign up at <https://northflank.com> with your GitHub account.
+2. **Create project** → name it `fazakkir` → choose **Northflank Cloud** → pick a
+   region near you → **Create Project**.
 
-### Step 2 — Push the code
+### Step 2 — Add the free PostgreSQL database
 
-Already done: the repository is at
-<https://github.com/Makdial/fazakkir-dmwm> and the current work is pushed.
+1. In the project, open the **Addons** tab → **Add database** → **PostgreSQL**.
+2. Choose the smallest (free) size and create it.
+3. Copy its **`DATABASE_URL`** connection string (find it in the database's
+   **Environment** tab).
 
-### Step 3 — Create the Render service
+> You do **not** need an external database such as Neon here. Northflank's free
+> tier includes one database per project.
 
-1. Sign up at <https://render.com> using your **GitHub account**.
-2. Click **New → Web Service**, then **connect a repository**.
-3. Authorise Render to read `Makdial/fazakkir-dmwm`.
-4. Fill in the form. The repository ships a `render.yaml` blueprint, so most
-   fields fill in automatically:
+### Step 3 — Create the service from your GitHub repo
 
-   | Field | Value |
-   | --- | --- |
-   | Name | `fazakkir` |
-   | Branch | `master` |
-   | Runtime | Python |
-   | Build command | see `render.yaml` |
-   | Start command | `gunicorn fazakkir_dmwm.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120` |
-   | Instance type | Free |
+1. **Services** tab → **Create service** → **Combined service**.
+2. **Source**: choose GitHub and connect `Makdial/fazakkir-dmwm`, branch `master`.
+3. **Build options**:
+   - Build type: **Dockerfile**
+   - Dockerfile path: `/Dockerfile` (repository root)
+   - Build context: repository root
+4. **Resources**: the smallest free instance.
+5. **Networking** → add a port:
 
-5. Click **Create Web Service**.
+   | Port | Protocol | Public domain |
+   | --- | --- | --- |
+   | `8000` | HTTP | enable |
 
-### Step 4 — Add the secret environment variables
+6. **Health checks** → path `/healthz/` on port `8000`. This endpoint also checks
+   the database, so Northflank holds traffic back until the database is ready.
 
-Render marks these **Sync: false**, so you must paste them in yourself under
-**Environment**:
+7. **Environment** → add the variables below. Use a **Secrets group** so they are
+   stored once and never shown again.
 
-| Variable | Where to get it |
+8. **Create service**. Northflank builds the image and deploys it.
+
+### Step 4 — Environment variables
+
+| Variable | Value |
 | --- | --- |
-| `DATABASE_URL` | The Neon connection string from step 1 |
-| `SECRET_KEY` | Generate: `python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"` |
-| `ALLOWED_HOSTS` | `fazakkir.onrender.com` (your Render hostname) |
-| `CSRF_TRUSTED_ORIGINS` | `https://fazakkir.onrender.com` |
-| `R2_ACCOUNT_ID` | your local `fazakkir_dmwm/.env` |
-| `R2_ACCESS_KEY_ID` | your local `fazakkir_dmwm/.env` |
-| `R2_SECRET_ACCESS_KEY` | your local `fazakkir_dmwm/.env` |
+| `DATABASE_URL` | from the PostgreSQL addon (step 2) |
+| `SECRET_KEY` | `python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"` |
+| `DEBUG` | `0` |
+| `ALLOWED_HOSTS` | your service hostname, e.g. `fazakkir--web.code.run` |
+| `CSRF_TRUSTED_ORIGINS` | `https://<that same hostname>` |
+| `R2_ACCOUNT_ID` | from your local `fazakkir_dmwm/.env` |
+| `R2_ACCESS_KEY_ID` | from your local `fazakkir_dmwm/.env` |
+| `R2_SECRET_ACCESS_KEY` | from your local `fazakkir_dmwm/.env` |
+| `R2_BUCKET` | `fazakkir` |
 
-Optionally, if you have them:
+Optional:
 
-| Variable | Notes |
+| Variable | Enables |
 | --- | --- |
-| `OPENAI_API_KEY` | enables automatic subtitles |
-| `EMAIL_HOST_PASSWORD` | Gmail **App password**, enables storage alerts |
+| `OPENAI_API_KEY` | automatic subtitles and translations |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` | real storage alert emails (use a Gmail **App password**) |
+| `JOB_STALE_MINUTES` | how long an interrupted conversion waits before being retried (default 30) |
 
-The R2 values are not in the GitHub repository — they are git-ignored on purpose.
-Copy them from your own `.env`.
+The R2 values are deliberately **not** in the GitHub repository (`.env` is
+git-ignored). Copy them from your own `.env`.
 
-### Step 5 — Deploy
+### Step 5 — Create your administrator
 
-Render deploys automatically. Watch the **Logs** tab. When it finishes you get
-a URL like `https://fazakkir.onrender.com`.
-
-### Step 6 — Create the database tables and your admin
-
-The Render shell is under **Shell**, or run it locally against the hosted
-database:
+Open the service's **Shell** tab and run:
 
 ```bash
-python manage.py migrate
-python manage.py compiletranslations
 python manage.py createsuperuser
 ```
 
-### Step 7 — Verify
+### Step 6 — Verify
 
-Open your URL and check:
+Open the public URL Northflank gave you and check:
 
-- the home page loads and the CSS is styled (static files were collected);
-- a video plays (R2 credentials are right);
-- `https://fazakkir.onrender.com/manage/` loads after signing in.
+- the home page is styled (WhiteNoise is serving the collected CSS/JS);
+- a video plays;
+- `/healthz/` returns `{"status": "ok", "database": true}`;
+- `/manage/` loads once you are signed in.
+
+### Step 7 — Updating the site
+
+Every `git push` to `master` triggers a rebuild and redeploy. The container's
+start command runs `python manage.py migrate --noinput` before starting
+gunicorn, so schema changes are applied automatically.
 
 ---
 
-## 4. What to expect from Render's free tier
+## 3. What Northflank's free tier gives you
 
-| | Behaviour | Why it matters here |
-| --- | --- | --- |
-| Cold start | ~1 minute after 15 min idle | First visitor waits; afterwards it is normal |
-| Database | **Not ephemeral** (Neon) | Your data is safe |
-| Bandwidth | 5 GB/month | Fine while videos stream from R2; the proxied MP3 uses this |
-| SSL | Automatic | Needed for the PWA and background playback |
-| Custom domain | Paid only | You get `*.onrender.com` for free |
-| Background jobs | **Killed on sleep** | See below |
+| | Behaviour |
+| --- | --- |
+| Deploys from GitHub | Yes, on every push |
+| Sleeps when idle | **No** — background conversions are never cut off |
+| Free database | 1 PostgreSQL addon per project |
+| Persistent disk | Not needed, because the database is external |
+| Free resources | 2 services, 2 jobs, 1 addon |
+| HTTPS | Automatic on the `*.code.run` domain |
+| Cost | Volumes are billed (~$0.15/GB/month) and are **not** needed here |
+
+Northflank suits this app better than a sleeping host because the MP3 extraction
+and the automatic subtitles run as background threads; a host that sleeps would
+interrupt them. (The app can recover from that — see "Background jobs" below —
+but it means re-running a conversion.)
+
+---
+
+## 4. Render, as an alternative
+
+If you prefer Render, the repository ships a `render.yaml` blueprint and the same
+`Dockerfile` also works there. One important difference: Render's free web
+services **sleep after 15 minutes** and have an **ephemeral filesystem**, so you
+must set `DATABASE_URL` to a hosted Postgres such as
+[Neon](https://neon.com) (free forever, no card). The app supports
+`DATABASE_URL` natively.
 
 ### Background jobs and sleeping hosts
 
 The MP3 extraction and the automatic subtitles run as background threads inside
-the web process. When Render sleeps or redeploys, those threads are killed
-mid-`ffmpeg`.
-
-The app handles this: a job that has been "processing" for longer than
+the web process. When the host sleeps or redeploys, those threads are killed
+mid-`ffmpeg`. The app handles this: a job stuck "processing" for longer than
 `JOB_STALE_MINUTES` (30 by default) is considered abandoned, marked retryable,
 and picked up again on the next page view. You do not have to intervene, but a
 very long conversion of a large file may need to be started twice.
@@ -154,27 +150,20 @@ very long conversion of a large file may need to be started twice.
 
 ## 5. The alternatives, honestly
 
-| Option | GitHub deploy | Always on | Persistent data | Verdict |
+| Option | GitHub deploy | Always on | Free database | Verdict |
 | --- | :---: | :---: | :---: | --- |
-| **Render + Neon** | Yes | No (sleeps) | Yes, with Neon | **Best match for what you asked** |
-| **Northflank** | Yes | **Yes** (free Sandbox tier) | Yes | Better uptime, slightly clunkier UI |
-| **PythonAnywhere** | No | Yes | Yes | Easiest of all, but manual, no GitHub link |
-| Railway | Yes | Yes | Yes | **No free tier** (trial credits only) |
-| Koyeb | Yes | — | Volumes now **paid** ($29/mo) | Pivoted to AI hosting; no longer free |
-| Replit | Yes | Yes | Yes | Free tier publishes **one** app and is credit-metered; not intended as a production home |
-| Fly.io / Heroku | Yes | Yes | Yes | No free tier |
+| **Northflank Sandbox** | Yes | **Yes** | Yes (1 addon) | **Best fit for this app** |
+| Render + Neon | Yes | No (sleeps) | Via Neon | Good, but sleeps |
+| PythonAnywhere | No | Yes | Yes (SQLite) | Easiest, but manual, no GitHub link |
+| Railway | Yes | Yes | No free tier | Trial credits only |
+| Koyeb | Yes | — | Volumes now **paid** | Pivoted to AI hosting |
+| Replit | Yes | Yes | Yes | Free tier publishes **one** app, credit-metered |
 
 ### If you want zero setup: PythonAnywhere
 
 It does **not** connect to GitHub — you clone and configure once by hand — but it
-needs no database service, no build command and no secrets dashboard, and it does
-not sleep. The full walkthrough is in [the original section below](#6-pythonanywhere-walkthrough-free).
-
-### If you want GitHub + always-on: Northflank
-
-Free Sandbox tier: 2 services, 1 database, 2 cron jobs, **always-on compute (no
-sleeping)**, GitHub/GitLab/Bitbucket integration, and buildpacks so no Dockerfile
-is needed. The trade-off is a busier UI than Render's.
+needs no database service, no Dockerfile and no secrets dashboard. The full
+walkthrough is in [the last section](#6-pythonanywhere-walkthrough-free).
 
 ---
 
@@ -203,6 +192,9 @@ is needed. The trade-off is a busier UI than Render's.
    R2_SECRET_ACCESS_KEY=...
    R2_BUCKET=fazakkir
    ```
+
+   PythonAnywhere's persistent disk means SQLite is safe here, so `DATABASE_URL`
+   can stay empty.
 
 4. Prepare the database and static files:
 
@@ -244,18 +236,14 @@ is needed. The trade-off is a busier UI than Render's.
 
 ## 7. Updating the site later
 
-With Render and GitHub connected this is just:
+With Northflank and GitHub connected this is just:
 
 ```bash
 git push
 ```
 
-Render rebuilds and redeploys automatically. To also run migrations, add a
-**pre-deploy command** in the Render dashboard:
-
-```
-python fazakkir_dmwm/manage.py migrate --noinput
-```
+Northflank rebuilds and redeploys automatically, and the container runs
+`manage.py migrate` on start.
 
 Manually (PythonAnywhere or SSH):
 
@@ -274,18 +262,17 @@ python manage.py compiletranslations
 
 ### Backups
 
-Videos and MP3s are in R2 and are safe. On Render the database is in Neon, so use
-**Neon's automatic backups** (they are included on the free plan) or dump it:
+Videos and MP3s are in R2 and are safe. On Northflank the database is a managed
+PostgreSQL addon; take a dump from the database's **Backups** tab. With SQLite
+(PythonAnywhere) or a local dev setup, dump it yourself:
 
 ```bash
 python manage.py dumpdata --natural-foreign --natural-primary > backup.json
 ```
 
-On PythonAnywhere (SQLite), copy `db.sqlite3`.
-
 ### HTTPS
 
-Render and PythonAnywhere both provide HTTPS automatically. The PWA install
+Northflank and PythonAnywhere both provide HTTPS automatically. The PWA install
 prompt, offline listening and the background playback controls only work in a
 secure context, so this is required, not optional.
 
@@ -303,9 +290,10 @@ secure context, so this is required, not optional.
 | Task | How |
 | --- | --- |
 | Deploy a change | `git push` |
-| Apply migrations | Render pre-deploy command, or `manage.py migrate` |
-| Back up the database | `manage.py dumpdata > backup.json` (Neon: built-in backups) |
+| Apply migrations | automatic on Northflank (start command); `manage.py migrate` elsewhere |
+| Back up the database | Northflank database → Backups; or `manage.py dumpdata > backup.json` |
 | Create an admin | `python manage.py createsuperuser` |
 | Convert missing MP3s | `python manage.py generateaudio` |
 | Generate subtitles | `python manage.py generatesubtitles` |
 | Check storage | `python manage.py checkstorage` |
+| Health probe | `/healthz/` |

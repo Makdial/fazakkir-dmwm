@@ -22,6 +22,9 @@ from core import views as core_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('i18n/', include('django.conf.urls.i18n')),
+    # Health probe used by the hosting platform; kept above everything so it
+    # never depends on an app being reachable.
+    path('healthz/', core_views.health, name='health'),
     path('manifest.webmanifest', core_views.manifest, name='manifest'),
     path('sw.js', core_views.service_worker, name='service_worker'),
     path('accounts/', include('accounts.urls')),

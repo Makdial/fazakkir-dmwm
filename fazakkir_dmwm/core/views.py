@@ -8,12 +8,35 @@ from __future__ import annotations
 
 import json
 
-from django.http import HttpResponse
+from django.db import connection
+from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 from django.templatetags.static import static
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
+
+
+@require_GET
+def health(request):
+    """Liveness/readiness probe used by the host (Northflank, Render, ...).
+
+    Checks that the database answers as well, because a container can be up
+    while its database addon is still starting; failing here lets the platform
+    retry instead of serving 500s to visitors.
+    """
+    database_ok = True
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except Exception:  # noqa: BLE001 - any database error is a failed probe
+        database_ok = False
+
+    return JsonResponse(
+        {"status": "ok" if database_ok else "degraded", "database": database_ok},
+        status=200 if database_ok else 503,
+    )
 
 
 @require_GET

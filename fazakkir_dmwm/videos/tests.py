@@ -363,6 +363,27 @@ class OfflineSupportTests(TestCase):
         self.assertIn("manifest+json", response["Content-Type"])
         self.assertIn("Fazakkir", response.content.decode())
 
+    def test_health_check_reports_ok(self):
+        # The hosting platform polls this to decide whether the container is
+        # serving traffic.
+        response = self.client.get(reverse("health"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ok", "database": True})
+
+    def test_health_check_fails_when_the_database_is_down(self):
+        import django.db
+
+        with mock.patch.object(
+            django.db.connection, "cursor", side_effect=Exception("db down")
+        ):
+            response = self.client.get(reverse("health"))
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["database"], False)
+
+    def test_health_check_needs_no_authentication(self):
+        # It must answer before anyone can sign in, so no login involved.
+        self.assertEqual(self.client.get(reverse("health")).status_code, 200)
+
     def test_service_worker_is_served_from_root(self):
         response = self.client.get(reverse("service_worker"))
         self.assertEqual(response.status_code, 200)
