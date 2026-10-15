@@ -40,40 +40,47 @@
                    src="{% url 'videos:subtitle_file' video.id track.language_code %}">
             {% endfor %}
         </audio>
+        {% if video.display_thumbnail_url %}
+        <img id="audioCover" class="audio-cover"
+             src="{{ video.display_thumbnail_url }}" alt="{{ video.title }}"
+             loading="lazy">
+        {% endif %}
         <div id="video-error" class="video-error" style="display: none;">
             <span class="error-icon">⚠</span>
             <p>{% trans "Video Unavailable" %}</p>
             <small>{% trans "The video file could not be loaded." %}</small>
         </div>
+        <button type="button" class="player-tapzone" id="tapZone"
+                aria-label="{% trans 'Show or hide the player controls' %}"></button>
+    </div>
 
-        <div class="player-bar" id="playerBar">
-            <input type="range" class="player-seek" id="seekBar" value="0" min="0" max="100" step="0.1"
-                   aria-label="{% trans 'Seek' %}">
-            <div class="player-bar-row">
-                <button type="button" class="player-btn" id="playPauseBtn"
-                        aria-label="{% trans 'Play' %}">▶</button>
-                <button type="button" class="player-btn" id="backBtn"
-                        aria-label="{% trans 'Back 10 seconds' %}">↺<span>10</span></button>
-                <button type="button" class="player-btn" id="fwdBtn"
-                        aria-label="{% trans 'Forward 10 seconds' %}"><span>10</span>↻</button>
-                <span class="player-time"><span id="currentTime">0:00</span> / <span id="duration">0:00</span></span>
-                <button type="button" class="player-btn" id="muteBtn"
-                        aria-label="{% trans 'Mute' %}">🔊</button>
-                <input type="range" class="player-volume" id="volumeBar" value="1" min="0" max="1" step="0.05"
-                       aria-label="{% trans 'Volume' %}">
-                <select class="player-rate" id="rateSelect" aria-label="{% trans 'Playback speed' %}">
-                    <option value="0.5">0.5×</option>
-                    <option value="0.75">0.75×</option>
-                    <option value="1" selected>1×</option>
-                    <option value="1.25">1.25×</option>
-                    <option value="1.5">1.5×</option>
-                    <option value="2">2×</option>
-                </select>
-                <button type="button" class="player-btn" id="pipBtn" hidden
-                        aria-label="{% trans 'Picture in picture' %}">⧉</button>
-                <button type="button" class="player-btn" id="fullscreenBtn"
-                        aria-label="{% trans 'Fullscreen' %}">⛶</button>
-            </div>
+    <div class="player-bar" id="playerBar">
+        <input type="range" class="player-seek" id="seekBar" value="0" min="0" max="100" step="0.1"
+               aria-label="{% trans 'Seek' %}">
+        <div class="player-bar-row">
+            <button type="button" class="player-btn" id="playPauseBtn"
+                    aria-label="{% trans 'Play' %}">▶</button>
+            <button type="button" class="player-btn" id="backBtn"
+                    aria-label="{% trans 'Back 10 seconds' %}">↺<span>10</span></button>
+            <button type="button" class="player-btn" id="fwdBtn"
+                    aria-label="{% trans 'Forward 10 seconds' %}"><span>10</span>↻</button>
+            <span class="player-time"><span id="currentTime">0:00</span> / <span id="duration">0:00</span></span>
+            <button type="button" class="player-btn" id="muteBtn"
+                    aria-label="{% trans 'Mute' %}">🔊</button>
+            <input type="range" class="player-volume" id="volumeBar" value="1" min="0" max="1" step="0.05"
+                   aria-label="{% trans 'Volume' %}">
+            <select class="player-rate" id="rateSelect" aria-label="{% trans 'Playback speed' %}">
+                <option value="0.5">0.5×</option>
+                <option value="0.75">0.75×</option>
+                <option value="1" selected>1×</option>
+                <option value="1.25">1.25×</option>
+                <option value="1.5">1.5×</option>
+                <option value="2">2×</option>
+            </select>
+            <button type="button" class="player-btn" id="pipBtn" hidden
+                    aria-label="{% trans 'Picture in picture' %}">⧉</button>
+            <button type="button" class="player-btn" id="fullscreenBtn"
+                    aria-label="{% trans 'Fullscreen' %}">⛶</button>
         </div>
     </div>
 
@@ -384,12 +391,15 @@ function setMode(mode) {
 
     const videoBtn = document.getElementById("mode-video")
     const audioBtn = document.getElementById("mode-audio")
+    const stage = document.getElementById("playerStage")
 
     if (mode === "audio") {
         if (!audioPlayer.getAttribute("src")) audioPlayer.setAttribute("src", audioSrc)
         videoPlayer.pause()
         videoPlayer.style.display = "none"
         audioPlayer.style.display = "block"
+        // Swap the black rectangle for the video's own thumbnail.
+        if (stage) stage.classList.add("audio-mode")
         setActivePlayer(audioPlayer)
         audioPlayer.play().catch(() => {})
         audioBtn.classList.add("active")
@@ -398,6 +408,7 @@ function setMode(mode) {
         audioPlayer.pause()
         audioPlayer.style.display = "none"
         videoPlayer.style.display = ""
+        if (stage) stage.classList.remove("audio-mode")
         setActivePlayer(videoPlayer)
         videoBtn.classList.add("active")
         audioBtn.classList.remove("active")
@@ -646,12 +657,98 @@ function wireControls() {
         } else if (event.key === "f") {
             fullscreenBtn.click()
         }
+        showControls()
     })
 
+    wireAutoHide()
     refreshAllControls()
 }
 
+// --- Auto-hiding controls ---------------------------------------------------
+// The bar covers the bottom of the picture, so leaving it up while the video
+// plays hides the action. It appears on a tap or click and fades away again
+// once playback has run on for a few seconds without input.
+const CONTROLS_IDLE_MS = 3200
+let hideTimer = null
+
+function controlsAreShowing() {
+    return playerBar.classList.contains("is-visible")
+}
+
+function showControls() {
+    if (!playerBar || !playerStage) return
+    playerBar.classList.add("is-visible")
+    playerStage.classList.add("controls-visible")
+    clearTimeout(hideTimer)
+    // A paused video keeps its controls; a playing one lets them fade.
+    if (activePlayer && !activePlayer.paused && !activePlayer.ended) {
+        hideTimer = setTimeout(hideControls, CONTROLS_IDLE_MS)
+    }
+}
+
+function hideControls() {
+    if (!playerBar || !playerStage) return
+    playerBar.classList.remove("is-visible")
+    playerStage.classList.remove("controls-visible")
+}
+
+function toggleControls() {
+    if (controlsAreShowing()) hideControls()
+    else showControls()
+}
+
+function wireAutoHide() {
+    const tapZone = document.getElementById("tapZone")
+
+    if (tapZone) {
+        // First tap brings the controls back, a second tap pauses, which is the
+        // convention every phone player follows.
+        tapZone.addEventListener("click", event => {
+            event.preventDefault()
+            if (!controlsAreShowing()) {
+                showControls()
+                return
+            }
+            if (activePlayer && !activePlayer.paused) activePlayer.pause()
+        })
+    }
+
+    if (playerStage) {
+        // Any mouse movement means the viewer is aiming at something.
+        playerStage.addEventListener("mousemove", () => showControls())
+        playerStage.addEventListener(
+            "touchstart", () => showControls(), { passive: true }
+        )
+    }
+
+    // Working a control counts as activity and restarts the idle countdown.
+    if (playerBar) {
+        ;["pointerdown", "input", "change", "focusin"].forEach(name =>
+            playerBar.addEventListener(name, () => showControls()))
+    }
+
+    ;[videoPlayer, audioPlayer].forEach(el => {
+        if (!el) return
+        el.addEventListener("play", () => {
+            // Do not sit on top of the picture while it is moving.
+            hideControls()
+            refreshPlayPauseIcon()
+        })
+        el.addEventListener("pause", () => {
+            showControls()
+            refreshPlayPauseIcon()
+        })
+        el.addEventListener("ended", () => showControls())
+    })
+
+    document.addEventListener("fullscreenchange", () => {
+        if (document.fullscreenElement) showControls()
+    })
+}
+
 wireControls()
+// Start hidden so the very first frame is unobstructed.
+hideControls()
 
 // --- Subtitles / lyrics ---------------------------------------------------
 

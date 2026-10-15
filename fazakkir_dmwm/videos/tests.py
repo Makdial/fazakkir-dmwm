@@ -629,6 +629,108 @@ class CustomPlayerTests(TestCase):
         self.assertIn(reverse("videos:subtitle_file", args=[self.video.id, "fr"]), body)
 
 
+class AudioModeCoverTests(TestCase):
+    """Listening to the MP3 shows the thumbnail instead of a black rectangle.
+
+    Switching to the audio element hides the <video>, which left the 16:9 stage
+    as an empty black box.
+    """
+
+    def setUp(self):
+        self.admin = make_user("listener", is_staff=True, is_superuser=True)
+        Profile.objects.filter(user=self.admin).update(access_level=Profile.Access.WRITE)
+        self.video = make_video(
+            self.admin,
+            title="Cover art",
+            thumbnail_file_id="thumbnails/c.jpg",
+            thumbnail_url="https://example.com/c.jpg",
+            audio_file_id="audio/c.mp3",
+            audio_url="https://example.com/c.mp3",
+            audio_status="ready",
+        )
+        self.body = self.client.get(
+            reverse("videos:detail", args=[self.video.id])
+        ).content.decode()
+
+    def test_cover_image_is_rendered(self):
+        self.assertIn('id="audioCover"', self.body)
+        # display_thumbnail_url may be a presigned R2 link, so match on the
+        # object key rather than the stored URL.
+        self.assertIn("thumbnails/c.jpg", self.body)
+        self.assertIn('alt="Cover art"', self.body)
+
+    def test_cover_is_hidden_until_audio_mode_is_entered(self):
+        # The rules live in the stylesheet, not the markup.
+        css = self._player_css()
+        self.assertIn(".audio-cover", css)
+        self.assertIn("video-player.audio-mode .audio-cover", css)
+        # Hidden by default, shown only once the audio mode class is present.
+        cover = css[css.index(".audio-cover {"):css.index("}", css.index(".audio-cover {"))]
+        self.assertIn("display: none", cover)
+
+    def test_switching_mode_toggles_the_cover_class(self):
+        self.assertIn('classList.add("audio-mode")', self.body)
+        self.assertIn('classList.remove("audio-mode")', self.body)
+
+    def test_video_without_a_thumbnail_gets_no_cover_element(self):
+        bare = make_video(self.admin, title="No art", audio_file_id="audio/n.mp3")
+        body = self.client.get(reverse("videos:detail", args=[bare.id])).content.decode()
+        self.assertNotIn('id="audioCover"', body)
+
+    @staticmethod
+    def _player_css() -> str:
+        root = (
+            Path(__file__).resolve().parent.parent
+            / "static" / "css" / "videoplayer.css"
+        )
+        return root.read_text(encoding="utf-8")
+
+
+class AutoHidingControlsTests(TestCase):
+    """The control bar must not sit on top of the picture while it plays."""
+
+    def setUp(self):
+        self.admin = make_user("tapper", is_staff=True, is_superuser=True)
+        Profile.objects.filter(user=self.admin).update(access_level=Profile.Access.WRITE)
+        self.video = make_video(
+            self.admin,
+            title="Tapped",
+            audio_file_id="audio/t.mp3",
+            audio_url="https://example.com/t.mp3",
+            audio_status="ready",
+        )
+        self.body = self.client.get(
+            reverse("videos:detail", args=[self.video.id])
+        ).content.decode()
+
+    def test_bar_starts_hidden(self):
+        self.assertIn("hideControls()", self.body)
+        # The hidden state is the default, so the first frame is never covered.
+        self.assertIn("visibility: hidden", self._player_css())
+
+    def test_tap_zone_brings_the_controls_back(self):
+        self.assertIn('id="tapZone"', self.body)
+        self.assertIn("if (!controlsAreShowing())", self.body)
+
+    def test_play_hides_and_pause_shows(self):
+        self.assertIn('el.addEventListener("play"', self.body)
+        self.assertIn('el.addEventListener("pause"', self.body)
+        self.assertIn("CONTROLS_IDLE_MS", self.body)
+
+    def test_mobile_puts_the_bar_below_the_picture(self):
+        css = self._player_css()
+        self.assertIn("@media (max-width: 768px)", css)
+        self.assertIn("position: static", css)
+
+    @staticmethod
+    def _player_css() -> str:
+        root = (
+            Path(__file__).resolve().parent.parent
+            / "static" / "css" / "videoplayer.css"
+        )
+        return root.read_text(encoding="utf-8")
+
+
 class ThumbnailOverlayTests(TestCase):
     """The hover play overlay must never permanently cover a thumbnail.
 

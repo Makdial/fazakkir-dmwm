@@ -42,6 +42,10 @@
                 placeholder="{% trans 'Enter your password' %}" required/>
         </div>
 
+        <div class="auth-links">
+            <a href="{% url 'accounts:password_reset' %}">{% trans "Forgot your password?" %}</a>
+        </div>
+
         <button type="submit" class="btn-submit">{% trans "Sign In" %}</button>
     </form>
 

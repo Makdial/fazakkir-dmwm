@@ -21,16 +21,53 @@
 
 /* --- Control bar --------------------------------------------------------- */
 
+/* Full-bleed tap target over the picture. It shows and hides the bar, and is
+   the only place a tap lands when the bar itself is hidden. */
+.player-tapzone {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* The bar floats over the bottom of the picture on a desktop, and fades away
+   entirely while the video plays so it never sits on top of the action. */
 .player-bar {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
+    z-index: 2;
     padding: 8px 10px 10px;
     background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
     display: flex;
     flex-direction: column;
     gap: 6px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+.player-bar.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Keep the picture fully lit while the bar is showing, so it does not read as
+   a half-faded frame. */
+.video-player.controls-visible::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    z-index: 1;
 }
 
 .player-seek {
@@ -111,6 +148,34 @@
     }
 }
 
+/* On a phone there is not enough picture to spare to cover it with controls, so
+   the bar drops below the video instead of floating over it. */
+@media (max-width: 768px) {
+    .video-player-container {
+        position: relative;
+    }
+
+    .video-player {
+        margin-bottom: 0;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .player-bar {
+        position: static;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-top: none;
+        border-bottom-left-radius: var(--radius-lg);
+        border-bottom-right-radius: var(--radius-lg);
+        padding: 10px 12px 12px;
+    }
+
+    .video-player.controls-visible::after {
+        display: none;
+    }
+}
+
 .video-error {
     position: absolute;
     top: 0;
@@ -158,6 +223,24 @@ video::-webkit-media-controls-panel {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 88%;
+    z-index: 3;
+}
+
+/* In audio mode the picture is hidden, which would otherwise leave a black
+   rectangle. Show the video's own thumbnail as the cover instead. */
+.audio-cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+    display: none;
+    z-index: 2;
+}
+
+.video-player.audio-mode .audio-cover {
+    display: block;
 }
 
 /* Playback-mode toggle + download buttons */
