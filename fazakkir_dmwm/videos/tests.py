@@ -412,6 +412,16 @@ class LanguageToggleTests(TestCase):
             with translation.override(code):
                 self.assertEqual(translation.gettext("Download MP3"), expected)
 
+    def test_no_template_comment_is_rendered_as_text(self):
+        # Django's {# ... #} syntax cannot span several lines: the comment
+        # regex does not match newlines, so a multi-line comment is printed to
+        # visitors instead of being stripped. Guard against that regressing.
+        self.client.cookies["django_language"] = "ar"
+        content = self.client.get(reverse("videos:list")).content.decode()
+        self.assertNotIn("{#", content)
+        self.assertNotIn("#}", content)
+        self.assertTrue(content.lstrip().startswith("<!DOCTYPE html>"))
+
 
 class OfflineSupportTests(TestCase):
     def setUp(self):

@@ -1,6 +1,4 @@
 {% load static i18n %}<!DOCTYPE html>
-{# `dir` flips the whole layout for Arabic (a right-to-left language).
-   LANGUAGE_BIDI is a boolean supplied by Django's i18n context processor. #}
 <html lang="{{ LANGUAGE_CODE|default:'en' }}" dir="{% if LANGUAGE_BIDI %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
