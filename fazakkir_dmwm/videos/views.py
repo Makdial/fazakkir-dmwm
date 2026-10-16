@@ -831,6 +831,9 @@ def playlist_create(request):
         if video:
             PlaylistItem.objects.get_or_create(playlist=playlist, video=video)
 
+    # A picture chosen while creating the playlist becomes its cover.
+    cover_error = _store_playlist_cover(playlist, request.POST.get("cover_data", ""))
+
     return JsonResponse(
         {
             "success": True,
@@ -839,6 +842,7 @@ def playlist_create(request):
                 "title": playlist.title,
                 "url": reverse("videos:playlist_detail", args=[playlist.id]),
             },
+            "cover_error": cover_error,
         }
     )
 
@@ -846,6 +850,38 @@ def playlist_create(request):
 def _get_owned_playlist(request, playlist_id):
     """Return the playlist if it belongs to the current user, else None."""
     return Playlist.objects.filter(id=playlist_id, user=request.user).first()
+
+
+def _store_playlist_cover(playlist, cover_data):
+    """Upload a ``data:image`` picture and make it the playlist's cover.
+
+    Returns an error message when the upload fails, or an empty string on
+    success. The picture being replaced is removed from the bucket so covers
+    do not pile up every time the owner changes their mind.
+    """
+    if not (cover_data or "").startswith("data:image"):
+        return ""
+
+    try:
+        result = upload_thumbnail(
+            file_data=cover_data,
+            file_name=f"playlist_{playlist.id}.jpg",
+            folder="playlist-covers",
+        )
+    except StorageError as exc:
+        return str(exc)
+
+    previous = playlist.cover_file_id
+    playlist.cover_file_id = result["path"]
+    playlist.cover_url = result["url"]
+    playlist.save(update_fields=["cover_file_id", "cover_url"])
+
+    if previous and previous != result["path"]:
+        try:
+            delete_file(previous)
+        except StorageError:
+            pass
+    return ""
 
 
 @login_required
@@ -893,26 +929,9 @@ def playlist_update(request, playlist_id):
         )
 
     cover_data = request.POST.get("cover_data", "")
-    if cover_data.startswith("data:image"):
-        try:
-            result = upload_thumbnail(
-                file_data=cover_data,
-                file_name=f"playlist_{playlist.id}.jpg",
-                folder="playlist-covers",
-            )
-        except StorageError as exc:
-            return JsonResponse({"success": False, "error": str(exc)})
-
-        # Remove the picture being replaced so the bucket does not collect
-        # orphaned covers every time the owner changes their mind.
-        previous = playlist.cover_file_id
-        playlist.cover_file_id = result["path"]
-        playlist.cover_url = result["url"]
-        if previous and previous != result["path"]:
-            try:
-                delete_file(previous)
-            except StorageError:
-                pass
+    error = _store_playlist_cover(playlist, cover_data)
+    if error:
+        return JsonResponse({"success": False, "error": error})
 
     title = (request.POST.get("title") or "").strip()
     if title:

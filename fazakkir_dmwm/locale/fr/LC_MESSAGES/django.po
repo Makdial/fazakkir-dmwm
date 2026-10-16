@@ -1057,3 +1057,6 @@ msgstr "Téléversez une vidéo ou un fichier audio et il apparaîtra ici."
 
 msgid "this video"
 msgstr "cette vidéo"
+
+msgid "Cover photo"
+msgstr "Photo de couverture"

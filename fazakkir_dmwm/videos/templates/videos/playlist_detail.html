@@ -147,19 +147,32 @@ if (coverInput) {
     coverInput.addEventListener("change", function (event) {
         const file = event.target.files[0];
         if (!file) return;
+        // Shrink the picture first so a full-size phone photo still fits in
+        // the request size limit.
         const reader = new FileReader();
         reader.onload = function (ev) {
-            const body = new URLSearchParams({
-                cover_data: ev.target.result,
-            });
-            fetch(updateUrl, {
-                method: "POST",
-                headers: { "X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded" },
-                body: body.toString(),
-            })
-                .then(r => r.json())
-                .then(data => { if (data.success) location.reload(); else alert(data.error || "{% trans 'Failed.' %}"); })
-                .catch(() => alert("{% trans 'Failed.' %}"));
+            const img = new Image();
+            img.onload = function () {
+                const maxSize = 640;
+                const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+                const canvas = document.createElement("canvas");
+                canvas.width = Math.max(1, Math.round(img.width * scale));
+                canvas.height = Math.max(1, Math.round(img.height * scale));
+                canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+                const body = new URLSearchParams({
+                    cover_data: canvas.toDataURL("image/jpeg", 0.85),
+                });
+                fetch(updateUrl, {
+                    method: "POST",
+                    headers: { "X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded" },
+                    body: body.toString(),
+                })
+                    .then(r => r.json())
+                    .then(data => { if (data.success) location.reload(); else alert(data.error || "{% trans 'Failed.' %}"); })
+                    .catch(() => alert("{% trans 'Failed.' %}"));
+            };
+            img.onerror = function () { alert("{% trans 'Failed.' %}"); };
+            img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
     });

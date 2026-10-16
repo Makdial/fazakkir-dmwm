@@ -1054,3 +1054,6 @@ msgstr "Yónnee vidiyo walla fichye audio, dina feeñ fii."
 
 msgid "this video"
 msgstr "vidiyo bii"
+
+msgid "Cover photo"
+msgstr "Nataal kubers bi"

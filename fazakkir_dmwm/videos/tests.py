@@ -221,6 +221,41 @@ class PlaylistTests(TestCase):
         self.assertIn("fazakkirConfirm", body)
         self.assertNotIn("window.confirm", body)
 
+    def test_cover_can_be_set_while_creating_the_playlist(self):
+        with mock.patch(
+            "videos.views.upload_thumbnail",
+            return_value={"path": "playlist-covers/n.jpg", "url": "https://cdn/n.jpg"},
+        ) as upload:
+            response = self.client.post(
+                reverse("videos:playlist_create"),
+                {"title": "With cover", "cover_data": "data:image/jpeg;base64,AAAA"},
+            )
+
+        self.assertTrue(response.json()["success"])
+        upload.assert_called_once()
+        playlist = Playlist.objects.get(title="With cover")
+        self.assertEqual(playlist.cover_url, "https://cdn/n.jpg")
+
+    def test_create_without_a_cover_reports_no_error(self):
+        response = self.client.post(
+            reverse("videos:playlist_create"), {"title": "Plain"}
+        )
+        self.assertTrue(response.json()["success"])
+        self.assertEqual(response.json()["cover_error"], "")
+
+    def test_playlist_list_shows_the_cover(self):
+        Playlist.objects.create(
+            user=self.user, title="Covered", cover_url="https://cdn/c.jpg"
+        )
+        body = self.client.get(reverse("videos:playlists")).content.decode()
+        self.assertIn("https://cdn/c.jpg", body)
+        self.assertIn("has-cover", body)
+
+    def test_playlist_list_keeps_the_placeholder_without_a_cover(self):
+        Playlist.objects.create(user=self.user, title="Bare")
+        body = self.client.get(reverse("videos:playlists")).content.decode()
+        self.assertNotIn("has-cover", body)
+
 
 class CommentTests(TestCase):
     def setUp(self):

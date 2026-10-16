@@ -1078,3 +1078,6 @@ msgstr "ارفع فيديو أو ملفًا صوتيًا وسيظهر هنا."
 
 msgid "this video"
 msgstr "هذا الفيديو"
+
+msgid "Cover photo"
+msgstr "صورة الغلاف"
