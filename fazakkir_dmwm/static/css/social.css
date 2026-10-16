@@ -430,6 +430,12 @@
 
 .save-new {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.save-new-row {
+    display: flex;
     gap: 8px;
 }
 

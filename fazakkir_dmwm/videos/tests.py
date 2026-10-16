@@ -256,6 +256,31 @@ class PlaylistTests(TestCase):
         body = self.client.get(reverse("videos:playlists")).content.decode()
         self.assertNotIn("has-cover", body)
 
+    def test_video_page_can_create_a_playlist_with_a_cover(self):
+        body = self.client.get(
+            reverse("videos:detail", args=[self.video.id])
+        ).content.decode()
+        self.assertIn("saveNewCover", body)
+        self.assertIn("coverToDataUrl", body)
+
+    def test_cover_can_be_set_while_creating_from_the_video_page(self):
+        with mock.patch(
+            "videos.views.upload_thumbnail",
+            return_value={"path": "playlist-covers/v.jpg", "url": "https://cdn/v.jpg"},
+        ):
+            response = self.client.post(
+                reverse("videos:playlist_create"),
+                {
+                    "title": "From video",
+                    "video_id": self.video.id,
+                    "cover_data": "data:image/jpeg;base64,AAAA",
+                },
+            )
+        self.assertTrue(response.json()["success"])
+        playlist = Playlist.objects.get(title="From video")
+        self.assertEqual(playlist.cover_url, "https://cdn/v.jpg")
+        self.assertTrue(playlist.contains(self.video))
+
 
 class CommentTests(TestCase):
     def setUp(self):
