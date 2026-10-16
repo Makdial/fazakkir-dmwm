@@ -94,10 +94,7 @@
                             aria-label="{% trans 'Fullscreen' %}">⛶</button>
                 </div>
             </div>
-            {# Closes .video-player-container. Without this the download buttons and
-               the whole comments section became children of the container, so the
-               absolutely positioned control bar anchored to the bottom of the page
-               instead of the bottom of the video. #}
+            {# Closes .video-player-container, so the bar anchors to the video, not the page. #}
         </div>
 
         {% if subtitle_tracks %}

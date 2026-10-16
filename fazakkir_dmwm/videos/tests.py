@@ -2757,3 +2757,50 @@ class YouTubeCardStyleTests(TestCase):
         block = self.rule(".play-icon {")
         self.assertIn("left: 12px", block)
         self.assertIn("translateY(-50%)", block)
+
+
+class TemplateCommentTests(TestCase):
+    """A ``{# ... #}`` comment cannot span lines; Django prints it to visitors.
+
+    The older guard only ever opened the list page, so a four-line comment on
+    the watch page was rendered verbatim to everyone who loaded a video. Scan
+    every template file and render several pages, so the whole class of mistake
+    is covered rather than one page of it.
+    """
+
+    SKIP_DIRS = {".venv", "staticfiles", "__pycache__", "node_modules", "locale"}
+    MULTILINE_COMMENT = re.compile(r"\{#.*?#\}", re.S)
+
+    def test_no_template_holds_a_multiline_hash_comment(self):
+        root = Path(__file__).resolve().parent.parent
+        offenders = []
+        for path in root.rglob("*.html"):
+            if any(part in self.SKIP_DIRS for part in path.parts):
+                continue
+            text = path.read_text(encoding="utf-8")
+            for match in self.MULTILINE_COMMENT.finditer(text):
+                if "\n" in match.group(0):
+                    line = text[: match.start()].count("\n") + 1
+                    offenders.append(f"{path.relative_to(root)}:{line}")
+        self.assertEqual(
+            offenders,
+            [],
+            "a {# ... #} comment cannot span lines, so these render as text: "
+            f"{offenders}",
+        )
+
+    def test_rendered_pages_contain_no_comment_delimiters(self):
+        user = make_user("commentviewer")
+        video = make_video(user, title="Comment check")
+        with mock.patch("videos.views.schedule_audio_generation"):
+            pages = {
+                "list": reverse("videos:list"),
+                "detail": reverse("videos:detail", args=[video.id]),
+                "search": reverse("videos:search") + "?q=comment",
+                "offline": reverse("videos:offline"),
+                "login": reverse("accounts:login"),
+            }
+            for name, url in pages.items():
+                body = self.client.get(url).content.decode()
+                self.assertNotIn("{#", body, f"{name} page leaks a template comment")
+                self.assertNotIn("#}", body, f"{name} page leaks a template comment")
