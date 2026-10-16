@@ -75,11 +75,17 @@ class Video(models.Model):
     likes = models.PositiveIntegerField(default=0)
     dislikes = models.PositiveIntegerField(default=0)
 
+    # Manual position on the home page. Administrators drag the rows on the
+    # dashboard's "Home order" page and each one is numbered from 1. Left at 0
+    # it means "not arranged yet", so it sorts ahead of the arranged rows and
+    # the newest upload still comes first on its own.
+    position = models.PositiveIntegerField(default=0)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["position", "-created_at"]
 
     def __str__(self):
         return self.title
@@ -225,6 +231,12 @@ class Playlist(models.Model):
         default=False,
         help_text=_("Public playlists can be viewed by anyone."),
     )
+
+    # The picture the owner picked for the playlist. ``cover_file_id`` is the
+    # R2 object path (needed to delete it), ``cover_url`` its public address.
+    cover_file_id = models.CharField(max_length=200, blank=True, default="")
+    cover_url = models.URLField(max_length=500, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -237,6 +249,11 @@ class Playlist(models.Model):
     @property
     def video_count(self):
         return self.items.count()
+
+    @property
+    def display_cover_url(self):
+        """Public or presigned cover URL, or an empty string."""
+        return r2_storage.resolve_url(self.cover_file_id, self.cover_url)
 
     def contains(self, video) -> bool:
         return self.items.filter(video=video).exists()

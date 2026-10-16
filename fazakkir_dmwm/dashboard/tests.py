@@ -1,3 +1,4 @@
+import json
 from unittest import mock
 
 from django.contrib.auth.models import User
@@ -285,3 +286,118 @@ class AudioDashboardTests(DashboardBaseTests):
         self.assertEqual(data["processing"], 0)
         self.assertIn("running", data)
         self.assertIn("total", data)
+
+
+class VideoOrderTests(DashboardBaseTests):
+    """The "Home order" page that rearranges the home page for everybody."""
+
+    def _video(self, title, **kwargs):
+        kwargs.setdefault("file_id", f"videos/{title}.mp4")
+        kwargs.setdefault("video_url", f"https://example.com/{title}.mp4")
+        return Video.objects.create(user=self.admin, title=title, **kwargs)
+
+    def home_order(self):
+        return list(Video.objects.values_list("title", flat=True))
+
+    def test_reader_can_open_the_page_but_not_save(self):
+        self._video("A")
+        self.client.login(username="reader", password="pw12345678")
+        self.assertEqual(
+            self.client.get(reverse("dashboard:video_order")).status_code, 200
+        )
+        self.assertEqual(
+            self.client.post(reverse("dashboard:video_order_save")).status_code, 403
+        )
+
+    def test_page_lists_videos_in_home_order(self):
+        first = self._video("First")
+        second = self._video("Second")
+        # Nothing has been arranged yet, so the newest upload leads.
+        self.assertEqual(self.home_order(), ["Second", "First"])
+        self.client.login(username="root", password="pw12345678")
+        body = self.client.get(reverse("dashboard:video_order")).content.decode()
+        self.assertLess(
+            body.index(f'data-id="{second.id}"'), body.index(f'data-id="{first.id}"')
+        )
+
+    def test_saving_a_new_order_changes_the_home_page(self):
+        first = self._video("First")
+        second = self._video("Second")
+        self.client.login(username="root", password="pw12345678")
+
+        # Put the older video back on top, which the default order never does.
+        response = self.client.post(
+            reverse("dashboard:video_order_save"),
+            data=json.dumps([first.id, second.id]),
+            content_type="application/json",
+        )
+
+        self.assertTrue(response.json()["success"])
+        self.assertEqual(self.home_order(), ["First", "Second"])
+
+    def test_order_survives_for_every_visitor(self):
+        first = self._video("First")
+        second = self._video("Second")
+        self.client.login(username="root", password="pw12345678")
+        self.client.post(
+            reverse("dashboard:video_order_save"),
+            data=json.dumps([first.id, second.id]),
+            content_type="application/json",
+        )
+        self.client.logout()
+
+        # An anonymous visitor to the home page sees the arranged order.
+        body = self.client.get(reverse("videos:list")).content.decode()
+        self.assertLess(body.index("First"), body.index("Second"))
+
+    def test_new_upload_leads_the_arranged_rows(self):
+        first = self._video("First")
+        second = self._video("Second")
+        self.client.login(username="root", password="pw12345678")
+        self.client.post(
+            reverse("dashboard:video_order_save"),
+            data=json.dumps([first.id, second.id]),
+            content_type="application/json",
+        )
+        # A brand-new upload is not numbered, so it still comes first.
+        self._video("Newest")
+        self.assertEqual(self.home_order(), ["Newest", "First", "Second"])
+
+    def test_unknown_ids_are_ignored(self):
+        first = self._video("First")
+        self.client.login(username="root", password="pw12345678")
+        response = self.client.post(
+            reverse("dashboard:video_order_save"),
+            data=json.dumps(["999999", first.id]),
+            content_type="application/json",
+        )
+        self.assertTrue(response.json()["success"])
+        self.assertEqual(self.home_order(), ["First"])
+
+    def test_empty_payload_is_rejected(self):
+        self._video("First")
+        self.client.login(username="root", password="pw12345678")
+        response = self.client.post(
+            reverse("dashboard:video_order_save"),
+            data=json.dumps([]),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["success"])
+
+    def test_malformed_payload_is_rejected(self):
+        self._video("First")
+        self.client.login(username="root", password="pw12345678")
+        response = self.client.post(
+            reverse("dashboard:video_order_save"),
+            data="{not json",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["success"])
+
+    def test_save_requires_post(self):
+        self.client.login(username="root", password="pw12345678")
+        self.assertEqual(
+            self.client.get(reverse("dashboard:video_order_save")).status_code, 405
+        )

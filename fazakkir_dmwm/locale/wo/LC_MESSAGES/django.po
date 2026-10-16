@@ -1009,3 +1009,48 @@ msgstr "Yebal ci def"
 
 msgid "Uploading Audio..."
 msgstr "Mi ngi yebal..."
+
+msgid "Audio"
+msgstr "Audio"
+
+msgid "Drag a row, or use the arrows, then save."
+msgstr "Tëddal benn rëdd, walla jëfandikoo fànn yi, teeloo ko."
+
+msgid "Drag the rows to choose what visitors see first on the home page."
+msgstr "Tëddal rëdd yi ngir tànn li gan yi di gis ci njëlbéen bi."
+
+msgid "Home order"
+msgstr "Tolluwaay kër bi"
+
+msgid "Home page order"
+msgstr "Tolluwaay xëtu kër bi"
+
+msgid "Move down"
+msgstr "Wàññi"
+
+msgid "Move up"
+msgstr "Yéeg"
+
+msgid "Nothing to arrange yet"
+msgstr "Amul dara bu ñu lay tolloo"
+
+msgid "Order saved."
+msgstr "Tolluwaay bi denc nañu ko."
+
+msgid "Playlist cover"
+msgstr "Kubersu playlist bi"
+
+msgid "Remove this video?"
+msgstr "Dindi vidiyo bii?"
+
+msgid "Remove “%(title)s” from this playlist?"
+msgstr "Dindi «%(title)s» ci playlist bii?"
+
+msgid "Save order"
+msgstr "Denc tolluwaay bi"
+
+msgid "Upload a video or an audio file and it will appear here."
+msgstr "Yónnee vidiyo walla fichye audio, dina feeñ fii."
+
+msgid "this video"
+msgstr "vidiyo bii"

@@ -140,6 +140,87 @@ class PlaylistTests(TestCase):
         self.assertTrue(response.json()["success"])
         self.assertFalse(Playlist.objects.filter(id=playlist.id).exists())
 
+    def test_owner_can_set_a_cover(self):
+        playlist = Playlist.objects.create(user=self.user, title="P")
+        with mock.patch(
+            "videos.views.upload_thumbnail",
+            return_value={"path": "playlist-covers/x.jpg", "url": "https://cdn/x.jpg"},
+        ) as upload:
+            response = self.client.post(
+                reverse("videos:playlist_update", args=[playlist.id]),
+                {"cover_data": "data:image/jpeg;base64,AAAA"},
+            )
+
+        self.assertTrue(response.json()["success"])
+        upload.assert_called_once()
+        playlist.refresh_from_db()
+        self.assertEqual(playlist.cover_file_id, "playlist-covers/x.jpg")
+        self.assertEqual(playlist.cover_url, "https://cdn/x.jpg")
+
+    def test_detail_shows_the_cover_for_other_signed_in_users(self):
+        playlist = Playlist.objects.create(
+            user=self.user,
+            title="P",
+            is_public=True,
+            cover_url="https://cdn/cover.jpg",
+        )
+        # Playlists need a signed-in account; bob is not the owner.
+        self.client.logout()
+        self.client.login(username="bob", password="pw12345678")
+        response = self.client.get(
+            reverse("videos:playlist_detail", args=[playlist.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        self.assertIn("https://cdn/cover.jpg", body)
+        self.assertIn("has-cover", body)
+
+    def test_non_owner_cannot_set_a_cover(self):
+        theirs = Playlist.objects.create(user=self.other, title="Theirs")
+        response = self.client.post(
+            reverse("videos:playlist_update", args=[theirs.id]),
+            {"cover_data": "data:image/jpeg;base64,AAAA"},
+        )
+        self.assertEqual(response.status_code, 404)
+        theirs.refresh_from_db()
+        self.assertEqual(theirs.cover_file_id, "")
+
+    def test_replacing_the_cover_deletes_the_old_object(self):
+        playlist = Playlist.objects.create(
+            user=self.user, title="P", cover_file_id="playlist-covers/old.jpg"
+        )
+        with mock.patch(
+            "videos.views.upload_thumbnail",
+            return_value={"path": "playlist-covers/new.jpg", "url": "https://cdn/new.jpg"},
+        ), mock.patch("videos.views.delete_file") as delete_file:
+            self.client.post(
+                reverse("videos:playlist_update", args=[playlist.id]),
+                {"cover_data": "data:image/jpeg;base64,AAAA"},
+            )
+
+        delete_file.assert_called_once_with("playlist-covers/old.jpg")
+
+    def test_delete_playlist_removes_the_cover_object(self):
+        playlist = Playlist.objects.create(
+            user=self.user, title="P", cover_file_id="playlist-covers/x.jpg"
+        )
+        with mock.patch("videos.views.delete_file") as delete_file:
+            self.client.post(reverse("videos:playlist_delete", args=[playlist.id]))
+
+        delete_file.assert_called_once_with("playlist-covers/x.jpg")
+
+    def test_removing_a_video_asks_first(self):
+        playlist = Playlist.objects.create(user=self.user, title="P")
+        PlaylistItem.objects.create(playlist=playlist, video=self.video)
+        body = self.client.get(
+            reverse("videos:playlist_detail", args=[playlist.id])
+        ).content.decode()
+        # The remove handler must route through our own confirmation dialog
+        # rather than deleting on a single click.
+        self.assertIn("function removeFromPlaylist", body)
+        self.assertIn("fazakkirConfirm", body)
+        self.assertNotIn("window.confirm", body)
+
 
 class CommentTests(TestCase):
     def setUp(self):

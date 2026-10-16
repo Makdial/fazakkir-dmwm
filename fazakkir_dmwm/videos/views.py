@@ -874,6 +874,11 @@ def playlist_delete(request, playlist_id):
         return JsonResponse(
             {"success": False, "error": _("Playlist not found.")}, status=404
         )
+    if playlist.cover_file_id:
+        try:
+            delete_file(playlist.cover_file_id)
+        except StorageError:
+            pass
     playlist.delete()
     return JsonResponse({"success": True, "message": _("Playlist deleted")})
 
@@ -886,6 +891,28 @@ def playlist_update(request, playlist_id):
         return JsonResponse(
             {"success": False, "error": _("Playlist not found.")}, status=404
         )
+
+    cover_data = request.POST.get("cover_data", "")
+    if cover_data.startswith("data:image"):
+        try:
+            result = upload_thumbnail(
+                file_data=cover_data,
+                file_name=f"playlist_{playlist.id}.jpg",
+                folder="playlist-covers",
+            )
+        except StorageError as exc:
+            return JsonResponse({"success": False, "error": str(exc)})
+
+        # Remove the picture being replaced so the bucket does not collect
+        # orphaned covers every time the owner changes their mind.
+        previous = playlist.cover_file_id
+        playlist.cover_file_id = result["path"]
+        playlist.cover_url = result["url"]
+        if previous and previous != result["path"]:
+            try:
+                delete_file(previous)
+            except StorageError:
+                pass
 
     title = (request.POST.get("title") or "").strip()
     if title:

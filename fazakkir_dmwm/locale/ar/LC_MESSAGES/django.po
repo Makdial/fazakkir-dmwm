@@ -1033,3 +1033,48 @@ msgstr "رفع ملف صوتي"
 
 msgid "Uploading Audio..."
 msgstr "جاري رفع الملف الصوتي..."
+
+msgid "Audio"
+msgstr "صوت"
+
+msgid "Drag a row, or use the arrows, then save."
+msgstr "اسحب صفًا، أو استخدم الأسهم، ثم احفظ."
+
+msgid "Drag the rows to choose what visitors see first on the home page."
+msgstr "اسحب الصفوف لاختيار ما يراه الزوار أولًا في الصفحة الرئيسية."
+
+msgid "Home order"
+msgstr "ترتيب الرئيسية"
+
+msgid "Home page order"
+msgstr "ترتيب الصفحة الرئيسية"
+
+msgid "Move down"
+msgstr "تحريك للأسفل"
+
+msgid "Move up"
+msgstr "تحريك للأعلى"
+
+msgid "Nothing to arrange yet"
+msgstr "لا يوجد شيء لترتيبه بعد"
+
+msgid "Order saved."
+msgstr "تم حفظ الترتيب."
+
+msgid "Playlist cover"
+msgstr "غلاف قائمة التشغيل"
+
+msgid "Remove this video?"
+msgstr "هل تريد إزالة هذا الفيديو؟"
+
+msgid "Remove “%(title)s” from this playlist?"
+msgstr "هل تريد إزالة «%(title)s» من قائمة التشغيل هذه؟"
+
+msgid "Save order"
+msgstr "حفظ الترتيب"
+
+msgid "Upload a video or an audio file and it will appear here."
+msgstr "ارفع فيديو أو ملفًا صوتيًا وسيظهر هنا."
+
+msgid "this video"
+msgstr "هذا الفيديو"

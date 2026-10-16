@@ -1012,3 +1012,48 @@ msgstr "Téléverser un audio"
 
 msgid "Uploading Audio..."
 msgstr "Téléversement de l'audio..."
+
+msgid "Audio"
+msgstr "Audio"
+
+msgid "Drag a row, or use the arrows, then save."
+msgstr "Faites glisser une ligne, ou utilisez les flèches, puis enregistrez."
+
+msgid "Drag the rows to choose what visitors see first on the home page."
+msgstr "Faites glisser les lignes pour choisir ce que les visiteurs voient en premier sur la page d'accueil."
+
+msgid "Home order"
+msgstr "Ordre d'accueil"
+
+msgid "Home page order"
+msgstr "Ordre de la page d'accueil"
+
+msgid "Move down"
+msgstr "Descendre"
+
+msgid "Move up"
+msgstr "Monter"
+
+msgid "Nothing to arrange yet"
+msgstr "Rien à organiser pour le moment"
+
+msgid "Order saved."
+msgstr "Ordre enregistré."
+
+msgid "Playlist cover"
+msgstr "Couverture de la playlist"
+
+msgid "Remove this video?"
+msgstr "Retirer cette vidéo ?"
+
+msgid "Remove “%(title)s” from this playlist?"
+msgstr "Retirer « %(title)s » de cette playlist ?"
+
+msgid "Save order"
+msgstr "Enregistrer l'ordre"
+
+msgid "Upload a video or an audio file and it will appear here."
+msgstr "Téléversez une vidéo ou un fichier audio et il apparaîtra ici."
+
+msgid "this video"
+msgstr "cette vidéo"

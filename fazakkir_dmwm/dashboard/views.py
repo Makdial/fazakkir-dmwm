@@ -7,9 +7,11 @@ reflected in the database and in Cloudflare R2.
 """
 from __future__ import annotations
 
+import json
 import logging
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -140,6 +142,66 @@ def video_manage(request):
             "no_audio_count": Video.objects.filter(audio_status="none").count(),
             "active_tab": "videos",
         },
+    )
+
+
+@read_required
+def video_order(request):
+    """Let an administrator arrange the order of the home page.
+
+    The rows are listed in exactly the order visitors see, so what is dragged
+    here is what everybody gets.
+    """
+    videos = Video.objects.all()
+    return render(
+        request,
+        "dashboard/order.html",
+        {
+            "videos": videos,
+            "total_videos": videos.count(),
+            "active_tab": "order",
+        },
+    )
+
+
+@write_required
+@require_POST
+def video_order_save(request):
+    """Store the order the administrator dropped the rows into."""
+    try:
+        payload = json.loads(request.body or "[]")
+    except (TypeError, ValueError):
+        payload = None
+
+    if not isinstance(payload, list) or not payload:
+        return JsonResponse(
+            {"success": False, "error": _("Nothing to reorder.")}, status=400
+        )
+
+    # Only rows that really exist may be numbered, and each at most once, so a
+    # hand-written request cannot renumber a video that was not on the page.
+    by_id = {str(video.id): video for video in Video.objects.all()}
+    ordered = []
+    seen = set()
+    for raw in payload:
+        key = str(raw)
+        if key in by_id and key not in seen:
+            seen.add(key)
+            ordered.append(by_id[key])
+
+    if not ordered:
+        return JsonResponse(
+            {"success": False, "error": _("Nothing to reorder.")}, status=400
+        )
+
+    with transaction.atomic():
+        for index, video in enumerate(ordered, start=1):
+            if video.position != index:
+                video.position = index
+                video.save(update_fields=["position"])
+
+    return JsonResponse(
+        {"success": True, "count": len(ordered), "message": _("Order saved.")}
     )
 
 
