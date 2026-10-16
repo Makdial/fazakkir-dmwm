@@ -1027,3 +1027,9 @@ msgstr "التالي"
 
 msgid "Exit fullscreen"
 msgstr "إنهاء ملء الشاشة"
+
+msgid "Upload Audio"
+msgstr "رفع ملف صوتي"
+
+msgid "Uploading Audio..."
+msgstr "جاري رفع الملف الصوتي..."

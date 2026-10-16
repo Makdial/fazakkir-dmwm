@@ -1006,3 +1006,9 @@ msgstr "À suivre"
 
 msgid "Exit fullscreen"
 msgstr "Quitter le plein écran"
+
+msgid "Upload Audio"
+msgstr "Téléverser un audio"
+
+msgid "Uploading Audio..."
+msgstr "Téléversement de l'audio..."

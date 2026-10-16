@@ -1003,3 +1003,9 @@ msgstr "Li ci topp"
 
 msgid "Exit fullscreen"
 msgstr "Génn ci fàww"
+
+msgid "Upload Audio"
+msgstr "Yebal ci def"
+
+msgid "Uploading Audio..."
+msgstr "Mi ngi yebal..."

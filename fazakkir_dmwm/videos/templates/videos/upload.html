@@ -19,7 +19,7 @@
 
 <div class="upload-container">
     <div class="upload-card">
-        <h1>{% trans "Upload Video" %}</h1>
+        <h1 id="uploadHeading">{% trans "Upload Video" %}</h1>
 
         {% if not storage_ready %}
         <p class="storage-warning">
@@ -166,19 +166,52 @@ $("id_audio_file").onchange = e => {
     $("audio-label").textContent = file ? file.name : "{% trans 'Click to select an MP3 file' %}";
 };
 
-// Show only the file input the chosen upload type needs, and keep the
-// thumbnail picker hidden for audio, which has no frame to sample.
-function applyUploadType() {
-    const audioOnly = ($("id_media_type_0").checked === true) ||
-                      ($("id_media_type_1") && $("id_media_type_1").checked === true);
+// A video and an MP3 are alternatives, never both: each carries its own media,
+// so only the picker for the chosen type is shown.
+const UPLOAD_LABELS = {
+    video: {
+        heading: "{% trans 'Upload Video' %}",
+        overlay: "{% trans 'Uploading Video...' %}",
+    },
+    audio: {
+        heading: "{% trans 'Upload Audio' %}",
+        overlay: "{% trans 'Uploading Audio...' %}",
+    },
+};
+
+// Read the value of the checked radio. The widget's ids are positional
+// (id_media_type_0 is the first choice), so hard-coding an index is what got
+// this wrong before.
+function selectedMediaType() {
+    const checked = document.querySelector('input[name="media_type"]:checked');
+    return checked ? checked.value : "video";
+}
+
+function showUploadType() {
+    const audioOnly = selectedMediaType() === "audio";
+    const videoInput = $("id_video_file");
+    const audioInput = $("id_audio_file");
+
     $("videoFieldGroup").hidden = audioOnly;
     $("audioFieldGroup").hidden = !audioOnly;
-    if (audioOnly) $("customThumbnailGroup").hidden = false;
+
+    // A disabled input is not submitted at all, so exactly one file can ever
+    // reach the server. The choice is kept in case the type is switched back.
+    videoInput.disabled = audioOnly;
+    audioInput.disabled = !audioOnly;
+
+    // An audio upload has no frame to sample, so there is nothing to thumbnail.
+    $("customThumbnailGroup").hidden = audioOnly;
+
+    const labels = audioOnly ? UPLOAD_LABELS.audio : UPLOAD_LABELS.video;
+    $("uploadHeading").textContent = labels.heading;
+    $("submitBtn").textContent = labels.heading;
 }
+
 document.querySelectorAll('input[name="media_type"]').forEach(input => {
-    input.addEventListener("change", applyUploadType);
+    input.addEventListener("change", showUploadType);
 });
-applyUploadType();
+showUploadType();
 
 $("customThumbnail").onchange = e => {
     const file = e.target.files[0];
@@ -192,10 +225,11 @@ $("customThumbnail").onchange = e => {
 $("uploadForm").onsubmit = async e => {
     e.preventDefault();
 
-    const isAudio = $("id_audio_file") && !$("audioFieldGroup").hidden;
-    const fileInput = isAudio ? $("id_audio_file") : $("id_video_file");
+    const mediaType = selectedMediaType();
+    const fileInput = mediaType === "audio" ? $("id_audio_file") : $("id_video_file");
     if (!fileInput.files.length || !$("id_title").value.trim()) return;
 
+    $("uploadStatus").textContent = UPLOAD_LABELS[mediaType].overlay;
     $("uploadOverlay").classList.add("active");
     $("submitBtn").disabled = true;
     $("errorContainer").innerHTML = "";

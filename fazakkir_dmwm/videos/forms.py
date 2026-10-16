@@ -75,16 +75,24 @@ class VideoUploadForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        if cleaned.get("media_type") == "audio":
-            if not cleaned.get("audio_file"):
+        media_type = cleaned.get("media_type")
+        video_file = cleaned.get("video_file")
+        audio_file = cleaned.get("audio_file")
+
+        # The two uploads are alternatives, not a pair: a video brings its own
+        # extracted MP3, and an audio upload has no picture at all. Accepting
+        # both would silently throw one of them away.
+        if video_file and audio_file:
+            raise forms.ValidationError(
+                _("Choose either a video or an MP3 file, not both.")
+            )
+
+        if media_type == "audio":
+            if not audio_file:
                 self.add_error(
                     "audio_file", _("Please choose an MP3 file for an audio upload.")
                 )
-            if cleaned.get("video_file"):
-                self.add_error(
-                    "video_file", _("An audio-only upload must not include a video file.")
-                )
-        elif not cleaned.get("video_file"):
+        elif not video_file:
             self.add_error("video_file", _("Please choose a video file."))
         return cleaned
 

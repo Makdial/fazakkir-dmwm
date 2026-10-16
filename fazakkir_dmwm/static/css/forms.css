@@ -8,6 +8,13 @@
     gap: 8px;
 }
 
+/* The `hidden` attribute is only a user-agent default, so any author rule that
+   sets `display` overrides it. The upload page relies on it to show the video
+   and the audio picker one at a time, and without this both stayed visible. */
+.form-group[hidden] {
+    display: none;
+}
+
 .form-group label {
     font-weight: 500;
     font-size: 0.9rem;
