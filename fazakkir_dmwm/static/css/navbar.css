@@ -1,15 +1,20 @@
 /**
- * Navigation bar styles
+ * Navigation bar styles.
+ *
+ * Laid out the way YouTube does it: the brand sits on the left, the search box
+ * takes all the space in the middle, and the account actions are pushed to the
+ * right edge. The bar is flat (the same colour as the page) rather than a raised
+ * card, and every hover is a soft circular wash instead of a filled button.
  */
 
 .navbar {
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
-    padding: 0 24px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--yt-border);
+    padding: 0 16px;
     height: 56px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 8px;
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -23,42 +28,61 @@
     color: var(--text-primary);
     font-weight: 700;
     font-size: 1.25rem;
+    letter-spacing: -0.02em;
+    padding: 4px 6px 4px 2px;
+    border-radius: var(--radius-sm);
+    flex: none;
 }
 
+.navbar-brand:focus-visible {
+    outline: 2px solid var(--accent-red);
+    outline-offset: 2px;
+}
+
+/* The rounded red square behind the play glyph, as on the YouTube wordmark. */
 .brand-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     background: var(--accent-red);
-    color: white;
-    border-radius: var(--radius-md);
-    font-size: 1rem;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    padding-left: 2px;
 }
 
 .navbar-actions {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 8px;
+    /* Take the remaining width so the search can stretch and the real actions
+       end up pinned to the right edge, exactly like YouTube's bar. */
+    flex: 1;
+    justify-content: flex-end;
+    min-width: 0;
 }
 
 .navbar-nav {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 4px;
     list-style: none;
+    flex: none;
 }
 
-/* Language switcher */
+/* --- Language switcher --------------------------------------------------- */
+
 .language-form {
     display: flex;
+    flex: none;
 }
 
 .lang-toggle {
     display: flex;
     align-items: center;
-    background: var(--bg-tertiary);
+    background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-full);
     padding: 2px;
@@ -70,10 +94,10 @@
     background: none;
     color: var(--text-secondary);
     font-family: inherit;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.03em;
-    padding: 5px 10px;
+    padding: 5px 9px;
     border-radius: var(--radius-full);
     cursor: pointer;
     transition: all var(--transition-fast);
@@ -88,25 +112,27 @@
     color: #fff;
 }
 
-/* Theme toggle */
+/* --- Theme toggle -------------------------------------------------------- */
+
 .theme-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    border: 1px solid var(--border-color);
-    background: var(--bg-tertiary);
+    border: none;
+    background: transparent;
     color: var(--text-primary);
     cursor: pointer;
     font-size: 1rem;
     line-height: 1;
-    transition: all var(--transition-normal);
+    transition: background var(--transition-fast);
+    flex: none;
 }
 
 .theme-toggle:hover {
-    background: var(--border-color);
+    background: var(--yt-hover);
 }
 
 .theme-icon-sun {
@@ -121,24 +147,29 @@
     display: none;
 }
 
+/* --- Links --------------------------------------------------------------- */
+
 .nav-link {
-    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-primary);
     text-decoration: none;
-    padding: 8px 16px;
+    padding: 8px 14px;
     border-radius: var(--radius-full);
     font-weight: 500;
     font-size: 0.9rem;
-    transition: all var(--transition-normal);
+    white-space: nowrap;
+    transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .nav-link:hover {
-    color: var(--text-primary);
-    background: var(--bg-tertiary);
+    background: var(--yt-hover);
 }
 
 .nav-link.btn-primary {
     background: var(--accent-red);
-    color: white;
+    color: #fff;
 }
 
 .nav-link.btn-primary:hover {
@@ -146,27 +177,27 @@
 }
 
 .nav-link.btn-outline {
-    border: 1px solid var(--accent-red);
-    color: var(--accent-red);
-}
-
-.nav-link.btn-outline:hover {
-    background: var(--accent-red);
-    color: white;
-}
-
-.btn-upload {
-    background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
-}
-
-.btn-upload:hover {
-    background: var(--border-color);
     color: var(--text-primary);
 }
 
+.nav-link.btn-outline:hover {
+    background: var(--yt-hover);
+    border-color: var(--text-secondary);
+}
+
+/* "Upload" behaves like YouTube's Create pill: a filled chip. */
+.btn-upload {
+    background: var(--yt-chip);
+    color: var(--text-primary);
+}
+
+.btn-upload:hover {
+    background: var(--yt-chip-hover);
+}
+
 .logout-form {
-    display: inline;
+    display: inline-flex;
 }
 
 .logout-btn {
@@ -177,25 +208,39 @@
 }
 
 .nav-username {
-    color: var(--text-secondary);
-    font-weight: 500;
-    font-size: 0.9rem;
-    padding: 8px 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: var(--accent-red);
+    font-weight: 600;
+    font-size: 0.95rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    text-transform: uppercase;
+    flex: none;
 }
 
-/* Hamburger button (hidden on desktop) */
+/* --- Hamburger (hidden on desktop) --------------------------------------- */
+
 .nav-toggle {
     display: none;
     flex-direction: column;
     justify-content: center;
     gap: 5px;
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     padding: 10px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
     cursor: pointer;
+    flex: none;
+}
+
+.nav-toggle:hover {
+    background: var(--yt-hover);
 }
 
 .nav-toggle-bar {
@@ -219,14 +264,23 @@
     transform: translateY(-7px) rotate(-45deg);
 }
 
-/* Mobile / small tablet: collapse the actions into a dropdown panel */
+/* ------------------------------------------------------------------ */
+/* Mobile / small tablet: the actions collapse into a dropdown panel.  */
+/* The search box is the first thing in that panel, as on the YouTube   */
+/* phone layout where the bar holds only the logo and a magnifier.      */
+/* ------------------------------------------------------------------ */
+
 @media (max-width: 768px) {
     .navbar {
-        padding: 0 16px;
+        padding: 0 12px;
     }
 
     .nav-toggle {
         display: flex;
+    }
+
+    .navbar-brand {
+        margin-right: auto;
     }
 
     .navbar-actions {
@@ -240,7 +294,7 @@
         gap: 14px;
         padding: 16px;
         background: var(--bg-secondary);
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--yt-border);
         box-shadow: var(--shadow-lg);
         max-height: calc(100vh - 56px);
         overflow-y: auto;
@@ -253,7 +307,7 @@
     .navbar-nav {
         flex-direction: column;
         align-items: stretch;
-        gap: 8px;
+        gap: 4px;
         width: 100%;
     }
 
@@ -263,14 +317,19 @@
 
     .nav-link,
     .nav-username {
-        display: block;
+        display: flex;
+        justify-content: center;
         text-align: center;
         padding: 12px 16px;
     }
 
     .nav-username {
-        background: var(--bg-tertiary);
+        width: 100%;
+        height: auto;
         border-radius: var(--radius-md);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        text-transform: none;
     }
 
     .logout-form {

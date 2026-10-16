@@ -2,20 +2,24 @@
  * Video styles - grid, cards, player, upload form
  */
 
-/* Video Grid */
+/* Video Grid - YouTube's fluid column count, 16px gutters, taller row gap so
+   each caption has room to breathe. */
 .video-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+    column-gap: 16px;
+    row-gap: 40px;
 }
 
+/* YouTube cards are not boxes: no background, no border, no shadow. Only the
+   thumbnail and the two-line caption. */
 .video-card {
     display: block;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-    transition: all var(--transition-normal);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    transition: none;
     text-decoration: none;
     color: inherit;
 }
@@ -24,25 +28,28 @@
    stay a single link (nested links/buttons are not valid HTML). */
 .video-card-wrap {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .card-download {
     position: absolute;
-    top: 8px;
+    bottom: 8px;
     right: 8px;
     z-index: 2;
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 6px 12px;
-    border-radius: var(--radius-full);
-    background: rgba(0, 0, 0, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.28);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.8);
+    border: none;
     color: #fff;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 600;
     text-decoration: none;
-    transition: all var(--transition-normal);
+    transition: background var(--transition-fast);
     -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
 }
@@ -50,31 +57,27 @@
 .card-download:hover,
 .card-download:focus-visible {
     background: var(--accent-red);
-    border-color: var(--accent-red);
-}
-
-.video-card:hover {
-    border-color: var(--accent-red);
 }
 
 /* Lift the card only on devices that actually hover (avoids sticky hover). */
 @media (hover: hover) {
     .video-card:hover {
-        transform: translateY(-4px);
+        transform: none;
     }
 }
 
 .video-thumbnail {
     position: relative;
     aspect-ratio: 16 / 9;
-    background: var(--bg-tertiary);
+    background: var(--yt-thumb-bg);
     overflow: hidden;
+    border-radius: 12px;
 }
 
 .video-thumbnail img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     background: #000;
 }
 
@@ -131,14 +134,38 @@
     }
 }
 
+/* Caption block: avatar on the left, two lines of text beside it - the shape
+   of every YouTube grid tile. */
 .video-info {
-    padding: 16px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 12px;
+    padding: 0;
+    align-items: start;
+}
+
+.video-card-avatar {
+    grid-row: span 3;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-red) 0%, var(--accent-red-light) 100%);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
 }
 
 .video-title {
-    font-size: 1rem;
+    font-size: 0.98rem;
     font-weight: 600;
-    margin: 0 0 8px;
+    line-height: 1.35;
+    margin: 0 0 4px;
+    color: var(--text-primary);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -149,12 +176,106 @@
     font-size: 0.85rem;
     color: var(--text-secondary);
     margin: 0;
+    line-height: 1.4;
 }
 
-/* Video Player Page */
+.video-meta-uploader {
+    display: block;
+    color: var(--text-secondary);
+}
+
+/* ------------------------------------------------------------------ */
+/* Watch layout (YouTube-style): picture and details on the left, the  */
+/* "Up next" list down the right.                                     */
+/* ------------------------------------------------------------------ */
+
+.watch-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 402px);
+    column-gap: 20px;
+    row-gap: 16px;
+    align-items: start;
+}
+
+.watch-main {
+    min-width: 0;
+}
+
+.watch-aside {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.watch-aside-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.related-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+}
+
+@media (hover: hover) {
+    .related-card:hover .related-title {
+        color: var(--text-secondary);
+    }
+}
+
+.related-thumb {
+    flex: none;
+    width: 168px;
+    aspect-ratio: 16 / 9;
+    background: var(--yt-thumb-bg);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.related-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.related-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.related-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.related-meta {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.3;
+}
+
+/* ------------------------------------------------------------------ */
+/* Video Player Page                                                   */
+/* ------------------------------------------------------------------ */
+
 .video-player-container {
-    max-width: 1000px;
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
     /* The control bar is absolutely positioned against this box. Without this
        it resolves against some ancestor further up the page, which made the bar
        span the full window width and overlap the download buttons. */
@@ -179,14 +300,15 @@
 .video-details {
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
-    padding: 24px;
+    padding: 20px;
     border: 1px solid var(--border-color);
 }
 
 .video-details h1 {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 700;
-    margin: 0 0 16px;
+    margin: 0 0 14px;
+    line-height: 1.35;
 }
 
 .video-stats {
@@ -208,6 +330,7 @@
 .video-actions {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .vote-btn {
@@ -215,23 +338,24 @@
     align-items: center;
     gap: 6px;
     padding: 8px 16px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
+    background: var(--yt-chip);
+    border: none;
     border-radius: var(--radius-full);
     color: var(--text-primary);
     cursor: pointer;
     font-family: inherit;
     font-size: 0.9rem;
-    transition: all var(--transition-normal);
+    font-weight: 500;
+    transition: background var(--transition-normal);
 }
 
 .vote-btn:hover {
-    background: var(--border-color);
+    background: var(--yt-chip-hover);
 }
 
 .vote-btn.active {
     background: var(--accent-red);
-    border-color: var(--accent-red);
+    color: #fff;
 }
 
 .video-channel {
@@ -271,7 +395,10 @@
     margin: 0;
 }
 
-/* Upload Form */
+/* ------------------------------------------------------------------ */
+/* Upload Form                                                         */
+/* ------------------------------------------------------------------ */
+
 .upload-container {
     max-width: 600px;
     margin: 40px auto;
@@ -324,8 +451,10 @@
     font-weight: 500;
 }
 
+/* ------------------------------------------------------------------ */
+/* Empty State                                                         */
+/* ------------------------------------------------------------------ */
 
-/* Empty State */
 .empty-state {
     text-align: center;
     padding: 80px 20px;
@@ -461,9 +590,16 @@
 /* Responsive (tablet and phones)                                     */
 /* ------------------------------------------------------------------ */
 
+@media (max-width: 1000px) {
+    .watch-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     .video-grid {
-        gap: 16px;
+        column-gap: 16px;
+        row-gap: 28px;
     }
 
     .card-download {
@@ -472,7 +608,7 @@
     }
 
     .video-info {
-        padding: 12px;
+        padding: 0;
     }
 
     .video-details {
@@ -481,7 +617,7 @@
     }
 
     .video-details h1 {
-        font-size: 1.25rem;
+        font-size: 1.15rem;
         margin-bottom: 12px;
     }
 
@@ -533,6 +669,10 @@
 @media (max-width: 480px) {
     .video-details {
         padding: 14px;
+    }
+
+    .related-thumb {
+        width: 120px;
     }
 
     .upload-card {

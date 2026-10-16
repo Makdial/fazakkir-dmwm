@@ -56,22 +56,36 @@
 
 /* --- Search box in the navbar ------------------------------------------- */
 
+/* YouTube's search: a rounded pill with a hairline border and a button fused to
+   its right edge. The pill grows to fill the space between the brand and the
+   account actions, which is what pushes the actions to the right edge. */
 .nav-search {
     display: flex;
-    align-items: center;
-    flex: 1;
-    max-width: 420px;
+    align-items: stretch;
+    flex: 1 1 240px;
+    max-width: 620px;
     min-width: 0;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    background: transparent;
+}
+
+.nav-search:focus-within {
+    border-color: var(--info-blue);
 }
 
 .nav-search-input {
-    width: 100%;
-    padding: 8px 12px;
-    font-size: 0.9rem;
+    flex: 1;
+    min-width: 0;
+    padding: 0 16px;
+    font-size: 0.95rem;
     background: var(--bg-secondary);
     color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
+    border: none;
+    border-radius: 0;
+    font-family: inherit;
 }
 
 .nav-search-input::placeholder {
@@ -79,14 +93,34 @@
 }
 
 .nav-search-input:focus {
-    outline: 2px solid var(--accent-red);
-    outline-offset: -1px;
+    outline: none;
 }
 
+.nav-search-btn {
+    flex: none;
+    width: 60px;
+    border: none;
+    border-left: 1px solid var(--border-color);
+    background: var(--yt-chip);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition-fast);
+}
+
+.nav-search-btn:hover {
+    background: var(--yt-chip-hover);
+}
+
+/* On a phone the search becomes the first row of the dropdown panel. */
 @media (max-width: 768px) {
     .nav-search {
         order: 10;
-        flex-basis: 100%;
+        flex-basis: auto;
+        width: 100%;
         max-width: none;
         margin-bottom: 10px;
     }

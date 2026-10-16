@@ -997,3 +997,6 @@ msgstr "Su kennu konto bi amu email %(email)s, araama bi lay doyiba ci biy gu sa
 
 msgid "Search results for %(query)s"
 msgstr "Nettiya lu lah mbir %(query)s"
+
+msgid "Up next"
+msgstr "Li ci topp"

@@ -1000,3 +1000,6 @@ msgstr "Si un compte existe pour %(email)s, un message contenant un lien de réi
 
 msgid "Search results for %(query)s"
 msgstr "Résultats de recherche pour %(query)s"
+
+msgid "Up next"
+msgstr "À suivre"

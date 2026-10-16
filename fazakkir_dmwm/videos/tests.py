@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 from io import StringIO
+from html.parser import HTMLParser
 import re
 import shutil
 import subprocess
@@ -2502,3 +2503,257 @@ class PlayerScriptTests(TestCase):
             missing, [],
             f"the script asks for elements the page does not render: {missing}",
         )
+
+
+class _MarkupTreeParser(HTMLParser):
+    """Tracks tag nesting so structural mistakes can be asserted directly.
+
+    Every element that is still open when the document ends is reported in
+    ``unclosed``; every end tag with nothing matching on the stack is reported
+    in ``stray``. ``inside`` maps each CSS class to the set of classes seen on
+    any descendant, which is how the "is the control bar inside the player
+    box?" question gets answered without string slicing.
+    """
+
+    VOID = {
+        "area", "base", "br", "col", "embed", "hr", "img", "input",
+        "link", "meta", "param", "source", "track", "wbr",
+    }
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.stack = []
+        self.stray = []
+        self.unclosed = []
+        self.inside = {}
+
+    @staticmethod
+    def _classes(attrs):
+        for key, value in attrs:
+            if key == "class" and value:
+                return value.split()
+        return []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.VOID:
+            return
+        classes = self._classes(attrs)
+        for _ancestor_tag, ancestor_classes in self.stack:
+            for name in ancestor_classes:
+                self.inside.setdefault(name, set()).update(classes)
+        self.stack.append((tag, classes))
+
+    def handle_endtag(self, tag):
+        if tag in self.VOID:
+            return
+        if self.stack and self.stack[-1][0] == tag:
+            self.stack.pop()
+            return
+        self.stray.append(tag)
+        # Unwind to the nearest matching open tag so parsing can continue.
+        for index in range(len(self.stack) - 1, -1, -1):
+            if self.stack[index][0] == tag:
+                del self.stack[index:]
+                return
+
+    def close(self):
+        super().close()
+        self.unclosed = [tag for tag, _classes in self.stack]
+        return self
+
+
+class WatchLayoutTests(TestCase):
+    """The watch page is laid out like YouTube's.
+
+    The picture and its details sit in one column with a list of other videos
+    down the right-hand side, and that list never repeats the video currently
+    being watched.
+    """
+
+    def setUp(self):
+        self.alice = make_user("alice")
+        self.bob = make_user("bob")
+        self.main = make_video(self.alice, title="Main clip", views=10)
+        self.popular = make_video(self.bob, title="Popular clip", views=900)
+        self.quiet = make_video(self.bob, title="Quiet clip", views=1)
+
+    def render(self, video=None):
+        with mock.patch("videos.views.schedule_audio_generation"):
+            response = self.client.get(
+                reverse("videos:detail", args=[(video or self.main).id])
+            )
+        self.assertEqual(response.status_code, 200)
+        return response
+
+    @staticmethod
+    def aside(html):
+        start = html.index('<aside class="watch-aside"')
+        return html[start:html.index("</aside>", start)]
+
+    def test_the_page_is_wrapped_in_the_two_column_layout(self):
+        html = self.render().content.decode()
+        for marker in (
+            'class="watch-layout"',
+            'class="watch-main"',
+            'class="watch-aside"',
+        ):
+            self.assertIn(marker, html)
+
+    def test_sidebar_lists_the_other_videos(self):
+        aside = self.aside(self.render().content.decode())
+        self.assertIn("Popular clip", aside)
+        self.assertIn("Quiet clip", aside)
+
+    def test_sidebar_never_lists_the_video_being_watched(self):
+        aside = self.aside(self.render().content.decode())
+        self.assertNotIn("Main clip", aside)
+
+    def test_sidebar_puts_the_most_watched_first(self):
+        aside = self.aside(self.render().content.decode())
+        self.assertLess(aside.index("Popular clip"), aside.index("Quiet clip"))
+
+    def test_sidebar_is_left_out_when_there_is_nothing_else_to_watch(self):
+        Video.objects.exclude(id=self.main.id).delete()
+        html = self.render().content.decode()
+        self.assertNotIn("watch-aside", html)
+
+    def test_the_view_hands_the_template_the_related_videos(self):
+        response = self.render()
+        ids = [video.id for video in response.context["related_videos"]]
+        self.assertEqual(ids[0], self.popular.id)
+        self.assertNotIn(self.main.id, ids)
+
+
+class MarkupNestingTests(TestCase):
+    """A stray or missing ``</div>`` restructures the page with no visible error.
+
+    Browsers drop an unmatched end tag, so the previous bug of this kind - one
+    ``</div>`` too many at the foot of the watch page - moved the control bar
+    and every following section up a level while all the string-based tests
+    stayed green. These checks look at the document as a whole instead.
+    """
+
+    def setUp(self):
+        self.user = make_user("nest")
+        self.client.login(username="nest", password="pw12345678")
+        self.video = make_video(
+            self.user,
+            title="Nested",
+            audio_file_id="audio/n.mp3",
+            audio_status="ready",
+        )
+        # A second video so the "Up next" sidebar, and its markup, is rendered.
+        make_video(
+            self.user,
+            title="Another",
+            audio_file_id="audio/b.mp3",
+            audio_status="ready",
+        )
+        with mock.patch("videos.views.schedule_audio_generation"):
+            response = self.client.get(
+                reverse("videos:detail", args=[self.video.id])
+            )
+        self.html = response.content.decode()
+        self.tree = _MarkupTreeParser()
+        self.tree.feed(self.html)
+        self.tree.close()
+
+    def test_every_div_is_closed_across_the_whole_page(self):
+        self.assertEqual(self.html.count("<div"), self.html.count("</div>"))
+
+    def test_every_element_is_closed(self):
+        self.assertEqual(self.tree.unclosed, [], "elements left open at the end")
+
+    def test_there_are_no_stray_end_tags(self):
+        self.assertEqual(self.tree.stray, [], "end tags with nothing to close")
+
+    def test_the_control_bar_is_not_inside_the_player_container(self):
+        self.assertNotIn(
+            "player-controls",
+            self.tree.inside.get("video-player-container", set()),
+        )
+
+    def test_the_details_and_sidebar_are_not_inside_the_player_container(self):
+        inside_player = self.tree.inside.get("video-player-container", set())
+        self.assertNotIn("video-details", inside_player)
+        self.assertNotIn("watch-aside", inside_player)
+
+    def test_the_player_and_the_details_are_side_by_side_in_the_main_column(self):
+        in_main = self.tree.inside.get("watch-main", set())
+        self.assertIn("video-player-container", in_main)
+        self.assertIn("video-details", in_main)
+        self.assertNotIn("watch-aside", in_main)
+
+    def test_the_sidebar_lives_inside_the_watch_layout(self):
+        self.assertIn(
+            "watch-aside",
+            self.tree.inside.get("watch-layout", set()),
+        )
+
+
+class NavbarSearchTests(TestCase):
+    """The navbar search is YouTube's rounded pill with a button fused to it."""
+
+    def setUp(self):
+        self.user = make_user("navuser")
+        self.client.login(username="navuser", password="pw12345678")
+        self.html = self.client.get(reverse("videos:list")).content.decode()
+
+    def test_the_search_form_sends_a_q_parameter_to_the_search_page(self):
+        self.assertIn('name="q"', self.html)
+        self.assertIn(reverse("videos:search"), self.html)
+
+    def test_the_search_box_carries_a_submit_button(self):
+        start = self.html.index('class="nav-search"')
+        form = self.html[start:self.html.index("</form>", start)]
+        self.assertIn('type="submit"', form)
+        self.assertIn("nav-search-btn", form)
+
+    def test_the_account_avatar_shows_a_single_letter(self):
+        self.assertIn(
+            'class="nav-username" title="navuser"',
+            self.html,
+        )
+        self.assertIn(">n</span>", self.html)
+
+
+class YouTubeCardStyleTests(TestCase):
+    """Grid tiles follow YouTube: a bare rounded thumbnail and an avatar line."""
+
+    def setUp(self):
+        self.css = (
+            Path(__file__).resolve().parent.parent
+            / "static" / "css" / "videos.css"
+        ).read_text(encoding="utf-8")
+        self.user = make_user("cards")
+        make_video(
+            self.user,
+            title="Tile",
+            audio_file_id="audio/t.mp3",
+            audio_status="ready",
+        )
+        self.html = self.client.get(reverse("videos:list")).content.decode()
+
+    def rule(self, opening):
+        start = self.css.index(opening)
+        return self.css[start:self.css.index("}", start)]
+
+    def test_cards_are_not_boxes(self):
+        block = self.rule(".video-card {")
+        self.assertIn("background: transparent", block)
+        self.assertIn("border: none", block)
+
+    def test_thumbnails_are_rounded_like_youtube(self):
+        self.assertIn("border-radius: 12px", self.rule(".video-thumbnail {"))
+
+    def test_the_caption_carries_a_channel_avatar(self):
+        self.assertIn("video-card-avatar", self.html)
+        self.assertIn(".video-card-avatar {", self.css)
+
+    def test_the_title_is_clamped_to_two_lines(self):
+        self.assertIn("-webkit-line-clamp: 2", self.rule(".video-title {"))
+
+    def test_the_play_overlay_is_still_only_shown_on_hover(self):
+        block = self.rule(".play-icon {")
+        self.assertIn("left: 12px", block)
+        self.assertIn("translateY(-50%)", block)

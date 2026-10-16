@@ -62,6 +62,15 @@ def video_detail(request, video_id):
 
     comments = video.comments.select_related("user").all()
 
+    # "Up next": the most watched other recordings, which is what YouTube shows
+    # down the right-hand side. Excluded from the query rather than filtered in
+    # the template so the current video cannot appear in its own sidebar.
+    related_videos = list(
+        Video.objects.exclude(id=video.id)
+        .select_related("user")
+        .order_by("-views", "-created_at")[:12]
+    )
+
     user_playlists = []
     playlist_ids_with_video = set()
     if request.user.is_authenticated:
@@ -93,6 +102,7 @@ def video_detail(request, video_id):
             "video": video,
             "user_vote": user_vote,
             "comments": comments,
+            "related_videos": related_videos,
             "comment_count": comments.count(),
             "user_playlists": user_playlists,
             "playlist_ids_with_video": playlist_ids_with_video,

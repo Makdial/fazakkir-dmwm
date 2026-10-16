@@ -1021,3 +1021,6 @@ msgstr "إذا كان هناك حساب مرتبط بـ %(email)s، فقد أُ�
 
 msgid "Search results for %(query)s"
 msgstr "نتائج البحث عن %(query)s"
+
+msgid "Up next"
+msgstr "التالي"

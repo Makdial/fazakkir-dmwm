@@ -59,6 +59,10 @@
                        value="{{ request.GET.q|default:'' }}"
                        placeholder="{% trans 'Search' %}"
                        aria-label="{% trans 'Search videos' %}">
+                <button type="submit" class="nav-search-btn"
+                        aria-label="{% trans 'Search videos' %}">
+                    <span aria-hidden="true">🔍</span>
+                </button>
             </form>
 
             <form action="{% url 'set_language' %}" method="post" class="language-form">
@@ -93,7 +97,8 @@
                         <li><a href="{% url 'dashboard:home' %}" class="nav-link">{% trans "Dashboard" %}</a></li>
                         <li><a href="{% url 'accounts:manage_users' %}" class="nav-link">{% trans "Users" %}</a></li>
                     {% endif %}
-                    <li><span class="nav-username">{{ user.username }}</span></li>
+                    <li><span class="nav-username" title="{{ user.username }}"
+                              aria-label="{{ user.username }}">{{ user.username|slice:":1" }}</span></li>
                     <li>
                         <form method="post" action="{% url 'accounts:logout' %}" class="logout-form">
                             {% csrf_token %}

@@ -41,12 +41,15 @@
                             <span class="play-icon">▶</span>
                         </div>
                         <div class="video-info">
-                            <h3 class="video-title">{{ video.title }}</h3>
-                            <p class="video-meta">
-                                {{ video.user.username }} |
-                                {% blocktrans count counter=video.views %}{{ counter }} view{% plural %}{{ counter }} views{% endblocktrans %}
-                                | {{ video.created_at|date:"Y" }}
-                            </p>
+                            <span class="video-card-avatar" aria-hidden="true">{{ video.user.username|slice:":1" }}</span>
+                            <div>
+                                <h3 class="video-title">{{ video.title }}</h3>
+                                <p class="video-meta">
+                                    <span class="video-meta-uploader">{{ video.user.username }}</span>
+                                    {% blocktrans count counter=video.views %}{{ counter }} view{% plural %}{{ counter }} views{% endblocktrans %}
+                                    · {{ video.created_at|date:"Y" }}
+                                </p>
+                            </div>
                         </div>
                     </a>
                     {% if video.has_audio %}

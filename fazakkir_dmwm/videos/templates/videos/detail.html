@@ -11,348 +11,378 @@
 
 {% block content %}
 
-<div class="video-player-container">
-    <div class="video-player{% if is_audio_only %} audio-mode{% endif %}" id="playerStage">
-        {% comment %}
-            No poster and no native controls. The browser drew its own centred
-            play button straight over the poster image, hiding the very frame it
-            was meant to announce; dropping the poster removes that clash, and
-            the control bar below puts every control where we want it. The Media
-            Session wiring (see further down) is independent of the `controls`
-            attribute, so background playback still works.
+<div class="watch-layout">
+    <div class="watch-main">
 
-            An audio-only upload has no picture at all, so it starts in the same
-            cover-art layout that "Listen (MP3)" switches into.
-        {% endcomment %}
-        <video id="video-player" playsinline preload="metadata"
-               src="{{ video.playback_url }}"
-               {% if is_audio_only %}style="display: none;"{% endif %}>
-            {% for track in subtitle_tracks %}
-            <track id="track-{{ track.language_code }}"
-                   kind="subtitles"
-                   srclang="{% if track.is_lyrics %}und{% else %}{{ track.language_code }}{% endif %}"
-                   label="{{ track.display_label }}"
-                   src="{% url 'videos:subtitle_file' video.id track.language_code %}">
-            {% endfor %}
-        </video>
-        <audio id="audio-player" preload="metadata" class="audio-player"
-               {% if not is_audio_only %}style="display: none;"{% endif %}
-               src="{% if is_audio_only %}{% url 'videos:audio_stream' video.id %}{% endif %}">
-            {% for track in subtitle_tracks %}
-            <track id="atrack-{{ track.language_code }}"
-                   kind="subtitles"
-                   srclang="{% if track.is_lyrics %}und{% else %}{{ track.language_code }}{% endif %}"
-                   label="{{ track.display_label }}"
-                   src="{% url 'videos:subtitle_file' video.id track.language_code %}">
-            {% endfor %}
-        </audio>
-        {% if video.display_thumbnail_url %}
-        <img id="audioCover" class="audio-cover"
-             src="{{ video.display_thumbnail_url }}" alt="{{ video.title }}"
-             loading="lazy">
-        {% endif %}
-        <div id="video-error" class="video-error" style="display: none;">
-            <span class="error-icon">⚠</span>
-            <p>{% trans "Video Unavailable" %}</p>
-            <small>{% trans "The video file could not be loaded." %}</small>
-        </div>
-        <button type="button" class="player-tapzone" id="tapZone"
-                aria-label="{% trans 'Show or hide the player controls' %}"></button>
-        <button type="button" class="player-bigplay" id="bigPlay"
-                aria-label="{% trans 'Play' %}">▶</button>
-    </div>
+        <div class="video-player-container">
+            <div class="video-player{% if is_audio_only %} audio-mode{% endif %}" id="playerStage">
+                {% comment %}
+                    No poster and no native controls. The browser drew its own centred
+                    play button straight over the poster image, hiding the very frame it
+                    was meant to announce; dropping the poster removes that clash, and
+                    the control bar below puts every control where we want it. The Media
+                    Session wiring (see further down) is independent of the `controls`
+                    attribute, so background playback still works.
 
-    <div class="player-bar" id="playerBar">
-        <input type="range" class="player-seek" id="seekBar" value="0" min="0" max="100" step="0.1"
-               aria-label="{% trans 'Seek' %}">
-        <div class="player-bar-row">
-            <button type="button" class="player-btn" id="playPauseBtn"
-                    aria-label="{% trans 'Play' %}">▶</button>
-            <button type="button" class="player-btn" id="backBtn"
-                    aria-label="{% trans 'Back 10 seconds' %}">↺<span>10</span></button>
-            <button type="button" class="player-btn" id="fwdBtn"
-                    aria-label="{% trans 'Forward 10 seconds' %}"><span>10</span>↻</button>
-            <span class="player-time"><span id="currentTime">0:00</span> / <span id="duration">0:00</span></span>
-            <button type="button" class="player-btn" id="muteBtn"
-                    aria-label="{% trans 'Mute' %}">🔊</button>
-            <input type="range" class="player-volume" id="volumeBar" value="1" min="0" max="1" step="0.05"
-                   aria-label="{% trans 'Volume' %}">
-            <select class="player-rate" id="rateSelect" aria-label="{% trans 'Playback speed' %}">
-                <option value="0.5">0.5×</option>
-                <option value="0.75">0.75×</option>
-                <option value="1" selected>1×</option>
-                <option value="1.25">1.25×</option>
-                <option value="1.5">1.5×</option>
-                <option value="2">2×</option>
-            </select>
-            <button type="button" class="player-btn" id="pipBtn" hidden
-                    aria-label="{% trans 'Picture in picture' %}">⧉</button>
-            <button type="button" class="player-btn" id="fullscreenBtn"
-                    aria-label="{% trans 'Fullscreen' %}">⛶</button>
-        </div>
-    </div>
-    {# Closes .video-player-container. Without this the download buttons and
-       the whole comments section became children of the container, so the
-       absolutely positioned control bar anchored to the bottom of the page
-       instead of the bottom of the video. #}
-    </div>
-
-    {% if subtitle_tracks %}
-    <div class="subtitle-controls">
-        <span class="subtitle-title">{% trans "Subtitles" %}</span>
-        <div class="subtitle-toggle" role="group" aria-label="{% trans 'Subtitles' %}">
-            <button type="button" class="subtitle-btn active" data-lang=""
-                    onclick="setSubtitle('')">{% trans "Off" %}</button>
-            {% for track in subtitle_tracks %}
-            <button type="button" class="subtitle-btn" data-lang="{{ track.language_code }}"
-                    onclick="setSubtitle('{{ track.language_code }}')">
-                {% if track.is_lyrics %}♪ {% endif %}{{ track.display_label }}
-            </button>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    {% if audio_pending %}
-    <div class="audio-status" id="audioStatus"
-         data-status-url="{% url 'videos:audio_status' video.id %}"
-         data-generate-url="{% url 'videos:audio_generate' video.id %}">
-        <span class="audio-spinner" aria-hidden="true"></span>
-        <span>{% trans "Preparing the audio (MP3) for this video…" %}</span>
-    </div>
-    {% elif audio_failed %}
-    <div class="audio-status audio-status-error" id="audioStatus"
-         data-status-url="{% url 'videos:audio_status' video.id %}"
-         data-generate-url="{% url 'videos:audio_generate' video.id %}">
-        <span>{% trans "The audio could not be generated." %}</span>
-        <button type="button" class="download-btn" onclick="retryAudio(this)">{% trans "Try again" %}</button>
-    </div>
-    {% elif audio_none %}
-    <div class="audio-status audio-status-muted">
-        <span>{% trans "This video has no audio track." %}</span>
-    </div>
-    {% endif %}
-
-    {% if video.has_audio or video.video_download_url %}
-    <div class="player-controls">
-        {% if video.has_audio and not is_audio_only %}
-        <div class="mode-toggle" role="group" aria-label="{% trans 'Playback mode' %}">
-            <button type="button" id="mode-video" class="mode-btn active"
-                    onclick="setMode('video')">{% trans "Video" %}</button>
-            <button type="button" id="mode-audio" class="mode-btn"
-                    onclick="setMode('audio')">{% trans "Listen (MP3)" %}</button>
-        </div>
-        {% endif %}
-        <div class="player-downloads">
-            {% if video.video_download_url %}
-            <a class="download-btn" href="{{ video.video_download_url }}" download>⬇ {% trans "Download video" %}</a>
-            {% endif %}
-            {% if video.has_audio %}
-            <a class="download-btn" href="{{ video.audio_download_url }}" download>⬇ {% trans "Download MP3" %}</a>
-            <button type="button" class="download-btn offline-btn" id="offlineToggle"
-                    data-offline-url="{% url 'videos:audio_stream' video.id %}"
-                    data-offline-title="{{ video.title }}"
-                    data-label-save="{% trans 'Save offline' %}"
-                    data-label-saved="{% trans 'Saved offline' %}"
-                    data-label-remove="{% trans 'Remove download' %}"
-                    data-label-error="{% trans 'Could not update the offline copy. Check your connection.' %}">⤓ {% trans "Save offline" %}</button>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-
-    <div class="video-details">
-        <h1>{{ video.title }}</h1>
-
-        <div class="video-stats">
-            <span class="video-stats-left">
-                {% blocktrans count counter=video.views %}{{ counter }} view{% plural %}{{ counter }} views{% endblocktrans %}
-                | {{ video.created_at|date:"M d, Y" }}
-            </span>
-            <div class="video-actions">
-                <button class="vote-btn {% if user_vote == 1 %}active{% endif %}" data-vote="like" onclick="vote({{ video.id }}, 'like')">
-                    👍 <span id="like-count">{{ video.likes }}</span>
-                </button>
-                {% if user.is_authenticated %}
-                <button type="button" class="vote-btn" id="saveToggle" aria-expanded="false" onclick="toggleSaveMenu()">
-                    ＋ {% trans "Save" %}
-                </button>
+                    An audio-only upload has no picture at all, so it starts in the same
+                    cover-art layout that "Listen (MP3)" switches into.
+                {% endcomment %}
+                <video id="video-player" playsinline preload="metadata"
+                       src="{{ video.playback_url }}"
+                       {% if is_audio_only %}style="display: none;"{% endif %}>
+                    {% for track in subtitle_tracks %}
+                    <track id="track-{{ track.language_code }}"
+                           kind="subtitles"
+                           srclang="{% if track.is_lyrics %}und{% else %}{{ track.language_code }}{% endif %}"
+                           label="{{ track.display_label }}"
+                           src="{% url 'videos:subtitle_file' video.id track.language_code %}">
+                    {% endfor %}
+                </video>
+                <audio id="audio-player" preload="metadata" class="audio-player"
+                       {% if not is_audio_only %}style="display: none;"{% endif %}
+                       src="{% if is_audio_only %}{% url 'videos:audio_stream' video.id %}{% endif %}">
+                    {% for track in subtitle_tracks %}
+                    <track id="atrack-{{ track.language_code }}"
+                           kind="subtitles"
+                           srclang="{% if track.is_lyrics %}und{% else %}{{ track.language_code }}{% endif %}"
+                           label="{{ track.display_label }}"
+                           src="{% url 'videos:subtitle_file' video.id track.language_code %}">
+                    {% endfor %}
+                </audio>
+                {% if video.display_thumbnail_url %}
+                <img id="audioCover" class="audio-cover"
+                     src="{{ video.display_thumbnail_url }}" alt="{{ video.title }}"
+                     loading="lazy">
                 {% endif %}
-                <button type="button" class="vote-btn" id="shareToggle" aria-expanded="false"
-                        aria-controls="sharePanel" onclick="toggleShareMenu()">
-                    ↗ {% trans "Share" %}
-                </button>
-                {% if can_write %}
-                <a class="vote-btn" href="{% url 'videos:edit' video.id %}">✎ {% trans "Edit" %}</a>
-                {% endif %}
+                <div id="video-error" class="video-error" style="display: none;">
+                    <span class="error-icon">⚠</span>
+                    <p>{% trans "Video Unavailable" %}</p>
+                    <small>{% trans "The video file could not be loaded." %}</small>
+                </div>
+                <button type="button" class="player-tapzone" id="tapZone"
+                        aria-label="{% trans 'Show or hide the player controls' %}"></button>
+                <button type="button" class="player-bigplay" id="bigPlay"
+                        aria-label="{% trans 'Play' %}">▶</button>
             </div>
+
+            <div class="player-bar" id="playerBar">
+                <input type="range" class="player-seek" id="seekBar" value="0" min="0" max="100" step="0.1"
+                       aria-label="{% trans 'Seek' %}">
+                <div class="player-bar-row">
+                    <button type="button" class="player-btn" id="playPauseBtn"
+                            aria-label="{% trans 'Play' %}">▶</button>
+                    <button type="button" class="player-btn" id="backBtn"
+                            aria-label="{% trans 'Back 10 seconds' %}">↺<span>10</span></button>
+                    <button type="button" class="player-btn" id="fwdBtn"
+                            aria-label="{% trans 'Forward 10 seconds' %}"><span>10</span>↻</button>
+                    <span class="player-time"><span id="currentTime">0:00</span> / <span id="duration">0:00</span></span>
+                    <button type="button" class="player-btn" id="muteBtn"
+                            aria-label="{% trans 'Mute' %}">🔊</button>
+                    <input type="range" class="player-volume" id="volumeBar" value="1" min="0" max="1" step="0.05"
+                           aria-label="{% trans 'Volume' %}">
+                    <select class="player-rate" id="rateSelect" aria-label="{% trans 'Playback speed' %}">
+                        <option value="0.5">0.5×</option>
+                        <option value="0.75">0.75×</option>
+                        <option value="1" selected>1×</option>
+                        <option value="1.25">1.25×</option>
+                        <option value="1.5">1.5×</option>
+                        <option value="2">2×</option>
+                    </select>
+                    <button type="button" class="player-btn" id="pipBtn" hidden
+                            aria-label="{% trans 'Picture in picture' %}">⧉</button>
+                    <button type="button" class="player-btn" id="fullscreenBtn"
+                            aria-label="{% trans 'Fullscreen' %}">⛶</button>
+                </div>
+            </div>
+            {# Closes .video-player-container. Without this the download buttons and
+               the whole comments section became children of the container, so the
+               absolutely positioned control bar anchored to the bottom of the page
+               instead of the bottom of the video. #}
         </div>
 
-        {% if user.is_authenticated %}
-        <div class="save-panel" id="savePanel" hidden>
-            <div class="save-panel-head">{% trans "Save to playlist" %}</div>
-            <ul class="save-panel-list">
-                {% for pl in user_playlists %}
-                <li>
-                    <label class="save-item">
-                        <input type="checkbox" data-playlist="{{ pl.id }}"
-                               {% if pl.id in playlist_ids_with_video %}checked{% endif %}
-                               onchange="togglePlaylist({{ pl.id }}, this)">
-                        <span class="save-item-title">{{ pl.title }}</span>
-                        <span class="save-count">{{ pl.item_count }}</span>
-                    </label>
-                </li>
-                {% empty %}
-                <li class="save-empty">{% trans "No playlists yet." %}</li>
+        {% if subtitle_tracks %}
+        <div class="subtitle-controls">
+            <span class="subtitle-title">{% trans "Subtitles" %}</span>
+            <div class="subtitle-toggle" role="group" aria-label="{% trans 'Subtitles' %}">
+                <button type="button" class="subtitle-btn active" data-lang=""
+                        onclick="setSubtitle('')">{% trans "Off" %}</button>
+                {% for track in subtitle_tracks %}
+                <button type="button" class="subtitle-btn" data-lang="{{ track.language_code }}"
+                        onclick="setSubtitle('{{ track.language_code }}')">
+                    {% if track.is_lyrics %}♪ {% endif %}{{ track.display_label }}
+                </button>
                 {% endfor %}
-            </ul>
-            <form class="save-new" onsubmit="return createPlaylistFromSave(event)">
-                <input type="text" id="saveNewTitle" class="form-input"
-                       placeholder="{% trans 'New playlist name' %}" maxlength="120">
-                <button type="submit" class="btn-small">{% trans "Create" %}</button>
-            </form>
-        </div>
-        {% endif %}
-
-        <div class="share-panel" id="sharePanel" hidden>
-            <div class="share-panel-head">{% trans "Share this video" %}</div>
-            <div class="share-targets">
-                <button type="button" class="share-target" data-share="video">
-                    <span class="share-target-icon">🎬</span>
-                    <span class="share-target-label">{% trans "Video link" %}</span>
-                </button>
-                {% if share_audio_url %}
-                <button type="button" class="share-target" data-share="audio">
-                    <span class="share-target-icon">🎵</span>
-                    <span class="share-target-label">{% trans "MP3 link" %}</span>
-                </button>
-                {% endif %}
-            </div>
-            <div class="share-networks">
-                <a class="share-network share-network-whatsapp" target="_blank" rel="noopener"
-                   data-share-network="video">WhatsApp</a>
-                <a class="share-network share-network-telegram" target="_blank" rel="noopener"
-                   data-share-network="video">Telegram</a>
-                <a class="share-network share-network-facebook" target="_blank" rel="noopener"
-                   data-share-network="video">Facebook</a>
-                <a class="share-network share-network-x" target="_blank" rel="noopener"
-                   data-share-network="video">X</a>
-            </div>
-            <p class="share-hint" id="shareHint" hidden></p>
-        </div>
-
-        <div class="video-channel">
-            <div class="channel-avatar">{{ video.user.username|slice:":1" }}</div>
-            <a href="{% url 'videos:channel' video.user.username %}" class="channel-name">{{ video.user.username }}</a>
-        </div>
-
-        {% if video.description %}
-        <p class="video-description">{{ video.description }}</p>
-        {% endif %}
-
-        {% if can_write %}
-        <div class="auto-sub-panel" id="autoSubPanel"
-             data-generate-url="{% url 'videos:subtitles_generate' video.id %}"
-             data-status-url="{% url 'videos:subtitles_status' video.id %}">
-            <div class="auto-sub-head">
-                <span class="auto-sub-title">{% trans "Automatic subtitles" %}</span>
-                {% if not subtitles_configured %}
-                <span class="badge badge-warning">{% trans "Not configured" %}</span>
-                {% elif subtitles_failed %}
-                <span class="badge badge-critical">{% trans "Failed" %}</span>
-                {% elif subtitles_pending %}
-                <span class="badge badge-warning" id="autoSubBadge">{% trans "Not generated" %}</span>
-                {% else %}
-                <span class="badge badge-ok" id="autoSubBadge">{% trans "Ready" %}</span>
-                {% endif %}
-            </div>
-            <p class="auto-sub-hint">
-                {% trans "Transcribe the audio and translate it automatically, without uploading a file." %}
-            </p>
-            <div class="auto-sub-actions">
-                <button type="button" class="btn-small" id="autoSubBtn"
-                        {% if not subtitles_configured or not video.has_audio %}disabled{% endif %}>
-                    {% if subtitles_pending %}{% trans "Generate subtitles" %}{% else %}{% trans "Regenerate subtitles" %}{% endif %}
-                </button>
-                <span class="auto-sub-message" id="autoSubMessage" role="status"></span>
             </div>
         </div>
         {% endif %}
 
-        <div class="comments-section">
-            <h2 class="comments-title">
-                {% trans "Comments" %} <span class="comments-count" id="commentsCount">{{ comment_count }}</span>
-            </h2>
+        {% if audio_pending %}
+        <div class="audio-status" id="audioStatus"
+             data-status-url="{% url 'videos:audio_status' video.id %}"
+             data-generate-url="{% url 'videos:audio_generate' video.id %}">
+            <span class="audio-spinner" aria-hidden="true"></span>
+            <span>{% trans "Preparing the audio (MP3) for this video…" %}</span>
+        </div>
+        {% elif audio_failed %}
+        <div class="audio-status audio-status-error" id="audioStatus"
+             data-status-url="{% url 'videos:audio_status' video.id %}"
+             data-generate-url="{% url 'videos:audio_generate' video.id %}">
+            <span>{% trans "The audio could not be generated." %}</span>
+            <button type="button" class="download-btn" onclick="retryAudio(this)">{% trans "Try again" %}</button>
+        </div>
+        {% elif audio_none %}
+        <div class="audio-status audio-status-muted">
+            <span>{% trans "This video has no audio track." %}</span>
+        </div>
+        {% endif %}
 
-            {% if user.is_authenticated %}
-            <form class="comment-form" onsubmit="return postComment(event)">
-                <textarea id="commentBody" class="form-input" rows="2" maxlength="2000"
-                          placeholder="{% trans 'Add a comment…' %}" required></textarea>
-                <button type="submit" class="btn btn-primary btn-comment">{% trans "Comment" %}</button>
-            </form>
-            {% else %}
-            <p class="comment-signin">
-                <a href="{% url 'accounts:login' %}">{% trans "Sign in" %}</a> {% trans "to add a comment." %}
-            </p>
+        {% if video.has_audio or video.video_download_url %}
+        <div class="player-controls">
+            {% if video.has_audio and not is_audio_only %}
+            <div class="mode-toggle" role="group" aria-label="{% trans 'Playback mode' %}">
+                <button type="button" id="mode-video" class="mode-btn active"
+                        onclick="setMode('video')">{% trans "Video" %}</button>
+                <button type="button" id="mode-audio" class="mode-btn"
+                        onclick="setMode('audio')">{% trans "Listen (MP3)" %}</button>
+            </div>
             {% endif %}
+            <div class="player-downloads">
+                {% if video.video_download_url %}
+                <a class="download-btn" href="{{ video.video_download_url }}" download>⬇ {% trans "Download video" %}</a>
+                {% endif %}
+                {% if video.has_audio %}
+                <a class="download-btn" href="{{ video.audio_download_url }}" download>⬇ {% trans "Download MP3" %}</a>
+                <button type="button" class="download-btn offline-btn" id="offlineToggle"
+                        data-offline-url="{% url 'videos:audio_stream' video.id %}"
+                        data-offline-title="{{ video.title }}"
+                        data-label-save="{% trans 'Save offline' %}"
+                        data-label-saved="{% trans 'Saved offline' %}"
+                        data-label-remove="{% trans 'Remove download' %}"
+                        data-label-error="{% trans 'Could not update the offline copy. Check your connection.' %}">⤓ {% trans "Save offline" %}</button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
 
-            <div class="comment-list" id="commentList">
-                {% for comment in comments %}
-                <div class="comment" data-comment="{{ comment.id }}">
-                    <span class="comment-avatar">{{ comment.user.username|slice:":1"|upper }}</span>
-                    <div class="comment-body">
-                        <div class="comment-head">
-                            <span class="comment-author">{{ comment.user.username }}</span>
-                            <span class="comment-date">{{ comment.created_at|date:"M d, Y H:i" }}</span>
-                        </div>
-                        <p class="comment-text">{{ comment.body }}</p>
-                    </div>
-                    {% if comment.user_id == user.id or can_write %}
-                    <button type="button" class="icon-btn" title="{% trans 'Delete' %}"
-                            onclick="deleteComment({{ comment.id }})">✕</button>
+        <div class="video-details">
+            <h1>{{ video.title }}</h1>
+
+            <div class="video-stats">
+                <span class="video-stats-left">
+                    {% blocktrans count counter=video.views %}{{ counter }} view{% plural %}{{ counter }} views{% endblocktrans %}
+                    | {{ video.created_at|date:"M d, Y" }}
+                </span>
+                <div class="video-actions">
+                    <button class="vote-btn {% if user_vote == 1 %}active{% endif %}" data-vote="like" onclick="vote({{ video.id }}, 'like')">
+                        👍 <span id="like-count">{{ video.likes }}</span>
+                    </button>
+                    {% if user.is_authenticated %}
+                    <button type="button" class="vote-btn" id="saveToggle" aria-expanded="false" onclick="toggleSaveMenu()">
+                        ＋ {% trans "Save" %}
+                    </button>
+                    {% endif %}
+                    <button type="button" class="vote-btn" id="shareToggle" aria-expanded="false"
+                            aria-controls="sharePanel" onclick="toggleShareMenu()">
+                        ↗ {% trans "Share" %}
+                    </button>
+                    {% if can_write %}
+                    <a class="vote-btn" href="{% url 'videos:edit' video.id %}">✎ {% trans "Edit" %}</a>
                     {% endif %}
                 </div>
-                {% empty %}
-                <p class="comment-empty" id="commentEmpty">{% trans "No comments yet. Be the first!" %}</p>
-                {% endfor %}
             </div>
-        </div>
 
-        {% if can_write %}
-        <div class="video-owner-actions">
-            <button class="delete-btn" type="button" onclick="deleteVideo({{ video.id }})">{% trans "Delete video" %}</button>
-        </div>
-
-        <div class="subtitle-admin">
-            <h2>{% trans "Subtitles & lyrics" %}</h2>
-            <p class="subtitle-hint">
-                {% trans "Upload a .vtt, .srt or .txt file for each language. Viewers can turn them on or off." %}
-            </p>
-
-            <form id="subtitleForm" class="subtitle-form" onsubmit="return uploadSubtitle(event)">
-                <select id="subtitleLanguage" class="form-input" aria-label="{% trans 'Language' %}">
-                    {% for code, name in subtitle_choices %}
-                    <option value="{{ code }}">{{ name }}</option>
+            {% if user.is_authenticated %}
+            <div class="save-panel" id="savePanel" hidden>
+                <div class="save-panel-head">{% trans "Save to playlist" %}</div>
+                <ul class="save-panel-list">
+                    {% for pl in user_playlists %}
+                    <li>
+                        <label class="save-item">
+                            <input type="checkbox" data-playlist="{{ pl.id }}"
+                                   {% if pl.id in playlist_ids_with_video %}checked{% endif %}
+                                   onchange="togglePlaylist({{ pl.id }}, this)">
+                            <span class="save-item-title">{{ pl.title }}</span>
+                            <span class="save-count">{{ pl.item_count }}</span>
+                        </label>
+                    </li>
+                    {% empty %}
+                    <li class="save-empty">{% trans "No playlists yet." %}</li>
                     {% endfor %}
-                </select>
-                <input type="file" id="subtitleFile" class="form-input" accept=".vtt,.srt,.txt" required>
-                <button type="submit" class="btn-submit">{% trans "Upload subtitle" %}</button>
-            </form>
+                </ul>
+                <form class="save-new" onsubmit="return createPlaylistFromSave(event)">
+                    <input type="text" id="saveNewTitle" class="form-input"
+                           placeholder="{% trans 'New playlist name' %}" maxlength="120">
+                    <button type="submit" class="btn-small">{% trans "Create" %}</button>
+                </form>
+            </div>
+            {% endif %}
 
-            <ul class="subtitle-list">
-                {% for track in subtitle_tracks %}
-                <li>
-                    <span>{% if track.is_lyrics %}♪ {% endif %}{{ track.display_label }}</span>
-                    <button type="button" class="delete-btn"
-                            onclick="deleteSubtitle('{{ track.language_code }}')">{% trans "Delete" %}</button>
-                </li>
-                {% empty %}
-                <li class="subtitle-empty">{% trans "No subtitles yet." %}</li>
-                {% endfor %}
-            </ul>
+            <div class="share-panel" id="sharePanel" hidden>
+                <div class="share-panel-head">{% trans "Share this video" %}</div>
+                <div class="share-targets">
+                    <button type="button" class="share-target" data-share="video">
+                        <span class="share-target-icon">🎬</span>
+                        <span class="share-target-label">{% trans "Video link" %}</span>
+                    </button>
+                    {% if share_audio_url %}
+                    <button type="button" class="share-target" data-share="audio">
+                        <span class="share-target-icon">🎵</span>
+                        <span class="share-target-label">{% trans "MP3 link" %}</span>
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="share-networks">
+                    <a class="share-network share-network-whatsapp" target="_blank" rel="noopener"
+                       data-share-network="video">WhatsApp</a>
+                    <a class="share-network share-network-telegram" target="_blank" rel="noopener"
+                       data-share-network="video">Telegram</a>
+                    <a class="share-network share-network-facebook" target="_blank" rel="noopener"
+                       data-share-network="video">Facebook</a>
+                    <a class="share-network share-network-x" target="_blank" rel="noopener"
+                       data-share-network="video">X</a>
+                </div>
+                <p class="share-hint" id="shareHint" hidden></p>
+            </div>
+
+            <div class="video-channel">
+                <div class="channel-avatar">{{ video.user.username|slice:":1" }}</div>
+                <a href="{% url 'videos:channel' video.user.username %}" class="channel-name">{{ video.user.username }}</a>
+            </div>
+
+            {% if video.description %}
+            <p class="video-description">{{ video.description }}</p>
+            {% endif %}
+
+            {% if can_write %}
+            <div class="auto-sub-panel" id="autoSubPanel"
+                 data-generate-url="{% url 'videos:subtitles_generate' video.id %}"
+                 data-status-url="{% url 'videos:subtitles_status' video.id %}">
+                <div class="auto-sub-head">
+                    <span class="auto-sub-title">{% trans "Automatic subtitles" %}</span>
+                    {% if not subtitles_configured %}
+                    <span class="badge badge-warning">{% trans "Not configured" %}</span>
+                    {% elif subtitles_failed %}
+                    <span class="badge badge-critical">{% trans "Failed" %}</span>
+                    {% elif subtitles_pending %}
+                    <span class="badge badge-warning" id="autoSubBadge">{% trans "Not generated" %}</span>
+                    {% else %}
+                    <span class="badge badge-ok" id="autoSubBadge">{% trans "Ready" %}</span>
+                    {% endif %}
+                </div>
+                <p class="auto-sub-hint">
+                    {% trans "Transcribe the audio and translate it automatically, without uploading a file." %}
+                </p>
+                <div class="auto-sub-actions">
+                    <button type="button" class="btn-small" id="autoSubBtn"
+                            {% if not subtitles_configured or not video.has_audio %}disabled{% endif %}>
+                        {% if subtitles_pending %}{% trans "Generate subtitles" %}{% else %}{% trans "Regenerate subtitles" %}{% endif %}
+                    </button>
+                    <span class="auto-sub-message" id="autoSubMessage" role="status"></span>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="comments-section">
+                <h2 class="comments-title">
+                    {% trans "Comments" %} <span class="comments-count" id="commentsCount">{{ comment_count }}</span>
+                </h2>
+
+                {% if user.is_authenticated %}
+                <form class="comment-form" onsubmit="return postComment(event)">
+                    <textarea id="commentBody" class="form-input" rows="2" maxlength="2000"
+                              placeholder="{% trans 'Add a comment…' %}" required></textarea>
+                    <button type="submit" class="btn btn-primary btn-comment">{% trans "Comment" %}</button>
+                </form>
+                {% else %}
+                <p class="comment-signin">
+                    <a href="{% url 'accounts:login' %}">{% trans "Sign in" %}</a> {% trans "to add a comment." %}
+                </p>
+                {% endif %}
+
+                <div class="comment-list" id="commentList">
+                    {% for comment in comments %}
+                    <div class="comment" data-comment="{{ comment.id }}">
+                        <span class="comment-avatar">{{ comment.user.username|slice:":1"|upper }}</span>
+                        <div class="comment-body">
+                            <div class="comment-head">
+                                <span class="comment-author">{{ comment.user.username }}</span>
+                                <span class="comment-date">{{ comment.created_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            <p class="comment-text">{{ comment.body }}</p>
+                        </div>
+                        {% if comment.user_id == user.id or can_write %}
+                        <button type="button" class="icon-btn" title="{% trans 'Delete' %}"
+                                onclick="deleteComment({{ comment.id }})">✕</button>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="comment-empty" id="commentEmpty">{% trans "No comments yet. Be the first!" %}</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if can_write %}
+            <div class="video-owner-actions">
+                <button class="delete-btn" type="button" onclick="deleteVideo({{ video.id }})">{% trans "Delete video" %}</button>
+            </div>
+
+            <div class="subtitle-admin">
+                <h2>{% trans "Subtitles & lyrics" %}</h2>
+                <p class="subtitle-hint">
+                    {% trans "Upload a .vtt, .srt or .txt file for each language. Viewers can turn them on or off." %}
+                </p>
+
+                <form id="subtitleForm" class="subtitle-form" onsubmit="return uploadSubtitle(event)">
+                    <select id="subtitleLanguage" class="form-input" aria-label="{% trans 'Language' %}">
+                        {% for code, name in subtitle_choices %}
+                        <option value="{{ code }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="file" id="subtitleFile" class="form-input" accept=".vtt,.srt,.txt" required>
+                    <button type="submit" class="btn-submit">{% trans "Upload subtitle" %}</button>
+                </form>
+
+                <ul class="subtitle-list">
+                    {% for track in subtitle_tracks %}
+                    <li>
+                        <span>{% if track.is_lyrics %}♪ {% endif %}{{ track.display_label }}</span>
+                        <button type="button" class="delete-btn"
+                                onclick="deleteSubtitle('{{ track.language_code }}')">{% trans "Delete" %}</button>
+                    </li>
+                    {% empty %}
+                    <li class="subtitle-empty">{% trans "No subtitles yet." %}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
+
     </div>
+
+    {% if related_videos %}
+    <aside class="watch-aside" aria-label="{% trans 'Up next' %}">
+        <h2 class="watch-aside-title">{% trans "Up next" %}</h2>
+        {% for related in related_videos %}
+        <a class="related-card" href="{% url 'videos:detail' related.id %}">
+            <div class="related-thumb">
+                {% if related.display_thumbnail_url %}
+                <img src="{{ related.display_thumbnail_url }}" alt="{{ related.title }}" loading="lazy">
+                {% else %}
+                <span class="thumbnail-placeholder">▶</span>
+                {% endif %}
+            </div>
+            <div class="related-info">
+                <h3 class="related-title">{{ related.title }}</h3>
+                <p class="related-meta">{{ related.user.username }}</p>
+                <p class="related-meta">
+                    {% blocktrans count counter=related.views %}{{ counter }} view{% plural %}{{ counter }} views{% endblocktrans %}
+                    · {{ related.created_at|date:"Y" }}
+                </p>
+            </div>
+        </a>
+        {% endfor %}
+    </aside>
+    {% endif %}
 </div>
 {% endblock %}
 

@@ -16,13 +16,26 @@
     --text-primary: #f1f1f1;
     --text-secondary: #aaaaaa;
 
-    /* Accent colors */
-    --accent-red: #ff0033;
-    --accent-red-hover: #cc0029;
+    /* Accent colors. YouTube's red is a pure #ff0000; the previous #ff0033 read
+       as pink next to it. */
+    --accent-red: #ff0000;
+    --accent-red-hover: #cc0000;
     --accent-red-light: #ff6b6b;
 
     /* Border colors */
     --border-color: #3f3f3f;
+
+    /* --- YouTube-style surfaces ------------------------------------------
+       YouTube keeps the page flat (#0f0f0f) and raises only chips and the
+       description box. These are separate from --bg-secondary/--bg-tertiary so
+       the admin screens keep their card look. */
+    --yt-surface: #212121;      /* description box, menus */
+    --yt-chip: #272727;         /* pill buttons, thumbnails placeholders */
+    --yt-chip-hover: #3f3f3f;   /* pill/button hover */
+    --yt-hover: rgba(255, 255, 255, 0.1); /* icon button hover */
+    --yt-border: #303030;
+    --yt-play-red: #ff0000;     /* progress bar + play glyph */
+    --yt-thumb-bg: #272727;
 
     /* Status colors */
     --success-green: #2ecc71;
@@ -59,12 +72,21 @@
     --text-secondary: #606060;
 
     /* Accent colors */
-    --accent-red: #e6002e;
-    --accent-red-hover: #c00026;
+    --accent-red: #ff0000;
+    --accent-red-hover: #cc0000;
     --accent-red-light: #ff5c7c;
 
     /* Border colors */
     --border-color: #dcdcdc;
+
+    /* --- YouTube-style surfaces (light) ---------------------------------- */
+    --yt-surface: #f9f9f9;
+    --yt-chip: #f2f2f2;
+    --yt-chip-hover: #e5e5e5;
+    --yt-hover: rgba(0, 0, 0, 0.05);
+    --yt-border: #e5e5e5;
+    --yt-play-red: #ff0000;
+    --yt-thumb-bg: #f2f2f2;
 
     /* Status colors */
     --success-green: #1f9d55;
