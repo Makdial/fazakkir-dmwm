@@ -1024,3 +1024,6 @@ msgstr "نتائج البحث عن %(query)s"
 
 msgid "Up next"
 msgstr "التالي"
+
+msgid "Exit fullscreen"
+msgstr "إنهاء ملء الشاشة"

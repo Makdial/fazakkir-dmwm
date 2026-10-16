@@ -1003,3 +1003,6 @@ msgstr "Résultats de recherche pour %(query)s"
 
 msgid "Up next"
 msgstr "À suivre"
+
+msgid "Exit fullscreen"
+msgstr "Quitter le plein écran"

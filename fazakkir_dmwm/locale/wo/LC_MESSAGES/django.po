@@ -1000,3 +1000,6 @@ msgstr "Nettiya lu lah mbir %(query)s"
 
 msgid "Up next"
 msgstr "Li ci topp"
+
+msgid "Exit fullscreen"
+msgstr "Génn ci fàww"

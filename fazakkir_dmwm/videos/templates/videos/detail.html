@@ -661,14 +661,93 @@ function wireControls() {
         activePlayer.playbackRate = Number(rateSelect.value)
     })
 
-    fullscreenBtn.addEventListener("click", () => {
-        if (!playerStage) return
-        if (document.fullscreenElement) {
-            document.exitFullscreen().catch(() => {})
-        } else {
-            playerStage.requestFullscreen().catch(() => {})
+    // Fullscreen. iPhone Safari ships none of the standard API: no
+    // Element.requestFullscreen, no webkitRequestFullscreen prefix, and no
+    // document.exitFullscreen. The previous code called requestFullscreen()
+    // unguarded, so on an iPhone it threw a TypeError synchronously - before
+    // .catch could even be attached - and the button did nothing at all. The
+    // only element iOS will expand is the <video> itself, through its own
+    // webkitEnterFullscreen(), which is what the fallback uses.
+    function fullscreenElement() {
+        return document.fullscreenElement
+            || document.webkitFullscreenElement
+            || document.msFullscreenElement
+            || null
+    }
+
+    function refreshFullscreenButton() {
+        if (!fullscreenBtn) return
+        const expanded = Boolean(
+            fullscreenElement()
+            || (videoPlayer && videoPlayer.webkitDisplayingFullscreen)
+        )
+        fullscreenBtn.textContent = expanded ? "⤡" : "⛶"
+        fullscreenBtn.setAttribute(
+            "aria-label",
+            expanded ? "{% trans 'Exit fullscreen' %}" : "{% trans 'Fullscreen' %}"
+        )
+    }
+
+    function requestStageFullscreen() {
+        if (!playerStage) return false
+        const request = playerStage.requestFullscreen
+            || playerStage.webkitRequestFullscreen
+            || playerStage.msRequestFullscreen
+        if (!request) return false
+        try {
+            const result = request.call(playerStage)
+            if (result && typeof result.catch === "function") result.catch(() => {})
+            return true
+        } catch (error) {
+            return false
         }
+    }
+
+    // The iOS-only path. webkitEnterFullScreen (capital S) is the spelling on
+    // very old WebKit builds, so both are accepted.
+    function requestVideoFullscreen() {
+        if (!videoPlayer) return false
+        const enter = videoPlayer.webkitEnterFullscreen
+            || videoPlayer.webkitEnterFullScreen
+        if (!enter) return false
+        try {
+            enter.call(videoPlayer)
+            return true
+        } catch (error) {
+            return false
+        }
+    }
+
+    function toggleFullscreen() {
+        if (fullscreenElement()) {
+            const exit = document.exitFullscreen
+                || document.webkitExitFullscreen
+                || document.msExitFullscreen
+            if (exit) {
+                try {
+                    const result = exit.call(document)
+                    if (result && typeof result.catch === "function") result.catch(() => {})
+                } catch (error) { /* refused; the controls are already hidden */ }
+            }
+            return
+        }
+        if (requestStageFullscreen()) return
+        requestVideoFullscreen()
+    }
+
+    fullscreenBtn.addEventListener("click", toggleFullscreen)
+
+    // iOS reports its native video fullscreen through private events and a
+    // flag rather than the standard ones, so the icon is kept in step with
+    // whichever route the browser took. Held in a variable because this file
+    // omits semicolons: a line starting with "[" would be read as a subscript
+    // of the statement above it.
+    const iosFullscreenEvents = ["webkitbeginfullscreen", "webkitendfullscreen"]
+    iosFullscreenEvents.forEach(name => {
+        if (videoPlayer) videoPlayer.addEventListener(name, refreshFullscreenButton)
     })
+    document.addEventListener("webkitfullscreenchange", refreshFullscreenButton)
+    refreshFullscreenButton()
 
     // Picture-in-picture is video only, and not available everywhere.
     if (window.documentPictureInPictureEnabled && !audioPlayer) {
@@ -847,7 +926,8 @@ function wireAutoHide() {
     })
 
     document.addEventListener("fullscreenchange", () => {
-        if (document.fullscreenElement) showControls()
+        refreshFullscreenButton()
+        if (fullscreenElement()) showControls()
     })
 }
 

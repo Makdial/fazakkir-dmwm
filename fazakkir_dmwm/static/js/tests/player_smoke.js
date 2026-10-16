@@ -58,7 +58,7 @@ function makeEl(id) {
         click() {},
         play() { el.playCalled = true; el.paused = false; return Promise.resolve(); },
         pause() { el.paused = true; },
-        requestFullscreen: () => Promise.resolve(),
+        requestFullscreen() { el.fullscreenRequested = true; return Promise.resolve(); },
         requestPictureInPicture: () => Promise.resolve(),
         textTracks: [],
     };
@@ -147,14 +147,58 @@ for (const [id, ev] of expected) {
 }
 
 const video = elements["video-player"];
+const audio = elements["audio-player"];
+const audioMode = /const audioOnly\s*=\s*true\b/.test(code);
 for (const [el, n, fn] of listeners) {
     if (el.id === "tapZone" && n === "click") fn({ preventDefault() {} });
 }
+// The tap drives whichever element the page made active: an audio-only upload
+// plays the <audio> element, so the check has to follow the mode.
+const activeStub = audioMode ? audio : video;
 console.log("after tapping the picture:");
+console.log("  active element      : " + (audioMode ? "audio" : "video"));
 console.log("  video.play() called : " + (video.playCalled === true));
+console.log("  audio.play() called : " + (audio.playCalled === true));
 console.log("  bar visible         : " + elements["playerBar"].classList.contains("is-visible"));
 console.log("  big play hidden     : " + elements["bigPlay"].hidden);
-if (!video.playCalled) failures += 1;
+if (!activeStub.playCalled) failures += 1;
+
+// --- Fullscreen -----------------------------------------------------------
+// iPhone Safari exposes no Element.requestFullscreen, no webkitRequestFullscreen
+// prefix and no document.exitFullscreen; the only thing it will expand is the
+// <video>, through its own webkitEnterFullscreen(). The button previously called
+// playerStage.requestFullscreen() unguarded, so on iOS it threw synchronously -
+// before .catch could be attached - and the button did nothing. All three routes
+// are exercised here so that cannot regress unnoticed.
+const stage = elements["playerStage"];
+const fullscreenClicks = listeners
+    .filter(([el, n]) => el.id === "fullscreenBtn" && n === "click")
+    .map(([, , fn]) => fn);
+console.log("fullscreen handler bound : " + (fullscreenClicks.length > 0));
+if (!fullscreenClicks.length) failures += 1;
+
+// 1. Desktop / Android: the stage element itself expands.
+stage.fullscreenRequested = false;
+fullscreenClicks.forEach((fn) => fn({ preventDefault() {} }));
+console.log("  desktop -> stage.requestFullscreen called    : " + (stage.fullscreenRequested === true));
+if (!stage.fullscreenRequested) failures += 1;
+
+// 2. iPhone: the stage has neither method, so the video's own API must be used.
+delete stage.requestFullscreen;
+delete stage.webkitRequestFullscreen;
+video.enteredFullscreen = false;
+video.webkitEnterFullscreen = function () { this.enteredFullscreen = true; };
+fullscreenClicks.forEach((fn) => fn({ preventDefault() {} }));
+console.log("  iPhone  -> video.webkitEnterFullscreen called : " + (video.enteredFullscreen === true));
+if (!video.enteredFullscreen) failures += 1;
+
+// 3. Leaving fullscreen still works wherever the API exists.
+document.fullscreenElement = stage;
+document.exitFullscreen = function () { document.exitCalled = true; return Promise.resolve(); };
+fullscreenClicks.forEach((fn) => fn({ preventDefault() {} }));
+console.log("  exit    -> document.exitFullscreen called     : " + (document.exitCalled === true));
+if (!document.exitCalled) failures += 1;
+document.fullscreenElement = null;
 
 // Everything the script looks up by id, so the Django test can confirm each one
 // really exists in the rendered markup.

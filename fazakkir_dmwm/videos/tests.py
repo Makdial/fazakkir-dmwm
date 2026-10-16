@@ -2409,10 +2409,20 @@ class PlayerScriptTests(TestCase):
             audio_file_id="audio/run.mp3",
             audio_status="ready",
         )
+        # An audio-only upload renders the same player, but drives the <audio>
+        # element instead, so the branch has to be exercised separately.
+        self.audio_only = Video.objects.create(
+            user=user,
+            title="Recitation",
+            media_type="audio",
+            audio_file_id="audio/recite.mp3",
+            audio_url="https://example.com/recite.mp3",
+            audio_status="ready",
+        )
 
-    def _script(self) -> str:
+    def _script(self, video=None) -> str:
         body = self.client.get(
-            reverse("videos:detail", args=[self.video.id])
+            reverse("videos:detail", args=[(video or self.video).id])
         ).content.decode()
         # The page opens with the theme bootstrap inline, so pick the block that
         # actually holds the player rather than the first one on the page.
@@ -2422,12 +2432,15 @@ class PlayerScriptTests(TestCase):
                 return block
         raise AssertionError("player script block not found in the page")
 
-    def _run(self) -> str:
+    def _run(self, script=None) -> str:
         project = Path(__file__).resolve().parent.parent
         harness = project / "static" / "js" / "tests" / "player_smoke.js"
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "player.js"
-            target.write_text(self._script(), encoding="utf-8")
+            target.write_text(
+                script if script is not None else self._script(),
+                encoding="utf-8",
+            )
             proc = subprocess.run(
                 [self.node, str(harness), str(target)],
                 capture_output=True, text=True, timeout=120, cwd=str(project),
@@ -2484,6 +2497,93 @@ class PlayerScriptTests(TestCase):
     def test_controls_drive_the_video_for_a_normal_upload(self):
         output = self._run()
         self.assertIn("video.play() called : true", output)
+
+    def test_player_script_runs_for_an_audio_only_upload(self):
+        """The audio-only page takes a different branch of the same script.
+
+        ``audioOnly`` a quoted "false" was truthy and made every control drive
+        the wrong element; executing the page is the only way to be sure the
+        branch really runs.
+        """
+        script = self._script(self.audio_only)
+        self.assertRegex(
+            script, r"const audioOnly\s*=\s*true\b",
+            "the audio-only page does not set the flag to a bare true",
+        )
+        output = self._run(script)
+        self.assertIn(
+            "script executed without throwing", output,
+            "the audio-only player failed to execute:\n" + output,
+        )
+        self.assertIn(
+            "active element      : audio", output,
+            "the audio-only page did not become active:\n" + output,
+        )
+        self.assertIn(
+            "audio.play() called : true", output,
+            "tapping an audio-only page did not start the MP3:\n" + output,
+        )
+        self.assertIn(
+            "video.play() called : false", output,
+            "an audio-only page started the video element:\n" + output,
+        )
+
+    def test_fullscreen_falls_back_to_the_video_on_iphone(self):
+        """iPhone Safari has no Fullscreen API on elements.
+
+        The button called ``playerStage.requestFullscreen()`` unguarded, so on
+        an iPhone it threw a TypeError synchronously - before ``.catch`` could
+        be attached - and pressing it did nothing. The harness replays that
+        environment: a stage with neither ``requestFullscreen`` nor the webkit
+        prefix, which must fall through to the video's own API.
+        """
+        output = self._run()
+        self.assertIn(
+            "desktop -> stage.requestFullscreen called    : true", output,
+            "fullscreen no longer uses the standard API:\n" + output,
+        )
+        self.assertIn(
+            "iPhone  -> video.webkitEnterFullscreen called : true", output,
+            "fullscreen still does nothing on an iPhone:\n" + output,
+        )
+        self.assertIn(
+            "exit    -> document.exitFullscreen called     : true", output,
+            "leaving fullscreen stopped working:\n" + output,
+        )
+
+    def test_no_line_is_glued_to_the_statement_above_it(self):
+        """This file omits semicolons, so a line starting with "[" or "(" is read
+        as a subscript or a call on the statement above it.
+
+        ``["a"].forEach(...)`` placed straight after ``foo()`` becomes
+        ``foo()["a"].forEach(...)``, which threw at load time and killed the
+        whole player. A bracket is only a hazard when the previous code line can
+        be continued; after a "}" or a restricted keyword such as "return", a new
+        statement begins instead and the bracket is harmless.
+        """
+        script = self._script()
+        lines = script.splitlines()
+        boundaries = ("}", ";", "{", ":")
+        restricted = ("return", "break", "continue", "throw", "yield")
+        offenders = []
+        for index, line in enumerate(lines):
+            stripped = line.strip()
+            if not stripped.startswith(("[", "(")):
+                continue
+            previous = ""
+            for earlier in reversed(lines[:index]):
+                candidate = earlier.strip()
+                if candidate and not candidate.startswith("//"):
+                    previous = candidate
+                    break
+            if previous.endswith(boundaries) or previous.endswith(restricted):
+                continue
+            offenders.append(f"line {index + 1}: {stripped}")
+        self.assertEqual(
+            offenders, [],
+            "these lines would be glued to the statement above them: "
+            + "; ".join(offenders),
+        )
 
     def test_every_id_the_script_looks_up_exists_in_the_markup(self):
         # These are only rendered when MP3 generation is running or the viewer
