@@ -41,6 +41,9 @@ class Video(models.Model):
     audio_file_id = models.CharField(max_length=200, blank=True, default="")
     audio_url = models.URLField(max_length=500, blank=True)
 
+    # Video/audio duration in seconds. 0 means not computed yet.
+    duration_seconds = models.FloatField(default=0.0, blank=True)
+
     # Status of the automatic MP3 extraction (see ``audio_tasks``).
     AUDIO_STATUS_CHOICES = [
         ("", _("Not generated")),
@@ -138,6 +141,18 @@ class Video(models.Model):
         return r2_storage.download_url(
             self.audio_file_id, f"{self.title}.mp3", self.audio_url
         )
+
+    @property
+    def duration_formatted(self):
+        """Format duration as M:SS or H:MM:SS."""
+        total = int(round(self.duration_seconds or 0))
+        if total < 0:
+            total = 0
+        hours, remainder = divmod(total, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if hours:
+            return f"{hours}:{minutes:02d}:{seconds:02d}"
+        return f"{minutes}:{seconds:02d}"
 
     def delete_stored_files(self) -> None:
         """Best-effort removal of every R2 object that belongs to this video.

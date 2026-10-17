@@ -61,6 +61,9 @@
                 {% else %}
                     <span class="thumbnail-placeholder">▶</span>
                 {% endif %}
+                {% if item.video.duration_seconds %}
+                <span class="video-duration">{{ item.video.duration_formatted }}</span>
+                {% endif %}
             </div>
             <div class="playlist-item-info">
                 <h3>{{ item.video.title }}</h3>

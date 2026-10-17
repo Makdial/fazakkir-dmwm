@@ -91,6 +91,24 @@
     opacity: 0.4;
 }
 
+/* Duration badge, bottom-right of the thumbnail, like YouTube's "12:34". */
+.video-duration {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    z-index: 2;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+
 /* Sits against the left edge rather than dead centre: a circle in the middle
    of the frame covers the part of the image people actually look at. */
 .play-icon {
@@ -231,6 +249,7 @@
 
 .related-thumb {
     flex: none;
+    position: relative;
     width: 168px;
     aspect-ratio: 16 / 9;
     background: var(--yt-thumb-bg);

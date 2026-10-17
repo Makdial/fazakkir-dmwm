@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -34,6 +35,11 @@ SECRET_KEY = os.environ.get("SECRET_KEY") or "django-insecure-dev-only-do-not-us
 # without any configuration. Set DEBUG=0 in production: that is what stops
 # Django leaking settings and tracebacks to visitors.
 DEBUG = os.environ.get("DEBUG", "1").strip().lower() in ("1", "true", "yes", "on")
+
+# True while the test runner is in charge. Background work that would otherwise
+# reach out to the network (measuring an old video's length, for example) is
+# disabled then, so the suite stays fast and deterministic.
+TESTING = "test" in sys.argv
 
 if not DEBUG and SECRET_KEY.startswith("django-insecure-"):
     raise RuntimeError(

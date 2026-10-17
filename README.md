@@ -13,6 +13,10 @@ videos; every visitor can browse and play them.
   **short-lived presigned URLs** otherwise — so public access is optional.
 - Uploads up to **3 GB** per video, streamed and multipart-uploaded so they
   never sit in server memory.
+- **Length badges**: every thumbnail shows the duration (`12:34`) like YouTube.
+  New uploads are measured at upload time; older videos fill themselves in the
+  first time a page shows them (or all at once with `python manage.py
+  generatedurations`).
 - **SQLite** database for titles, views, likes and users — zero configuration.
 - **Light / dark theme toggle**, remembered per browser.
 - **Four languages**: English, French, Arabic and Wolof, switchable from the navbar
@@ -298,6 +302,23 @@ freely.
 
 > Note: browsers can display one text track at a time, so enabling a new track
 > replaces the previous one.
+
+### Length badges
+
+Every video card shows its running time in the corner of the thumbnail, exactly
+like YouTube. The length is measured once, when the file is uploaded, and stored
+with the video.
+
+Videos uploaded before this existed have no length recorded yet. They fill
+themselves in automatically: the first time a page displays such a video, its
+length is measured in the background and the badge appears on the next visit.
+To do the whole library in one go instead, run:
+
+```bash
+python manage.py generatedurations          # only videos missing a length
+python manage.py generatedurations --all    # re-measure every video
+python manage.py generatedurations --id 3   # just one video
+```
 
 ### Automatic MP3 conversion
 

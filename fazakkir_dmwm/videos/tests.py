@@ -12,7 +12,7 @@ from unittest import mock
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -2165,6 +2165,15 @@ class AudioOnlyUploadTests(TestCase):
         self.assertTrue(video.is_audio_only)
         self.assertFalse(video.has_video)
 
+    @mock.patch("videos.views.duration_for_upload", return_value=321.0)
+    @mock.patch("videos.views.upload_audio")
+    def test_audio_upload_records_the_length(self, upload_audio, duration):
+        upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
+        self.audio_post()
+        video = Video.objects.get()
+        self.assertEqual(video.duration_seconds, 321.0)
+        self.assertEqual(video.duration_formatted, "5:21")
+
     @mock.patch("videos.views.upload_audio")
     def test_audio_only_has_no_video_download_link(self, upload_audio):
         upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
@@ -2218,6 +2227,101 @@ class AudioOnlyUploadTests(TestCase):
         self.assertContains(response, 'name="media_type"')
         self.assertContains(response, 'name="audio_file"')
         self.assertContains(response, 'name="video_file"')
+
+class DurationDisplayTests(TestCase):
+    """Videos and audio show their length on the thumbnail, like YouTube."""
+
+    def setUp(self):
+        self.user = make_user("author")
+
+    def test_duration_is_formatted_as_minutes_and_seconds(self):
+        self.assertEqual(make_video(self.user, duration_seconds=45).duration_formatted, "0:45")
+        self.assertEqual(make_video(self.user, duration_seconds=125).duration_formatted, "2:05")
+        self.assertEqual(make_video(self.user, duration_seconds=3725).duration_formatted, "1:02:05")
+
+    def test_zero_duration_is_not_shown(self):
+        self.assertEqual(make_video(self.user, duration_seconds=0).duration_formatted, "0:00")
+
+    def test_ffmpeg_banner_duration_is_parsed(self):
+        from .audio import _parse_duration
+
+        banner = "  Duration: 00:03:21.45, start: 0.000000, bitrate: 128 kb/s"
+        self.assertAlmostEqual(_parse_duration(banner), 201.45)
+
+    def test_unparseable_output_yields_zero(self):
+        from .audio import _parse_duration
+
+        self.assertEqual(_parse_duration("no duration here"), 0.0)
+
+    def test_badge_is_rendered_on_the_home_grid(self):
+        make_video(self.user, title="Long one", duration_seconds=605)
+        body = self.client.get(reverse("videos:list")).content.decode()
+        self.assertIn("video-duration", body)
+        self.assertIn("10:05", body)
+
+    def test_badge_is_hidden_when_the_length_is_unknown(self):
+        make_video(self.user, title="Unknown", duration_seconds=0)
+        body = self.client.get(reverse("videos:list")).content.decode()
+        self.assertNotIn("video-duration", body)
+
+    def test_fill_duration_measures_and_stores_the_length(self):
+        from . import duration_tasks
+
+        video = make_video(self.user, duration_seconds=0)
+        with mock.patch.object(
+            duration_tasks, "get_duration_from_url", return_value=612.0
+        ):
+            duration_tasks.fill_duration(video.id)
+        video.refresh_from_db()
+        self.assertEqual(video.duration_seconds, 612.0)
+
+    def test_fill_duration_leaves_a_known_length_alone(self):
+        from . import duration_tasks
+
+        video = make_video(self.user, duration_seconds=30.0)
+        with mock.patch.object(
+            duration_tasks, "get_duration_from_url", return_value=999.0
+        ) as probe:
+            duration_tasks.fill_duration(video.id)
+        probe.assert_not_called()
+        video.refresh_from_db()
+        self.assertEqual(video.duration_seconds, 30.0)
+
+    def test_scheduling_is_skipped_without_storage(self):
+        from . import duration_tasks
+
+        duration_tasks._QUEUE.clear()
+        duration_tasks._QUEUED.clear()
+        with override_settings(TESTING=False):
+            with mock.patch.object(duration_tasks, "is_configured", return_value=False):
+                queued = duration_tasks.schedule_duration_fill([1, 2, 3])
+        self.assertEqual(queued, 0)
+        self.assertEqual(duration_tasks._QUEUE, [])
+
+    def test_scheduling_queues_and_skips_duplicates(self):
+        from . import duration_tasks
+
+        duration_tasks._QUEUE.clear()
+        duration_tasks._QUEUED.clear()
+        duration_tasks._FAILED.discard(7)
+        with override_settings(TESTING=False):
+            with mock.patch.object(duration_tasks, "is_configured", return_value=True):
+                with mock.patch("videos.duration_tasks.threading.Thread") as thread:
+                    first = duration_tasks.schedule_duration_fill([7, 7, 8])
+                    second = duration_tasks.schedule_duration_fill([7, 8])
+        # 7 and 8 are queued once; the repeats are ignored.
+        self.assertEqual(first, 2)
+        self.assertEqual(second, 0)
+        thread.assert_called_once()
+        duration_tasks._QUEUE.clear()
+        duration_tasks._QUEUED.clear()
+
+    def test_home_page_queues_videos_that_have_no_length(self):
+        make_video(self.user, title="Needs a length", duration_seconds=0)
+        with mock.patch("videos.views.schedule_missing_durations") as schedule:
+            self.client.get(reverse("videos:list"))
+        schedule.assert_called_once()
+
 
 class TranslationCoverageTests(TestCase):
     """Every string shown in the UI must exist in all three catalogues.

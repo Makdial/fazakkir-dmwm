@@ -13,8 +13,9 @@ from django.views.decorators.http import require_GET, require_POST
 
 from core.permissions import login_required, user_can_write, write_required
 
-from .audio import AudioExtractionError, extract_mp3, materialize
+from .audio import AudioExtractionError, duration_for_upload, extract_mp3, materialize
 from .audio_tasks import clear_stale_jobs, schedule_audio_generation
+from .duration_tasks import schedule_missing_durations
 from .forms import VideoEditForm, VideoUploadForm
 from .models import Comment, Playlist, PlaylistItem, SubtitleTrack, Video, VideoLike
 from .r2_storage import (
@@ -40,6 +41,9 @@ logger = logging.getLogger(__name__)
 
 def video_detail(request, video_id):
     video = get_object_or_404(Video.objects, id=video_id)
+
+    if not video.duration_seconds:
+        schedule_missing_durations(Video.objects.filter(id=video.id))
 
     video.views += 1
     video.save(update_fields=["views"])
@@ -129,6 +133,9 @@ def video_detail(request, video_id):
 
 def video_list(request):
     videos = Video.objects.all()
+    # Old uploads have no length yet; measure the ones on this page in the
+    # background so the badge fills in without the administrator doing anything.
+    schedule_missing_durations(videos)
     return render(request, "videos/list.html", {"videos": videos})
 
 
@@ -164,6 +171,7 @@ def video_search(request):
         videos = videos.filter(clause)
 
     videos = videos.distinct()
+    schedule_missing_durations(videos)
 
     return render(
         request,
@@ -174,6 +182,7 @@ def video_search(request):
 
 def channel_videos(request, username):
     videos = Video.objects.filter(user__username=username)
+    schedule_missing_durations(videos)
     return render(request, "videos/channel.html", {"videos": videos, "channel_name": username})
 
 
@@ -301,6 +310,9 @@ def video_upload(request):
 
     # Audio-only upload: store the MP3 itself, with no picture behind it.
     if media_type == "audio":
+        # Measure the duration before the upload, while the file is still open.
+        duration = duration_for_upload(audio_file)
+        audio_file.seek(0)
         try:
             result = upload_audio(audio_file, Path(audio_file.name).stem + ".mp3")
         except StorageError as exc:
@@ -316,6 +328,7 @@ def video_upload(request):
             audio_file_id=result["path"],
             audio_url=result["url"],
             audio_status="ready",
+            duration_seconds=duration,
         )
         _notify_storage_after_upload()
         return JsonResponse({
@@ -325,7 +338,9 @@ def video_upload(request):
         })
 
     # Extract the audio first: uploading the video to R2 closes the temporary
-    # file Django saved the upload to, so it is gone afterwards.
+    # file Django saved the upload to, so it is gone afterwards. The duration is
+    # read at the same time, for the same reason.
+    duration = duration_for_upload(video_file)
     audio_file_id, audio_url, audio_status = _extract_audio_track(
         video_file, video_file.name
     )
@@ -365,6 +380,7 @@ def video_upload(request):
         audio_file_id=audio_file_id,
         audio_url=audio_url,
         audio_status=audio_status,
+        duration_seconds=duration,
     )
 
     _notify_storage_after_upload()
@@ -462,6 +478,8 @@ def video_edit(request, video_id):
         remove_thumbnail = form.cleaned_data.get("remove_thumbnail")
 
         if new_video:
+            # Measure the duration before the upload closes the file.
+            new_duration = duration_for_upload(new_video)
             audio_file_id, audio_url, audio_status = _extract_audio_track(
                 new_video, new_video.name
             )
@@ -500,6 +518,7 @@ def video_edit(request, video_id):
             video.auto_subtitle_status = ""
             video.auto_subtitle_error = ""
             video.job_started_at = None
+            video.duration_seconds = new_duration
             video.save()
 
             if not audio_file_id and audio_status == "":

@@ -373,6 +373,9 @@
                 {% else %}
                 <span class="thumbnail-placeholder">▶</span>
                 {% endif %}
+                {% if related.duration_seconds %}
+                <span class="video-duration">{{ related.duration_formatted }}</span>
+                {% endif %}
             </div>
             <div class="related-info">
                 <h3 class="related-title">{{ related.title }}</h3>

@@ -6,6 +6,7 @@ ffmpeg installation is required.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -21,6 +22,11 @@ def _ffmpeg_exe() -> str:
     import imageio_ffmpeg
 
     return imageio_ffmpeg.get_ffmpeg_exe()
+
+
+# ffmpeg prints "Duration: 00:03:21.45, ..." in its header banner. Parsing that
+# avoids needing ffprobe, which imageio-ffmpeg does not ship.
+_DURATION_RE = re.compile(r"Duration:\s*(\d+):(\d{2}):(\d{2}(?:\.\d+)?)")
 
 
 def materialize(uploaded_file) -> tuple[str, str | None]:
@@ -100,3 +106,68 @@ def extract_mp3_from_url(source_url: str, dest_path: str) -> bool:
     file instead of the server downloading and storing a second copy.
     """
     return _run_ffmpeg(_build_command(source_url, dest_path, remote=True), dest_path)
+
+
+def _parse_duration(text: str) -> float:
+    match = _DURATION_RE.search(text or "")
+    if not match:
+        return 0.0
+    hours, minutes, seconds = match.groups()
+    return int(hours) * 3600 + int(minutes) * 60 + float(seconds)
+
+
+def get_duration(source_path: str) -> float:
+    """Return the duration of a media file in seconds, or 0.0 if unknown."""
+    command = [_ffmpeg_exe(), "-nostdin", "-hide_banner", "-i", str(source_path)]
+    try:
+        # ffmpeg exits non-zero when handed no output file, but it still prints
+        # the input's header (with the duration) to stderr, so the code is not
+        # checked.
+        proc = subprocess.run(command, capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return 0.0
+    return _parse_duration(proc.stderr)
+
+
+def get_duration_from_url(source_url: str) -> float:
+    """Like :func:`get_duration`, but reads the media from an HTTP(S) URL."""
+    command = [
+        _ffmpeg_exe(),
+        "-nostdin",
+        "-hide_banner",
+        "-rw_timeout",
+        "60000000",
+        "-user_agent",
+        "Fazakkir/1.0",
+        "-i",
+        str(source_url),
+    ]
+    try:
+        proc = subprocess.run(command, capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError):
+        return 0.0
+    return _parse_duration(proc.stderr)
+
+
+def duration_for_upload(uploaded_file) -> float:
+    """Best-effort duration, in seconds, for a Django uploaded file.
+
+    Materializes the upload to disk when needed and always cleans up after
+    itself. Never raises: an unreadable file simply yields ``0.0``.
+    """
+    cleanup = None
+    try:
+        source_path, cleanup = materialize(uploaded_file)
+        return get_duration(source_path)
+    except Exception:  # noqa: BLE001 - duration is cosmetic, never fail an upload
+        return 0.0
+    finally:
+        if cleanup:
+            _remove(cleanup)
+
+
+def _remove(path: str) -> None:
+    try:
+        os.remove(path)
+    except OSError:
+        pass

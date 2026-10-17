@@ -23,6 +23,9 @@
                     {% else %}
                         <span class="thumbnail-placeholder">▶</span>
                     {% endif %}
+                    {% if video.duration_seconds %}
+                    <span class="video-duration">{{ video.duration_formatted }}</span>
+                    {% endif %}
                     <span class="play-icon">▶</span>
                 </div>
                 <div class="video-info">
