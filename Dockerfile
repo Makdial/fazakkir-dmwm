@@ -1,8 +1,8 @@
 # Container image for Fazakkir.
 #
 # Used by Northflank (and works unchanged on Render, Railway, Fly.io and any
-# Docker host). imageio-ffmpeg ships its own ffmpeg binary through pip, so no
-# system package installation is needed for the MP3 extraction.
+# Docker host). ffmpeg is installed from the distribution because the static
+# binary bundled by imageio-ffmpeg crashes on network input here.
 FROM python:3.13-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -11,6 +11,13 @@ ENV PYTHONUNBUFFERED=1 \
     PORT=8000
 
 WORKDIR /app
+
+# A real, dynamically linked ffmpeg. The static binary that imageio-ffmpeg
+# ships segfaults on network input inside this image, so reading media straight
+# from R2 (length probes, MP3 extraction) only works with the system package.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 # Dependencies are copied first so the layer is reused when only code changes.
 COPY requirements.txt ./

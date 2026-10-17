@@ -1,15 +1,20 @@
 """Extract an MP3 audio track from an uploaded video.
 
-``imageio-ffmpeg`` ships a self-contained ffmpeg binary, so no system-wide
-ffmpeg installation is required.
+A system ``ffmpeg`` is used when one is installed (the production image
+installs it). ``imageio-ffmpeg``'s self-contained binary is the fallback, so a
+development machine needs no system-wide ffmpeg installation.
 """
 from __future__ import annotations
 
+import logging
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class AudioExtractionError(Exception):
@@ -17,8 +22,15 @@ class AudioExtractionError(Exception):
 
 
 def _ffmpeg_exe() -> str:
-    # Imported lazily so the rest of the site works even if the optional
-    # dependency is missing.
+    # Prefer a system ffmpeg. The static binary that imageio-ffmpeg ships
+    # crashes (SIGSEGV, no output) as soon as it is handed a network URL inside
+    # a container, which silently broke reading media straight from R2.
+    system = shutil.which("ffmpeg")
+    if system:
+        return system
+
+    # Fall back to the bundled binary; imported lazily so the rest of the site
+    # works even if the optional dependency is missing.
     import imageio_ffmpeg
 
     return imageio_ffmpeg.get_ffmpeg_exe()
@@ -146,7 +158,16 @@ def get_duration_from_url(source_url: str) -> float:
         proc = subprocess.run(command, capture_output=True, text=True, timeout=120)
     except (OSError, subprocess.SubprocessError):
         return 0.0
-    return _parse_duration(proc.stderr)
+    duration = _parse_duration(proc.stderr)
+    if duration <= 0 and proc.returncode:
+        # A crashed or rejected read used to pass unnoticed; say so, because a
+        # silent zero means "no badge and never retried".
+        logger.warning(
+            "Could not read the length from %s (ffmpeg rc=%s)",
+            source_url.split("?")[0],
+            proc.returncode,
+        )
+    return duration
 
 
 def duration_for_upload(uploaded_file) -> float:

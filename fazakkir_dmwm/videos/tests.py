@@ -2253,6 +2253,19 @@ class DurationDisplayTests(TestCase):
 
         self.assertEqual(_parse_duration("no duration here"), 0.0)
 
+    def test_system_ffmpeg_is_preferred_over_the_bundled_binary(self):
+        from . import audio
+
+        with mock.patch.object(audio.shutil, "which", return_value="/usr/bin/ffmpeg"):
+            self.assertEqual(audio._ffmpeg_exe(), "/usr/bin/ffmpeg")
+
+    def test_bundled_ffmpeg_is_used_when_none_is_installed(self):
+        from . import audio
+
+        with mock.patch.object(audio.shutil, "which", return_value=None):
+            with mock.patch("imageio_ffmpeg.get_ffmpeg_exe", return_value="/bundled"):
+                self.assertEqual(audio._ffmpeg_exe(), "/bundled")
+
     def test_badge_is_rendered_on_the_home_grid(self):
         make_video(self.user, title="Long one", duration_seconds=605)
         body = self.client.get(reverse("videos:list")).content.decode()
