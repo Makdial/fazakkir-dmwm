@@ -771,8 +771,8 @@ msgstr "Li generaat sous-titrage en arrière-plan."
 msgid "A subtitle run is already in progress for this video."
 msgstr "Sous-titrage di.screen bajal ci vidéo bi."
 
-msgid "Automatic subtitles are not configured. Set OPENAI_API_KEY in the .env file to enable them."
-msgstr "Sous-titrage automatique mi kenn defu paramétré. Ràng OPENAI_API_KEY fichier .env."
+msgid "Automatic subtitles are not configured. Set %(key)s in the .env file to enable them."
+msgstr "Sous-titrage automatique mi kenn defu paramétré. Ràng %(key)s fichier .env."
 
 msgid "This video has no audio track yet. Generate its MP3 first, then create the subtitles."
 msgstr "Vidéo bi amay piste audio. Generer MP3 bi lépp bu soxla, teul generaat sous-titrage."

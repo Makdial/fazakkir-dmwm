@@ -795,8 +795,8 @@ msgstr "جارٍ إنشاء الترجمات في الخلفية."
 msgid "A subtitle run is already in progress for this video."
 msgstr "هناك عملية إنشاء ترجمات قيد التنفيذ لهذا الفيديو بالفعل."
 
-msgid "Automatic subtitles are not configured. Set OPENAI_API_KEY in the .env file to enable them."
-msgstr "الترجمات التلقائية غير مُعدّة. عيّن OPENAI_API_KEY في ملف ‎.env لتفعيلها."
+msgid "Automatic subtitles are not configured. Set %(key)s in the .env file to enable them."
+msgstr "الترجمات التلقائية غير مُعدّة. عيّن %(key)s في ملف ‎.env لتفعيلها."
 
 msgid "This video has no audio track yet. Generate its MP3 first, then create the subtitles."
 msgstr "لا يحتوي هذا الفيديو بعد على مسار صوتي. أنشئ ملف MP3 أولًا، ثم أنشئ الترجمات."

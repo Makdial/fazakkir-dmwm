@@ -37,7 +37,7 @@ class Command(BaseCommand):
             self.stderr.write(
                 self.style.ERROR(
                     "No subtitle provider is configured. Set SUBTITLE_PROVIDER and "
-                    "OPENAI_API_KEY in your .env file first."
+                    f"{transcription.configuration_hint()} in your .env file first."
                 )
             )
             return

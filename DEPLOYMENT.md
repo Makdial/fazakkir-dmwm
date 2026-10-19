@@ -77,7 +77,8 @@ Optional:
 
 | Variable | Enables |
 | --- | --- |
-| `OPENAI_API_KEY` | automatic subtitles and translations |
+| `OPENAI_API_KEY` (with `SUBTITLE_PROVIDER=openai`) | automatic subtitles and translations |
+| `GOOGLE_API_KEY` (with `SUBTITLE_PROVIDER=google`) | automatic subtitles via Cloud Speech-to-Text + Cloud Translation |
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` | real storage alert emails (use a Gmail **App password**) |
 | `JOB_STALE_MINUTES` | how long an interrupted conversion waits before being retried (default 30) |
 

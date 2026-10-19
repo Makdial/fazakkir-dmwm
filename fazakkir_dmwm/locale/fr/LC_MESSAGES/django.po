@@ -774,8 +774,8 @@ msgstr "Génération des sous-titres en arrière-plan."
 msgid "A subtitle run is already in progress for this video."
 msgstr "Une génération de sous-titres est déjà en cours pour cette vidéo."
 
-msgid "Automatic subtitles are not configured. Set OPENAI_API_KEY in the .env file to enable them."
-msgstr "Les sous-titres automatiques ne sont pas configurés. Définissez OPENAI_API_KEY dans le fichier .env pour les activer."
+msgid "Automatic subtitles are not configured. Set %(key)s in the .env file to enable them."
+msgstr "Les sous-titres automatiques ne sont pas configurés. Définissez %(key)s dans le fichier .env pour les activer."
 
 msgid "This video has no audio track yet. Generate its MP3 first, then create the subtitles."
 msgstr "Cette vidéo n'a pas encore de piste audio. Générez d'abord son MP3, puis créez les sous-titres."

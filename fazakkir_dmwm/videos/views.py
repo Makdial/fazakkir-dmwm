@@ -28,7 +28,10 @@ from .r2_storage import (
     upload_thumbnail,
     upload_video,
 )
-from .subtitles import ALLOWED_SUBTITLE_EXTENSIONS, label_for, normalize_to_vtt
+from .subtitles import ALLOWED_SUBTITLE_EXTENSIONS, language_choices, label_for, normalize_to_vtt
+from .transcription import (
+    configuration_hint as subtitles_key_hint,
+)
 from .transcription import (
     is_configured as subtitles_configured,
 )
@@ -121,12 +124,7 @@ def video_detail(request, video_id):
             in ("", "processing"),
             "subtitles_failed": video.auto_subtitle_status == "failed",
             "subtitle_tracks": video.subtitle_tracks.all(),
-            "subtitle_choices": [
-                ("ar", _("Arabic")),
-                ("fr", _("French")),
-                ("en", _("English")),
-                ("lyrics", _("Lyrics")),
-            ],
+            "subtitle_choices": [(code, _(name)) for code, name in language_choices()],
         },
     )
 
@@ -710,8 +708,9 @@ def subtitles_generate(request, video_id):
                 "success": False,
                 "error": _(
                     "Automatic subtitles are not configured. "
-                    "Set OPENAI_API_KEY in the .env file to enable them."
-                ),
+                    "Set %(key)s in the .env file to enable them."
+                )
+                % {"key": subtitles_key_hint()},
             },
             status=400,
         )

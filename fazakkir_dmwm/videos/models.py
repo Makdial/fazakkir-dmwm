@@ -6,6 +6,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from . import r2_storage
+from .subtitles import CAPTION_LANGUAGES, language_choices
 
 logger = logging.getLogger(__name__)
 
@@ -176,12 +177,7 @@ class SubtitleTrack(models.Model):
     from Django so the browser never has to make a cross-origin request for it.
     """
 
-    LANGUAGE_CHOICES = [
-        ("ar", "Arabic"),
-        ("fr", "French"),
-        ("en", "English"),
-        ("lyrics", "Lyrics"),
-    ]
+    LANGUAGE_CHOICES = language_choices()
 
     video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name="subtitle_tracks")
     language_code = models.CharField(max_length=10, choices=LANGUAGE_CHOICES)
@@ -204,12 +200,13 @@ class SubtitleTrack(models.Model):
         """Translated label shown in the player UI."""
         from django.utils.translation import gettext
 
-        return {
-            "ar": gettext("Arabic"),
-            "fr": gettext("French"),
-            "en": gettext("English"),
-            "lyrics": gettext("Lyrics"),
-        }.get(self.language_code, self.label)
+        # Translate the English name for known languages; anything else (a
+        # caption language without a catalogue entry) falls back to the stored
+        # label, which itself defaults to the code.
+        name = CAPTION_LANGUAGES.get(self.language_code)
+        if name is None:
+            return self.label
+        return gettext(name)
 
 
 class VideoLike(models.Model):

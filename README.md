@@ -49,6 +49,11 @@ videos; every visitor can browse and play them.
   app shell and saved audio keep working with no connection at all.
 - **Subtitles & lyrics**: upload `.vtt`, `.srt` or `.txt` files per language
   (Arabic, French, English) or as lyrics; viewers can turn each track on or off.
+- **Automatic captions (CC), YouTube-style**: with one API key the server
+  transcribes a video's audio in the spoken language and machine-translates it
+  into every target language, so viewers pick a language from the same
+  **Subtitles** row. Two back ends ship: **OpenAI** (Whisper) and **Google
+  Cloud** (Speech-to-Text + Cloud Translation).
 - **Responsive layout**: works on phones and tablets, with a collapsible
   hamburger menu, fluid video grid, stacked player controls and touch-friendly
   tap targets.
@@ -302,6 +307,58 @@ freely.
 
 > Note: browsers can display one text track at a time, so enabling a new track
 > replaces the previous one.
+
+### Automatic captions & translation
+
+Instead of uploading a file, read & write staff can let the server build the
+subtitles. On the video page press **Automatic subtitles**: the MP3 is cut into
+chunks, each chunk is transcribed in the spoken language
+(`SUBTITLE_SOURCE_LANGUAGE`, Arabic by default) and every cue is translated into
+the languages listed in `SUBTITLE_TARGET_LANGUAGES`. The result is one WebVTT
+track per language, so viewers choose the caption language from the ordinary
+**Subtitles** row above the player. The site knows these caption languages:
+Arabic, Chinese, English, French, German, Hindi, Indonesian, Italian, Japanese,
+Korean, Portuguese, Russian, Spanish, Turkish and Urdu (plus the special
+`lyrics` track). They are defined once in `videos/subtitles.py`
+(`CAPTION_LANGUAGES`), which drives both the manual-upload dropdown and the
+labels shown in the player; automatic generation accepts any target code, and
+one outside this list simply displays its own code.
+
+Pick the engine with `SUBTITLE_PROVIDER`:
+
+| Provider | Speech-to-text | Translation | Key |
+| --- | --- | --- | --- |
+| `openai` (default) | `whisper-1` | a chat model | `OPENAI_API_KEY` |
+| `google` | Cloud Speech-to-Text | Cloud Translation (NMT) | `GOOGLE_API_KEY` |
+
+For Google, create an API key in the Cloud console and enable both
+**Speech-to-Text** and **Cloud Translation** on its project, then set:
+
+```
+SUBTITLE_PROVIDER=google
+GOOGLE_API_KEY=your-key
+SUBTITLE_SOURCE_LANGUAGE=ar
+SUBTITLE_TARGET_LANGUAGES=fr,en
+```
+
+Optional Google tuning: `GOOGLE_SPEECH_MODEL` (default `latest_long`),
+`GOOGLE_SPEECH_LANGUAGE` (an exact BCP-47 code such as `ar-EG` when a dialect
+matters), `GOOGLE_SPEECH_ALTERNATIVE_LANGUAGES` (extra codes to accept) and
+`GOOGLE_TRANSLATE_MODEL` (`nmt`, the default, or the legacy `base`).
+
+Google's synchronous recogniser caps a single request at about a minute, so the
+audio is chunked more finely for Google than for OpenAI; the per-chunk
+timestamps are shifted back onto the full timeline and the word timings are
+grouped into readable lines. The pipeline is pluggable — a provider only
+implements `transcribe` and `translate` (see `videos/transcription.py`).
+
+To do every video at once, for example after switching provider, run:
+
+```bash
+python manage.py generatesubtitles              # every video with an MP3
+python manage.py generatesubtitles --id 3       # just one video
+python manage.py generatesubtitles --force      # retry failures too
+```
 
 ### Length badges
 

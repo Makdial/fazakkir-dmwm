@@ -1854,6 +1854,388 @@ class GenerateSubtitlesCommandTests(TestCase):
         self.assertIn("No videos need subtitles", out.getvalue())
 
 
+class GoogleLanguageCodeTests(TestCase):
+    """Our short codes mapped to what each Google API expects."""
+
+    def test_short_codes_are_mapped_for_speech(self):
+        with override_settings(GOOGLE_SPEECH_LANGUAGE=""):
+            self.assertEqual(transcription.speech_language_code("ar"), "ar-SA")
+            self.assertEqual(transcription.speech_language_code("fr"), "fr-FR")
+            self.assertEqual(transcription.speech_language_code("en"), "en-US")
+
+    def test_full_bcp47_tags_pass_through(self):
+        with override_settings(GOOGLE_SPEECH_LANGUAGE=""):
+            self.assertEqual(transcription.speech_language_code("ar-EG"), "ar-EG")
+
+    def test_unknown_codes_are_left_alone(self):
+        with override_settings(GOOGLE_SPEECH_LANGUAGE=""):
+            self.assertEqual(transcription.speech_language_code("wo"), "wo")
+
+    def test_empty_language_falls_back_to_english(self):
+        with override_settings(GOOGLE_SPEECH_LANGUAGE=""):
+            self.assertEqual(transcription.speech_language_code(""), "en-US")
+
+    def test_the_override_wins_over_the_mapping(self):
+        with override_settings(GOOGLE_SPEECH_LANGUAGE="ar-MA"):
+            self.assertEqual(transcription.speech_language_code("ar"), "ar-MA")
+
+    def test_translate_codes_are_lowercased(self):
+        self.assertEqual(transcription.translate_language_code("FR"), "fr")
+
+
+class CaptionBuildingTests(TestCase):
+    """Google returns timed words; these are grouped into caption lines."""
+
+    def test_a_sentence_ending_starts_a_new_caption(self):
+        captions = transcription.build_captions(
+            [
+                ("Hello", 0, 0.5),
+                ("world.", 0.5, 1.0),
+                ("Next", 1.0, 1.5),
+                ("one.", 1.5, 2.0),
+            ]
+        )
+        self.assertEqual([c.text for c in captions], ["Hello world.", "Next one."])
+
+    def test_a_long_pause_splits_the_line(self):
+        captions = transcription.build_captions([("before", 0, 0.5), ("after", 3.0, 3.5)])
+        self.assertEqual([c.text for c in captions], ["before", "after"])
+
+    def test_a_long_run_is_broken_up(self):
+        words = [(f"w{i}", i * 0.5, i * 0.5 + 0.5) for i in range(40)]
+        captions = transcription.build_captions(words)
+        self.assertGreater(len(captions), 1)
+        for caption in captions:
+            self.assertLessEqual(
+                caption.end - caption.start, transcription.CAPTION_MAX_SECONDS + 0.5
+            )
+
+    def test_a_zero_length_caption_still_has_a_positive_span(self):
+        captions = transcription.build_captions([("word", 1.0, 1.0)])
+        self.assertEqual(captions[0].start, 1.0)
+        self.assertEqual(captions[0].end, 1.5)
+
+    def test_a_very_long_word_is_not_split_on_itself(self):
+        word = "x" * 200
+        captions = transcription.build_captions([(word, 0, 1)])
+        self.assertEqual(captions[0].text, word)
+
+    def test_time_parser_handles_google_values(self):
+        self.assertEqual(transcription._google_seconds("1.500s"), 1.5)
+        self.assertEqual(transcription._google_seconds("0s"), 0.0)
+        self.assertEqual(transcription._google_seconds(None), 0.0)
+        self.assertEqual(transcription._google_seconds("nonsense"), 0.0)
+
+    def test_results_without_word_times_fall_back_to_transcripts(self):
+        captions = transcription.captions_from_speech_results(
+            [{"alternatives": [{"transcript": "One two three"}]}]
+        )
+        self.assertEqual(captions[0].text, "One two three")
+        self.assertGreater(captions[0].end, captions[0].start)
+
+    def test_speech_results_become_timed_captions(self):
+        results = [
+            {
+                "alternatives": [
+                    {
+                        "transcript": "Hello world.",
+                        "words": [
+                            {"word": "Hello", "startTime": "0s", "endTime": "0.400s"},
+                            {"word": "world.", "startTime": "0.400s", "endTime": "1s"},
+                        ],
+                    }
+                ]
+            }
+        ]
+        captions = transcription.captions_from_speech_results(results)
+        self.assertEqual(len(captions), 1)
+        self.assertEqual(captions[0].text, "Hello world.")
+        self.assertAlmostEqual(captions[0].start, 0.0)
+        self.assertAlmostEqual(captions[0].end, 1.0)
+
+
+class GoogleProviderTests(TestCase):
+    """The Google Cloud Speech-to-Text + Translation back end."""
+
+    API_KEY = "test-google-key"
+
+    def _audio_file(self, data=b"fake-mp3-bytes"):
+        directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, directory, ignore_errors=True)
+        path = Path(directory) / "chunk.mp3"
+        path.write_bytes(data)
+        return str(path)
+
+    @override_settings(
+        GOOGLE_API_KEY=API_KEY,
+        GOOGLE_SPEECH_MODEL="latest_long",
+        GOOGLE_SPEECH_LANGUAGE="",
+        GOOGLE_SPEECH_ALTERNATIVE_LANGUAGES="",
+    )
+    def test_transcribe_builds_the_request_and_reads_captions(self):
+        import base64 as _base64
+
+        results = [
+            {
+                "alternatives": [
+                    {
+                        "transcript": "Hello world.",
+                        "words": [
+                            {"word": "Hello", "startTime": "0s", "endTime": "0.400s"},
+                            {"word": "world.", "startTime": "0.400s", "endTime": "1s"},
+                        ],
+                    }
+                ]
+            }
+        ]
+        provider = transcription.GoogleProvider()
+        with mock.patch(
+            "videos.transcription._google_post_json", return_value={"results": results}
+        ) as post:
+            segments = provider.transcribe(self._audio_file(), "ar")
+
+        url, payload, key = post.call_args.args
+        self.assertEqual(url, transcription.GOOGLE_SPEECH_URL)
+        self.assertEqual(key, self.API_KEY)
+        config = payload["config"]
+        self.assertEqual(config["encoding"], "MP3")
+        self.assertEqual(config["sampleRateHertz"], transcription.CHUNK_SAMPLE_RATE)
+        self.assertEqual(config["languageCode"], "ar-SA")
+        self.assertEqual(config["model"], "latest_long")
+        self.assertTrue(config["enableWordTimeOffsets"])
+        self.assertTrue(config["enableAutomaticPunctuation"])
+        self.assertNotIn("alternativeLanguageCodes", config)
+        self.assertEqual(
+            _base64.b64decode(payload["audio"]["content"]), b"fake-mp3-bytes"
+        )
+        self.assertEqual([s.text for s in segments], ["Hello world."])
+        self.assertAlmostEqual(segments[0].end, 1.0)
+
+    @override_settings(
+        GOOGLE_API_KEY=API_KEY,
+        GOOGLE_SPEECH_MODEL="",
+        GOOGLE_SPEECH_ALTERNATIVE_LANGUAGES="fr,en",
+    )
+    def test_alternative_languages_and_an_empty_model_are_supported(self):
+        provider = transcription.GoogleProvider()
+        with mock.patch(
+            "videos.transcription._google_post_json", return_value={"results": []}
+        ) as post:
+            provider.transcribe(self._audio_file(), "ar")
+
+        config = post.call_args.args[1]["config"]
+        self.assertNotIn("model", config)
+        self.assertEqual(config["alternativeLanguageCodes"], ["fr-FR", "en-US"])
+
+    @override_settings(GOOGLE_API_KEY=API_KEY, GOOGLE_TRANSLATE_MODEL="nmt")
+    def test_translate_unescapes_and_keeps_the_timings(self):
+        provider = transcription.GoogleProvider()
+        provider._source_language = "ar"
+        segments = [
+            transcription.Segment(0, 1, "س"),
+            transcription.Segment(1, 2, "ب"),
+        ]
+        response = {
+            "data": {
+                "translations": [
+                    {"translatedText": "It&#39;s a"},
+                    {"translatedText": "test &amp; more"},
+                ]
+            }
+        }
+        with mock.patch(
+            "videos.transcription._google_post_json", return_value=response
+        ) as post:
+            translated = provider.translate(segments, "fr")
+
+        url, payload, _key = post.call_args.args
+        self.assertEqual(url, transcription.GOOGLE_TRANSLATE_URL)
+        self.assertEqual(payload["q"], ["س", "ب"])
+        self.assertEqual(payload["target"], "fr")
+        self.assertEqual(payload["source"], "ar")
+        self.assertEqual(payload["model"], "nmt")
+        self.assertEqual(payload["format"], "text")
+        self.assertEqual([s.text for s in translated], ["It's a", "test & more"])
+        self.assertEqual([(s.start, s.end) for s in translated], [(0, 1), (1, 2)])
+
+    @override_settings(GOOGLE_API_KEY=API_KEY)
+    def test_translate_batches_long_lists(self):
+        provider = transcription.GoogleProvider()
+        count = transcription.TRANSLATE_BATCH * 2 + 3
+        segments = [
+            transcription.Segment(i, i + 1, f"line {i}") for i in range(count)
+        ]
+        payloads = []
+
+        def fake(url, payload, api_key):
+            payloads.append(payload)
+            return {
+                "data": {
+                    "translations": [
+                        {"translatedText": text} for text in payload["q"]
+                    ]
+                }
+            }
+
+        with mock.patch("videos.transcription._google_post_json", side_effect=fake):
+            translated = provider.translate(segments, "en")
+
+        self.assertEqual(len(translated), count)
+        self.assertEqual(
+            [len(payload["q"]) for payload in payloads],
+            [
+                transcription.TRANSLATE_BATCH,
+                transcription.TRANSLATE_BATCH,
+                3,
+            ],
+        )
+
+    @override_settings(GOOGLE_API_KEY=API_KEY)
+    def test_translate_rejects_a_short_response(self):
+        provider = transcription.GoogleProvider()
+        with mock.patch(
+            "videos.transcription._google_post_json",
+            return_value={"data": {"translations": []}},
+        ):
+            with self.assertRaises(transcription.TranscriptionError):
+                provider.translate([transcription.Segment(0, 1, "x")], "en")
+
+
+class GoogleProviderSelectionTests(TestCase):
+    """Which back end ``SUBTITLE_PROVIDER`` picks and how it is checked."""
+
+    def test_google_is_selected_by_the_setting(self):
+        with override_settings(SUBTITLE_PROVIDER="google", GOOGLE_API_KEY="k"):
+            self.assertIsInstance(
+                transcription.get_provider(), transcription.GoogleProvider
+            )
+
+    def test_openai_is_still_the_default(self):
+        # Empty and unset both fall back to the OpenAI provider, which stays
+        # configured by OPENAI_API_KEY alone (the package is imported lazily).
+        with override_settings(SUBTITLE_PROVIDER="", OPENAI_API_KEY="k"):
+            self.assertEqual(transcription.provider_name(), "openai")
+            self.assertTrue(transcription.is_configured())
+
+    def test_an_unknown_provider_is_reported(self):
+        with override_settings(SUBTITLE_PROVIDER="nope"):
+            with self.assertRaises(transcription.TranscriptionError):
+                transcription.get_provider()
+
+    def test_google_needs_a_key_to_be_configured(self):
+        with override_settings(SUBTITLE_PROVIDER="google", GOOGLE_API_KEY=""):
+            self.assertFalse(transcription.is_configured())
+        with override_settings(SUBTITLE_PROVIDER="google", GOOGLE_API_KEY="k"):
+            self.assertTrue(transcription.is_configured())
+
+    def test_the_hint_names_the_configured_providers_key(self):
+        with override_settings(SUBTITLE_PROVIDER="google"):
+            self.assertEqual(transcription.configuration_hint(), "GOOGLE_API_KEY")
+        with override_settings(SUBTITLE_PROVIDER="openai"):
+            self.assertEqual(transcription.configuration_hint(), "OPENAI_API_KEY")
+
+    def test_a_missing_key_is_reported_when_the_provider_is_built(self):
+        with override_settings(SUBTITLE_PROVIDER="google", GOOGLE_API_KEY=""):
+            with self.assertRaises(transcription.TranscriptionError) as caught:
+                transcription.GoogleProvider()
+        self.assertIn("GOOGLE_API_KEY", str(caught.exception))
+
+
+class GoogleChunkingTests(TestCase):
+    """The synchronous recogniser caps a request at about a minute."""
+
+    @override_settings(GOOGLE_API_KEY="k")
+    def test_google_asks_for_sub_minute_chunks(self):
+        provider = transcription.GoogleProvider()
+        self.assertLessEqual(provider.chunk_seconds, 60)
+        self.assertLess(provider.chunk_seconds, transcription.CHUNK_SECONDS)
+
+    def test_the_pipeline_uses_the_provider_chunk_length(self):
+        user = make_user("owner")
+        video = make_video(user, audio_file_id="audio/a.mp3")
+
+        class ShortChunkProvider(transcription.SubtitleProvider):
+            name = "fake"
+            chunk_seconds = 42
+
+            def transcribe(self, path, language):
+                return [transcription.Segment(0, 1, "hi")]
+
+            def translate(self, segments, target_language):
+                return list(segments)
+
+        with (
+            mock.patch(
+                "videos.transcription.get_provider",
+                return_value=ShortChunkProvider(),
+            ),
+            mock.patch("videos.transcription.download_audio", return_value="audio.mp3"),
+            mock.patch(
+                "videos.transcription.chunk_audio", return_value=[("c0.mp3", 0.0)]
+            ) as chunk,
+        ):
+            transcription.generate_subtitles(video.id)
+
+        self.assertEqual(chunk.call_args.args[2], 42)
+
+
+class GoogleHttpLayerTests(TestCase):
+    """The small httpx wrapper shared by both Google calls."""
+
+    class _Response:
+        def __init__(self, status_code=200, payload=None, text=""):
+            self.status_code = status_code
+            self._payload = payload
+            self.text = text
+
+        def json(self):
+            if self._payload is None:
+                raise ValueError("no json body")
+            return self._payload
+
+    def test_a_successful_call_returns_the_json(self):
+        response = self._Response(200, {"ok": True})
+        with mock.patch("httpx.post", return_value=response) as post:
+            data = transcription._google_post_json(
+                "https://example.com", {"a": 1}, "secret"
+            )
+        self.assertEqual(data, {"ok": True})
+        self.assertEqual(post.call_args.kwargs["params"], {"key": "secret"})
+        self.assertEqual(post.call_args.kwargs["json"], {"a": 1})
+
+    def test_an_error_response_carries_the_google_message(self):
+        response = self._Response(400, {"error": {"message": "API key not valid"}})
+        with mock.patch("httpx.post", return_value=response):
+            with self.assertRaises(transcription.TranscriptionError) as caught:
+                transcription._google_post_json("https://example.com", {}, "bad")
+        self.assertIn("API key not valid", str(caught.exception))
+
+    def test_a_connection_failure_is_wrapped(self):
+        import httpx
+
+        with mock.patch("httpx.post", side_effect=httpx.ConnectError("down")):
+            with self.assertRaises(transcription.TranscriptionError) as caught:
+                transcription._google_post_json("https://example.com", {}, "k")
+        self.assertIn("Could not reach Google", str(caught.exception))
+
+
+class GoogleSubtitleEndpointTests(TestCase):
+    """The video-page endpoint speaks up for whichever provider is configured."""
+
+    def setUp(self):
+        self.admin = make_user("root", is_staff=True, is_superuser=True)
+        self.video = make_video(self.admin, audio_file_id="audio/a.mp3")
+        self.client.login(username="root", password="pw12345678")
+
+    @override_settings(SUBTITLE_PROVIDER="google", GOOGLE_API_KEY="")
+    def test_a_missing_google_key_is_named_in_the_error(self):
+        response = self.client.post(
+            reverse("videos:subtitles_generate", args=[self.video.id])
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("GOOGLE_API_KEY", response.json()["error"])
+
+
 class BackgroundPlaybackTests(TestCase):
     """Media Session wiring so playback survives the screen locking."""
 

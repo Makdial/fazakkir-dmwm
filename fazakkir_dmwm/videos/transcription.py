@@ -8,6 +8,10 @@ The back end is pluggable.  A provider only has to implement two small methods
 (:meth:`SubtitleProvider.transcribe` and :meth:`SubtitleProvider.translate`), so
 a local/offline engine can be added later without touching anything else.
 
+Two providers ship today, chosen with ``SUBTITLE_PROVIDER``: :class:`OpenAIProvider`
+(``openai``) and :class:`GoogleProvider` (``google``, Google Cloud Speech-to-Text
+plus Cloud Translation).
+
 Pipeline per video::
 
     audio  ->  16 kHz mono chunks  ->  transcribe  ->  translate  ->  WebVTT
@@ -18,6 +22,8 @@ with the start of the full track.
 """
 from __future__ import annotations
 
+import base64
+import html
 import logging
 import os
 import tempfile
@@ -91,17 +97,24 @@ def _ffmpeg_exe() -> str:
     return imageio_ffmpeg.get_ffmpeg_exe()
 
 
-def chunk_audio(source_path: str, workdir: str) -> list[tuple[str, float]]:
+def chunk_audio(
+    source_path: str, workdir: str, chunk_seconds: int = CHUNK_SECONDS
+) -> list[tuple[str, float]]:
     """Split ``source_path`` into API-sized pieces.
+
+    ``chunk_seconds`` is how long each piece lasts; it defaults to the global
+    maximum but providers that cap a single request lower (Google's synchronous
+    recogniser allows about a minute) pass their own, shorter value.
 
     Returns ``[(path, offset_seconds), ...]`` so the caller can shift the
     per-chunk timestamps back onto the full timeline.
     """
     import subprocess
 
+    chunk_seconds = max(1, int(chunk_seconds))
     chunks: list[tuple[str, float]] = []
     for index in range(0, 1024):  # generous ceiling: ~85 hours of audio
-        start = index * CHUNK_SECONDS
+        start = index * chunk_seconds
         path = os.path.join(workdir, f"chunk-{index:04d}.mp3")
         command = [
             _ffmpeg_exe(),
@@ -112,7 +125,7 @@ def chunk_audio(source_path: str, workdir: str) -> list[tuple[str, float]]:
             "-ss",
             str(start),
             "-t",
-            str(CHUNK_SECONDS),
+            str(chunk_seconds),
             "-i",
             source_path,
             "-ac",
@@ -177,6 +190,11 @@ class SubtitleProvider:
     """Interface every speech-to-text / translation back end implements."""
 
     name = "base"
+
+    # Longest slice of audio handed to :meth:`transcribe` in one call. Back ends
+    # whose API caps a request lower than the default shorten it (see
+    # :class:`GoogleProvider`, whose synchronous recogniser allows ~1 minute).
+    chunk_seconds = CHUNK_SECONDS
 
     def transcribe(self, path: str, language: str) -> list[Segment]:
         raise NotImplementedError
@@ -295,20 +313,312 @@ class OpenAIProvider(SubtitleProvider):
         return cleaned
 
 
+# --- Google Cloud provider --------------------------------------------------
+#
+# Speech-to-Text turns each audio chunk into timed words; Cloud Translation
+# turns those words into captions for every target language. Both services take
+# the same API key, so a single ``GOOGLE_API_KEY`` enables the pair.
+
+GOOGLE_SPEECH_URL = "https://speech.googleapis.com/v1/speech:recognize"
+GOOGLE_TRANSLATE_URL = "https://translation.googleapis.com/language/translate/v2"
+GOOGLE_HTTP_TIMEOUT = 180.0
+
+# The synchronous ``recognize`` endpoint accepts at most about one minute (and
+# 10 MB) of audio, so Google chunks are much shorter than the OpenAI ones.
+GOOGLE_CHUNK_SECONDS = 55
+
+# Spoken-language codes: our short codes -> the BCP-47 tags Speech-to-Text
+# expects. A tag that already contains a dash is passed through untouched, and
+# ``GOOGLE_SPEECH_LANGUAGE`` overrides the lot (useful for an Arabic dialect
+# other than ``ar-SA``).
+GOOGLE_SPEECH_LANGUAGES = {
+    "ar": "ar-SA",
+    "en": "en-US",
+    "fr": "fr-FR",
+    "es": "es-ES",
+    "tr": "tr-TR",
+}
+
+# How a long run of speech is broken into readable caption lines.
+CAPTION_MAX_SECONDS = 7.0
+CAPTION_MAX_CHARS = 90
+CAPTION_GAP_SECONDS = 1.5
+CAPTION_SENTENCE_ENDINGS = ".!?…。？！"
+
+
+def speech_language_code(language: str) -> str:
+    """Return the Speech-to-Text code for one of our language codes."""
+    override = (getattr(settings, "GOOGLE_SPEECH_LANGUAGE", "") or "").strip()
+    if override:
+        return override
+    language = (language or "").strip()
+    if not language:
+        return "en-US"
+    if "-" in language:
+        return language
+    return GOOGLE_SPEECH_LANGUAGES.get(language.lower(), language)
+
+
+def translate_language_code(language: str) -> str:
+    """Return the Cloud Translation code for one of our language codes."""
+    return (language or "").strip().lower()
+
+
+def _google_seconds(value) -> float:
+    """Convert a Speech-to-Text duration such as ``"1.500s"`` to seconds."""
+    if value is None:
+        return 0.0
+    try:
+        return float(str(value).strip().rstrip("s"))
+    except ValueError:
+        return 0.0
+
+
+def words_from_speech_results(results) -> list[tuple[str, float, float]]:
+    """Flatten ``results`` into ``(text, start, end)`` timed words."""
+    words: list[tuple[str, float, float]] = []
+    for result in results or []:
+        alternatives = result.get("alternatives") or []
+        if not alternatives:
+            continue
+        for word in alternatives[0].get("words") or []:
+            text = (word.get("word") or "").strip()
+            if text:
+                words.append(
+                    (
+                        text,
+                        _google_seconds(word.get("startTime")),
+                        _google_seconds(word.get("endTime")),
+                    )
+                )
+    return words
+
+
+def build_captions(words) -> list[Segment]:
+    """Group timed words into YouTube-style caption lines.
+
+    A new line starts on a sentence ending, after a pause, or once the current
+    line has grown long enough to be hard to read.
+    """
+    segments: list[Segment] = []
+    buffer: list[tuple[str, float, float]] = []
+    length = 0
+
+    def flush() -> None:
+        nonlocal buffer, length
+        if buffer:
+            text = " ".join(item[0] for item in buffer)
+            start = buffer[0][1]
+            end = buffer[-1][2]
+            if end <= start:
+                end = start + 0.5
+            segments.append(Segment(start, end, text))
+        buffer = []
+        length = 0
+
+    for text, start, end in words:
+        if buffer:
+            gap = start - buffer[-1][2]
+            duration = end - buffer[0][1]
+            if (
+                gap > CAPTION_GAP_SECONDS
+                or duration > CAPTION_MAX_SECONDS
+                or length + len(text) + 1 > CAPTION_MAX_CHARS
+            ):
+                flush()
+        buffer.append((text, start, end))
+        length += len(text) + 1
+        if text and text[-1] in CAPTION_SENTENCE_ENDINGS:
+            flush()
+
+    flush()
+    return segments
+
+
+def captions_from_speech_results(results) -> list[Segment]:
+    """Turn a Speech-to-Text response into timed caption segments."""
+    words = words_from_speech_results(results)
+    if words:
+        return build_captions(words)
+
+    # Word timings are only absent when the API refuses to return them; fall
+    # back to one caption per result so the transcription is not lost.
+    segments: list[Segment] = []
+    cursor = 0.0
+    for result in results or []:
+        alternatives = result.get("alternatives") or []
+        text = ((alternatives[0].get("transcript") if alternatives else "") or "").strip()
+        if not text:
+            continue
+        duration = max(1.0, min(CAPTION_MAX_SECONDS, 0.4 * len(text.split()) + 0.5))
+        segments.append(Segment(cursor, cursor + duration, text))
+        cursor += duration
+    return segments
+
+
+def _google_error(response) -> str:
+    """A readable message taken from a failed Google API response."""
+    try:
+        error = response.json().get("error") or {}
+    except ValueError:
+        error = {}
+    message = error.get("message") or (getattr(response, "text", "") or "").strip()
+    return f"Google rejected the request: {message or f'HTTP {response.status_code}'}"
+
+
+def _google_post_json(url: str, payload: dict, api_key: str) -> dict:
+    """POST ``payload`` to a Google API and return the decoded JSON.
+
+    ``httpx`` is imported lazily so the module keeps working for installs that
+    only ever use the OpenAI provider.
+    """
+    try:
+        import httpx
+    except ImportError as exc:  # pragma: no cover - depends on environment
+        raise TranscriptionError(
+            "The 'httpx' package is not installed. Run: pip install httpx"
+        ) from exc
+
+    try:
+        response = httpx.post(
+            url, params={"key": api_key}, json=payload, timeout=GOOGLE_HTTP_TIMEOUT
+        )
+    except httpx.HTTPError as exc:
+        raise TranscriptionError(f"Could not reach Google: {exc}") from exc
+
+    if response.status_code >= 400:
+        raise TranscriptionError(_google_error(response))
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise TranscriptionError("Google returned an unexpected response.") from exc
+
+
+class GoogleProvider(SubtitleProvider):
+    """Google Cloud: Speech-to-Text transcription and Translation captions.
+
+    Authenticates with a single API key (``GOOGLE_API_KEY``). Transcription uses
+    the synchronous recogniser, whose ~1 minute ceiling is why this provider
+    asks for shorter audio chunks, and returns word-level timings that are
+    grouped into caption lines. Translation uses Cloud Translation v2 with its
+    Neural Machine Translation model (``GOOGLE_TRANSLATE_MODEL``).
+    """
+
+    name = "google"
+    chunk_seconds = GOOGLE_CHUNK_SECONDS
+
+    def __init__(self):
+        api_key = (getattr(settings, "GOOGLE_API_KEY", "") or "").strip()
+        if not api_key:
+            raise TranscriptionError(
+                "GOOGLE_API_KEY is not set, so subtitles cannot be generated."
+            )
+        self._api_key = api_key
+        self._source_language = ""
+
+    def transcribe(self, path: str, language: str) -> list[Segment]:
+        # Remembered so translation can be told the source language instead of
+        # auto-detecting it line by line.
+        self._source_language = language
+
+        with open(path, "rb") as handle:
+            audio = base64.b64encode(handle.read()).decode("ascii")
+
+        config = {
+            "encoding": "MP3",
+            "sampleRateHertz": CHUNK_SAMPLE_RATE,
+            "audioChannelCount": 1,
+            "languageCode": speech_language_code(language),
+            "enableAutomaticPunctuation": True,
+            "enableWordTimeOffsets": True,
+        }
+        model = (getattr(settings, "GOOGLE_SPEECH_MODEL", "") or "").strip()
+        if model:
+            config["model"] = model
+        alternatives = [
+            speech_language_code(code)
+            for code in (
+                getattr(settings, "GOOGLE_SPEECH_ALTERNATIVE_LANGUAGES", "") or ""
+            ).split(",")
+            if code.strip()
+        ]
+        if alternatives:
+            config["alternativeLanguageCodes"] = alternatives
+
+        data = self._post_json(
+            GOOGLE_SPEECH_URL, {"config": config, "audio": {"content": audio}}
+        )
+        return captions_from_speech_results(data.get("results"))
+
+    def translate(self, segments: list[Segment], target_language: str) -> list[Segment]:
+        target = translate_language_code(target_language)
+        source = translate_language_code(self._source_language)
+        translated: list[Segment] = []
+
+        for start in range(0, len(segments), TRANSLATE_BATCH):
+            batch = segments[start : start + TRANSLATE_BATCH]
+            texts = self._translate_batch(
+                [segment.text for segment in batch], target, source
+            )
+            for segment, text in zip(batch, texts):
+                translated.append(Segment(segment.start, segment.end, text))
+
+        if len(translated) != len(segments):
+            raise TranscriptionError(
+                "The translation returned a different number of lines than expected."
+            )
+        return translated
+
+    def _translate_batch(
+        self, texts: list[str], target: str, source: str
+    ) -> list[str]:
+        payload = {"q": texts, "target": target, "format": "text"}
+        model = (getattr(settings, "GOOGLE_TRANSLATE_MODEL", "") or "").strip()
+        if model:
+            payload["model"] = model
+        if source:
+            payload["source"] = source
+
+        data = self._post_json(GOOGLE_TRANSLATE_URL, payload)
+        translations = (data.get("data") or {}).get("translations") or []
+        # Cloud Translation escapes punctuation even in ``text`` mode.
+        return [
+            html.unescape((item.get("translatedText") or "").strip())
+            for item in translations
+        ]
+
+    def _post_json(self, url: str, payload: dict) -> dict:
+        return _google_post_json(url, payload, self._api_key)
+
+
+def provider_name() -> str:
+    """The configured provider's short name."""
+    return (getattr(settings, "SUBTITLE_PROVIDER", "openai") or "openai").strip().lower()
+
+
 def get_provider() -> SubtitleProvider:
     """Build the provider named by ``SUBTITLE_PROVIDER``."""
-    name = (getattr(settings, "SUBTITLE_PROVIDER", "openai") or "openai").strip().lower()
+    name = provider_name()
     if name == "openai":
         return OpenAIProvider()
+    if name == "google":
+        return GoogleProvider()
     raise TranscriptionError(f"Unknown subtitle provider: {name!r}")
 
 
 def is_configured() -> bool:
     """True when the configured provider has everything it needs to run."""
-    name = (getattr(settings, "SUBTITLE_PROVIDER", "openai") or "openai").strip().lower()
+    name = provider_name()
     if name == "openai":
         return bool(getattr(settings, "OPENAI_API_KEY", ""))
+    if name == "google":
+        return bool(getattr(settings, "GOOGLE_API_KEY", ""))
     return False
+
+
+def configuration_hint() -> str:
+    """The ``.env`` variable the configured provider needs to be switched on."""
+    return "GOOGLE_API_KEY" if provider_name() == "google" else "OPENAI_API_KEY"
 
 
 # --- Orchestration ----------------------------------------------------------
@@ -335,7 +645,7 @@ def generate_subtitles(video_id: int, include_lyrics: bool = True) -> dict:
     workdir = tempfile.mkdtemp(prefix="fazakkir-subs-")
     try:
         audio_path = download_audio(video, os.path.join(workdir, "audio.mp3"))
-        chunks = chunk_audio(audio_path, workdir)
+        chunks = chunk_audio(audio_path, workdir, provider.chunk_seconds)
 
         segments: list[Segment] = []
         for chunk_path, offset in chunks:

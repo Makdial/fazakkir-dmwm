@@ -318,16 +318,37 @@ STORAGE_ALERT_EMAIL = os.environ.get("STORAGE_ALERT_EMAIL", "makhoutech@gmail.co
 
 # Automatic subtitles and lyrics. The video's speech is transcribed in
 # SUBTITLE_SOURCE_LANGUAGE and each cue translated into every language listed in
-# SUBTITLE_TARGET_LANGUAGES. Set SUBTITLE_PROVIDER to "openai" and provide an
-# OPENAI_API_KEY to enable it; see videos/transcription.py.
+# SUBTITLE_TARGET_LANGUAGES. SUBTITLE_PROVIDER picks the back end:
+#
+#   openai  ->  whisper-1 + a chat model, needs OPENAI_API_KEY
+#   google  ->  Cloud Speech-to-Text + Cloud Translation, needs GOOGLE_API_KEY
+#
+# See videos/transcription.py for both providers.
 SUBTITLE_PROVIDER = os.environ.get("SUBTITLE_PROVIDER", "openai")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 SUBTITLE_SOURCE_LANGUAGE = os.environ.get("SUBTITLE_SOURCE_LANGUAGE", "ar")
 SUBTITLE_TARGET_LANGUAGES = os.environ.get("SUBTITLE_TARGET_LANGUAGES", "fr,en")
+
+# --- OpenAI provider --------------------------------------------------------
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 # whisper-1 is used because it is the model that returns per-segment
 # timestamps; gpt-4o-transcribe does not support timestamp_granularities.
 SUBTITLE_TRANSCRIBE_MODEL = os.environ.get("SUBTITLE_TRANSCRIBE_MODEL", "whisper-1")
 SUBTITLE_TRANSLATE_MODEL = os.environ.get("SUBTITLE_TRANSLATE_MODEL", "gpt-4o-mini")
+
+# --- Google provider --------------------------------------------------------
+# One API key enables both Cloud Speech-to-Text and Cloud Translation.
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+# Speech recognition model: latest_long (continuous speech), latest_short, video…
+GOOGLE_SPEECH_MODEL = os.environ.get("GOOGLE_SPEECH_MODEL", "latest_long")
+# Exact BCP-47 code for the spoken language, e.g. "ar-EG" or "fr-FR". Empty means
+# use the built-in mapping (ar -> ar-SA, fr -> fr-FR, en -> en-US…).
+GOOGLE_SPEECH_LANGUAGE = os.environ.get("GOOGLE_SPEECH_LANGUAGE", "")
+# Extra language codes to accept alongside the source (comma separated).
+GOOGLE_SPEECH_ALTERNATIVE_LANGUAGES = os.environ.get(
+    "GOOGLE_SPEECH_ALTERNATIVE_LANGUAGES", ""
+)
+# Translation model: nmt (Neural Machine Translation, the default) or base.
+GOOGLE_TRANSLATE_MODEL = os.environ.get("GOOGLE_TRANSLATE_MODEL", "nmt")
 
 # How long a background MP3 / subtitle job may stay "processing" before it is
 # assumed abandoned and marked retryable. Free hosts such as Render kill the web

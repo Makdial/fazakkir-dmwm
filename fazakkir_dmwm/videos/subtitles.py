@@ -50,11 +50,47 @@ def normalize_to_vtt(content: bytes | str) -> str:
     return f"WEBVTT\n\n00:00:00.000 --> 99:59:59.000\n{stripped}\n"
 
 
+# Every language a subtitle track can use, as a single source of truth so the
+# upload dropdown, the stored labels and automatically generated tracks always
+# agree. The values are the English names; the player translates them at render
+# time (see ``SubtitleTrack.display_label``), so a language without a catalogue
+# entry simply shows its English name.
+CAPTION_LANGUAGES = {
+    "ar": "Arabic",
+    "de": "German",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "hi": "Hindi",
+    "id": "Indonesian",
+    "it": "Italian",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "pt": "Portuguese",
+    "ru": "Russian",
+    "tr": "Turkish",
+    "ur": "Urdu",
+    "zh": "Chinese",
+    "lyrics": "Lyrics",
+}
+
+# The synthetic "language" that holds a video's lyrics rather than captions.
+LYRICS_CODE = "lyrics"
+
+
+def language_choices() -> list[tuple[str, str]]:
+    """The ``(code, English name)`` pairs a subtitle track may use.
+
+    Languages come first, sorted by code, with the special lyrics track last.
+    """
+    choices = [
+        (code, name)
+        for code, name in sorted(CAPTION_LANGUAGES.items())
+        if code != LYRICS_CODE
+    ]
+    return choices + [(LYRICS_CODE, CAPTION_LANGUAGES[LYRICS_CODE])]
+
+
 def label_for(language_code: str) -> str:
-    """Human readable label for a language code."""
-    return {
-        "ar": "Arabic",
-        "fr": "French",
-        "en": "English",
-        "lyrics": "Lyrics",
-    }.get(language_code, language_code)
+    """Human readable English label for a language code."""
+    return CAPTION_LANGUAGES.get(language_code, language_code)
