@@ -1529,6 +1529,16 @@ class TranscriptionPipelineTests(TestCase):
     def setUp(self):
         self.user = make_user("owner")
         self.provider = FakeProvider()
+        # Pin the pipeline's settings: otherwise a developer's own .env (a
+        # different source language, or the ElevenLabs provider) would leak in
+        # and change what these tests see.
+        settings_override = override_settings(
+            SUBTITLE_PROVIDER="openai",
+            SUBTITLE_SOURCE_LANGUAGE="ar",
+            SUBTITLE_TARGET_LANGUAGES="fr,en",
+        )
+        settings_override.enable()
+        self.addCleanup(settings_override.disable)
 
     def _patch_pipeline(self, chunks):
         return (
@@ -1761,6 +1771,7 @@ class SubtitleEndpointsTests(TestCase):
         self.assertEqual(response.status_code, 302)
 
     @mock.patch("videos.views.subtitles_configured", return_value=False)
+    @override_settings(SUBTITLE_PROVIDER="openai")
     def test_unconfigured_provider_is_reported(self, _configured):
         self._login_admin()
         response = self.client.post(
@@ -1919,6 +1930,18 @@ class CaptionBuildingTests(TestCase):
         word = "x" * 200
         captions = transcription.build_captions([(word, 0, 1)])
         self.assertEqual(captions[0].text, word)
+
+    def test_standalone_punctuation_is_not_its_own_caption(self):
+        # Scribe emits standalone punctuation as a word of its own; a caption
+        # holding just "." is noise, so it is dropped.
+        captions = transcription.build_captions(
+            [("Hello", 0, 0.5), (".", 0.5, 0.6), ("world.", 0.6, 1.0)]
+        )
+        self.assertEqual([c.text for c in captions], ["Hello world."])
+
+    def test_punctuation_only_input_produces_no_captions(self):
+        captions = transcription.build_captions([(".", 0, 0.5), ("!", 0.5, 1.0)])
+        self.assertEqual(captions, [])
 
     def test_time_parser_handles_google_values(self):
         self.assertEqual(transcription._google_seconds("1.500s"), 1.5)
@@ -2139,6 +2162,313 @@ class GoogleProviderSelectionTests(TestCase):
             with self.assertRaises(transcription.TranscriptionError) as caught:
                 transcription.GoogleProvider()
         self.assertIn("GOOGLE_API_KEY", str(caught.exception))
+
+
+class ElevenLabsLanguageCodeTests(TestCase):
+    """The language code Scribe is asked for (and when it auto-detects)."""
+
+    def test_the_source_language_is_lowercased(self):
+        with override_settings(ELEVENLABS_LANGUAGE_CODE=""):
+            self.assertEqual(transcription.elevenlabs_language_code("WO"), "wo")
+            self.assertEqual(transcription.elevenlabs_language_code("ar"), "ar")
+
+    def test_empty_language_means_auto_detect(self):
+        with override_settings(ELEVENLABS_LANGUAGE_CODE=""):
+            self.assertEqual(transcription.elevenlabs_language_code(""), "")
+
+    def test_the_setting_overrides_the_source_language(self):
+        with override_settings(ELEVENLABS_LANGUAGE_CODE="fr"):
+            self.assertEqual(transcription.elevenlabs_language_code("wo"), "fr")
+
+    def test_the_setting_can_ask_for_auto_detect(self):
+        with override_settings(ELEVENLABS_LANGUAGE_CODE="auto"):
+            self.assertEqual(transcription.elevenlabs_language_code("wo"), "")
+
+
+class ElevenLabsCaptionTests(TestCase):
+    """Scribe's word list is grouped into the same caption lines as Google's."""
+
+    def test_words_become_timed_captions(self):
+        result = {
+            "text": "Hello world.",
+            "words": [
+                {"text": "Hello", "start": 0.0, "end": 0.4, "type": "word"},
+                {"text": " ", "start": 0.4, "end": 0.5, "type": "spacing"},
+                {"text": "world.", "start": 0.5, "end": 1.0, "type": "word"},
+            ],
+        }
+        captions = transcription.captions_from_elevenlabs(result)
+        self.assertEqual([c.text for c in captions], ["Hello world."])
+        self.assertAlmostEqual(captions[0].start, 0.0)
+        self.assertAlmostEqual(captions[0].end, 1.0)
+
+    def test_spacing_and_audio_events_are_ignored(self):
+        result = {
+            "words": [
+                {"text": "[beep]", "start": 0.0, "end": 0.5, "type": "audio_event"},
+                {"text": "hi", "start": 0.5, "end": 1.0, "type": "word"},
+            ]
+        }
+        self.assertEqual(
+            transcription.words_from_elevenlabs(result), [("hi", 0.5, 1.0)]
+        )
+
+    def test_words_without_timings_are_skipped(self):
+        result = {
+            "words": [
+                {"text": "no-times", "type": "word"},
+                {"text": "timed", "start": 1.0, "end": 2.0, "type": "word"},
+            ]
+        }
+        self.assertEqual(
+            transcription.words_from_elevenlabs(result), [("timed", 1.0, 2.0)]
+        )
+
+    def test_a_result_without_words_falls_back_to_the_transcript(self):
+        result = {"text": "One two three", "audio_duration_secs": 5}
+        captions = transcription.captions_from_elevenlabs(result)
+        self.assertEqual(captions[0].text, "One two three")
+        self.assertAlmostEqual(captions[0].end, 5.0)
+
+    def test_an_empty_result_produces_nothing(self):
+        self.assertEqual(transcription.captions_from_elevenlabs({}), [])
+        self.assertEqual(transcription.captions_from_elevenlabs(None), [])
+
+
+class ElevenLabsProviderTests(TestCase):
+    """The ElevenLabs Scribe back end."""
+
+    API_KEY = "test-elevenlabs-key"
+
+    def _audio_file(self, data=b"fake-mp3-bytes"):
+        directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, directory, ignore_errors=True)
+        path = Path(directory) / "chunk.mp3"
+        path.write_bytes(data)
+        return str(path)
+
+    @override_settings(
+        ELEVENLABS_API_KEY=API_KEY,
+        ELEVENLABS_STT_MODEL="scribe_v2",
+        ELEVENLABS_LANGUAGE_CODE="",
+    )
+    def test_transcribe_builds_the_request_and_reads_captions(self):
+        result = {
+            "language_code": "eng",
+            "words": [
+                {"text": "Hello", "start": 0.0, "end": 0.4, "type": "word"},
+                {"text": "world.", "start": 0.4, "end": 1.0, "type": "word"},
+            ],
+        }
+        provider = transcription.ElevenLabsProvider()
+        with mock.patch(
+            "videos.transcription._elevenlabs_transcribe_request",
+            return_value=result,
+        ) as post:
+            segments = provider.transcribe(self._audio_file(), "ar")
+
+        key, path, data = post.call_args.args
+        self.assertEqual(key, self.API_KEY)
+        self.assertEqual(data["model_id"], "scribe_v2")
+        self.assertEqual(data["timestamps_granularity"], "word")
+        self.assertEqual(data["language_code"], "ar")
+        self.assertEqual([s.text for s in segments], ["Hello world."])
+
+    @override_settings(
+        ELEVENLABS_API_KEY=API_KEY,
+        ELEVENLABS_STT_MODEL="",
+        ELEVENLABS_LANGUAGE_CODE="",
+    )
+    def test_an_empty_model_defaults_and_no_language_means_auto(self):
+        provider = transcription.ElevenLabsProvider()
+        with mock.patch(
+            "videos.transcription._elevenlabs_transcribe_request",
+            return_value={"words": []},
+        ) as post:
+            provider.transcribe(self._audio_file(), "")
+
+        data = post.call_args.args[2]
+        self.assertEqual(data["model_id"], "scribe_v2")
+        self.assertNotIn("language_code", data)
+
+    @override_settings(ELEVENLABS_API_KEY=API_KEY)
+    def test_translate_is_not_supported(self):
+        provider = transcription.ElevenLabsProvider()
+        self.assertFalse(provider.supports_translation)
+        with self.assertRaises(transcription.TranscriptionError):
+            provider.translate([transcription.Segment(0, 1, "hi")], "fr")
+
+    def test_a_missing_key_is_reported_when_the_provider_is_built(self):
+        with override_settings(ELEVENLABS_API_KEY=""):
+            with self.assertRaises(transcription.TranscriptionError) as caught:
+                transcription.ElevenLabsProvider()
+        self.assertIn("ELEVENLABS_API_KEY", str(caught.exception))
+
+    def test_the_provider_uses_the_shared_chunk_length(self):
+        with override_settings(ELEVENLABS_API_KEY=self.API_KEY):
+            provider = transcription.ElevenLabsProvider()
+        self.assertEqual(provider.chunk_seconds, transcription.CHUNK_SECONDS)
+
+
+class ElevenLabsProviderSelectionTests(TestCase):
+    """``SUBTITLE_PROVIDER=elevenlabs`` is wired into the same switches."""
+
+    def test_elevenlabs_is_selected_by_the_setting(self):
+        with override_settings(SUBTITLE_PROVIDER="elevenlabs", ELEVENLABS_API_KEY="k"):
+            self.assertIsInstance(
+                transcription.get_provider(), transcription.ElevenLabsProvider
+            )
+
+    def test_elevenlabs_needs_a_key_to_be_configured(self):
+        with override_settings(SUBTITLE_PROVIDER="elevenlabs", ELEVENLABS_API_KEY=""):
+            self.assertFalse(transcription.is_configured())
+        with override_settings(SUBTITLE_PROVIDER="elevenlabs", ELEVENLABS_API_KEY="k"):
+            self.assertTrue(transcription.is_configured())
+
+    def test_the_hint_names_the_elevenlabs_key(self):
+        with override_settings(SUBTITLE_PROVIDER="elevenlabs"):
+            self.assertEqual(
+                transcription.configuration_hint(), "ELEVENLABS_API_KEY"
+            )
+
+
+class ElevenLabsHttpLayerTests(TestCase):
+    """The multipart wrapper that talks to Scribe."""
+
+    class _Response:
+        def __init__(self, status_code=200, payload=None, text=""):
+            self.status_code = status_code
+            self._payload = payload
+            self.text = text
+
+        def json(self):
+            if self._payload is None:
+                raise ValueError("no json body")
+            return self._payload
+
+    def _audio_file(self, data=b"fake-mp3-bytes"):
+        directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, directory, ignore_errors=True)
+        path = Path(directory) / "chunk.mp3"
+        path.write_bytes(data)
+        return str(path)
+
+    def test_a_successful_call_returns_the_json(self):
+        response = self._Response(200, {"text": "ok"})
+        with mock.patch("httpx.post", return_value=response) as post:
+            result = transcription._elevenlabs_transcribe_request(
+                "key", self._audio_file(), {"model_id": "scribe_v2"}
+            )
+
+        self.assertEqual(result, {"text": "ok"})
+        url = post.call_args.args[0]
+        self.assertEqual(url, transcription.ELEVENLABS_SPEECH_URL)
+        self.assertEqual(post.call_args.kwargs["headers"], {"xi-api-key": "key"})
+
+    def test_an_error_response_is_reported(self):
+        response = self._Response(
+            401, {"detail": {"message": "bad key", "code": "unauthorized"}}
+        )
+        with mock.patch("httpx.post", return_value=response):
+            with self.assertRaises(transcription.TranscriptionError) as caught:
+                transcription._elevenlabs_transcribe_request(
+                    "key", self._audio_file(), {}
+                )
+        self.assertIn("bad key", str(caught.exception))
+
+    def test_a_network_error_is_wrapped(self):
+        import httpx as _httpx
+
+        with mock.patch("httpx.post", side_effect=_httpx.ConnectError("down")):
+            with self.assertRaises(transcription.TranscriptionError):
+                transcription._elevenlabs_transcribe_request(
+                    "key", self._audio_file(), {}
+                )
+
+    def test_a_non_json_body_is_reported(self):
+        response = self._Response(200, None, text="not json")
+        with mock.patch("httpx.post", return_value=response):
+            with self.assertRaises(transcription.TranscriptionError):
+                transcription._elevenlabs_transcribe_request(
+                    "key", self._audio_file(), {}
+                )
+
+
+class ElevenLabsPipelineTests(TestCase):
+    """A provider without translation still saves its source track."""
+
+    class _SourceOnlyProvider(transcription.SubtitleProvider):
+        name = "elevenlabs"
+        supports_translation = False
+
+        def __init__(self):
+            self.translate_calls = 0
+
+        def transcribe(self, path, language):
+            return [transcription.Segment(0, 1, "hello"), transcription.Segment(1, 2, "world")]
+
+        def translate(self, segments, target_language):
+            self.translate_calls += 1
+            return list(segments)
+
+    def test_targets_are_skipped_and_the_source_track_is_saved(self):
+        user = make_user("owner")
+        video = make_video(user, audio_file_id="audio/a.mp3")
+        provider = self._SourceOnlyProvider()
+
+        with (
+            mock.patch(
+                "videos.transcription.get_provider", return_value=provider
+            ),
+            mock.patch("videos.transcription.download_audio", return_value="audio.mp3"),
+            mock.patch(
+                "videos.transcription.chunk_audio", return_value=[("c0.mp3", 0.0)]
+            ),
+            override_settings(
+                SUBTITLE_SOURCE_LANGUAGE="wo", SUBTITLE_TARGET_LANGUAGES="fr,en"
+            ),
+        ):
+            result = transcription.generate_subtitles(video.id)
+
+        self.assertEqual(provider.translate_calls, 0)
+        self.assertIn("wo", result["languages"])
+        self.assertFalse(video.subtitle_tracks.filter(language_code="fr").exists())
+        self.assertTrue(video.subtitle_tracks.filter(language_code="wo").exists())
+
+
+class AudioChunkingTests(TestCase):
+    """Chunking stops at the real end of the audio, not at a silent tail."""
+
+    def test_chunks_stop_at_the_known_duration(self):
+        directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, directory, ignore_errors=True)
+        source = str(Path(directory) / "audio.mp3")
+        # A two second tone so ffmpeg has something real to read.
+        subprocess.run(
+            [
+                transcription._ffmpeg_exe(),
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=440:duration=2",
+                "-ar",
+                str(transcription.CHUNK_SAMPLE_RATE),
+                "-ac",
+                "1",
+                source,
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        chunks = transcription.chunk_audio(source, directory, chunk_seconds=1)
+        self.assertEqual(len(chunks), 2)
+        self.assertEqual([offset for _path, offset in chunks], [0.0, 1.0])
+
+    def test_an_unreadable_file_is_reported(self):
+        with self.assertRaises(transcription.TranscriptionError):
+            transcription.chunk_audio("does-not-exist.mp3", tempfile.mkdtemp())
 
 
 class GoogleChunkingTests(TestCase):

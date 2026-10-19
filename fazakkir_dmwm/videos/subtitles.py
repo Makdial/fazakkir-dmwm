@@ -70,6 +70,7 @@ CAPTION_LANGUAGES = {
     "ru": "Russian",
     "tr": "Turkish",
     "ur": "Urdu",
+    "wo": "Wolof",
     "zh": "Chinese",
     "lyrics": "Lyrics",
 }

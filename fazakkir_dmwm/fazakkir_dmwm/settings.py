@@ -322,8 +322,10 @@ STORAGE_ALERT_EMAIL = os.environ.get("STORAGE_ALERT_EMAIL", "makhoutech@gmail.co
 #
 #   openai  ->  whisper-1 + a chat model, needs OPENAI_API_KEY
 #   google  ->  Cloud Speech-to-Text + Cloud Translation, needs GOOGLE_API_KEY
+#   elevenlabs -> Scribe speech-to-text, needs ELEVENLABS_API_KEY. It has no
+#                 text-translation API, so only the source track is produced.
 #
-# See videos/transcription.py for both providers.
+# See videos/transcription.py for all providers.
 SUBTITLE_PROVIDER = os.environ.get("SUBTITLE_PROVIDER", "openai")
 SUBTITLE_SOURCE_LANGUAGE = os.environ.get("SUBTITLE_SOURCE_LANGUAGE", "ar")
 SUBTITLE_TARGET_LANGUAGES = os.environ.get("SUBTITLE_TARGET_LANGUAGES", "fr,en")
@@ -349,6 +351,16 @@ GOOGLE_SPEECH_ALTERNATIVE_LANGUAGES = os.environ.get(
 )
 # Translation model: nmt (Neural Machine Translation, the default) or base.
 GOOGLE_TRANSLATE_MODEL = os.environ.get("GOOGLE_TRANSLATE_MODEL", "nmt")
+
+# --- ElevenLabs provider ----------------------------------------------------
+# Scribe transcribes the audio with word-level timings. ElevenLabs translates
+# only through dubbing (not plain text), so the automatic pipeline creates the
+# source-language track and leaves the target languages alone.
+ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
+ELEVENLABS_STT_MODEL = os.environ.get("ELEVENLABS_STT_MODEL", "scribe_v2")
+# Exact ISO-639-1/639-3 code to force for Scribe, or "auto" to let it detect the
+# language. Empty means pass SUBTITLE_SOURCE_LANGUAGE through.
+ELEVENLABS_LANGUAGE_CODE = os.environ.get("ELEVENLABS_LANGUAGE_CODE", "")
 
 # How long a background MP3 / subtitle job may stay "processing" before it is
 # assumed abandoned and marked retryable. Free hosts such as Render kill the web

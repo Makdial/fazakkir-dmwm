@@ -65,8 +65,8 @@ services:
         value: "90"
       - key: STORAGE_ALERT_EMAIL
         value: makhoutech@gmail.com
-      # Automatic subtitles (optional). Use "openai" or "google" and set the
-      # matching API key; leave the other blank.
+      # Automatic subtitles (optional). Use "openai", "google" or "elevenlabs"
+      # and set the matching API key; leave the others blank.
       - key: SUBTITLE_PROVIDER
         value: openai
       - key: OPENAI_API_KEY
@@ -77,6 +77,12 @@ services:
         value: latest_long
       - key: GOOGLE_TRANSLATE_MODEL
         value: nmt
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_STT_MODEL
+        value: scribe_v2
+      - key: ELEVENLABS_LANGUAGE_CODE
+        value: ""
       - key: SUBTITLE_SOURCE_LANGUAGE
         value: ar
       - key: SUBTITLE_TARGET_LANGUAGES

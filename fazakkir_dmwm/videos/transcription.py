@@ -26,6 +26,7 @@ import base64
 import html
 import logging
 import os
+import re
 import tempfile
 import threading
 from dataclasses import dataclass
@@ -97,6 +98,32 @@ def _ffmpeg_exe() -> str:
     return imageio_ffmpeg.get_ffmpeg_exe()
 
 
+_DURATION_PATTERN = re.compile(r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)")
+
+
+def _audio_duration(path: str) -> float | None:
+    """Length of an audio file in seconds, read from ffmpeg's metadata.
+
+    ``ffmpeg -i`` prints the duration and exits without decoding, so this is
+    cheap even for a long video (unlike decoding the whole file to measure it).
+    """
+    import subprocess
+
+    try:
+        proc = subprocess.run(
+            [_ffmpeg_exe(), "-nostdin", "-hide_banner", "-i", path],
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return None
+    match = _DURATION_PATTERN.search(proc.stderr or "")
+    if not match:
+        return None
+    hours, minutes, seconds = match.groups()
+    return int(hours) * 3600 + int(minutes) * 60 + float(seconds)
+
+
 def chunk_audio(
     source_path: str, workdir: str, chunk_seconds: int = CHUNK_SECONDS
 ) -> list[tuple[str, float]]:
@@ -112,9 +139,19 @@ def chunk_audio(
     import subprocess
 
     chunk_seconds = max(1, int(chunk_seconds))
+    duration = _audio_duration(source_path)
+    # MP3 frames are padded, so a file reported as exactly N seconds can be a
+    # hair longer. Without a little slack, the boundary chunk at N seconds
+    # would be a sliver of encoder padding.
+    last_start = None if duration is None else duration - 0.5
     chunks: list[tuple[str, float]] = []
     for index in range(0, 1024):  # generous ceiling: ~85 hours of audio
         start = index * chunk_seconds
+        # ffmpeg writes a header even when asked for audio past the end, so the
+        # output file exists but is silent. Stop by the known duration instead
+        # of relying on a missing file.
+        if last_start is not None and start >= last_start:
+            break
         path = os.path.join(workdir, f"chunk-{index:04d}.mp3")
         command = [
             _ffmpeg_exe(),
@@ -190,6 +227,11 @@ class SubtitleProvider:
     """Interface every speech-to-text / translation back end implements."""
 
     name = "base"
+
+    # False for providers that can transcribe but have no text-translation
+    # API (ElevenLabs only translates audio through its dubbing workflow), so
+    # the pipeline saves the source track instead of failing on every target.
+    supports_translation = True
 
     # Longest slice of audio handed to :meth:`transcribe` in one call. Back ends
     # whose API caps a request lower than the default shorten it (see
@@ -417,6 +459,10 @@ def build_captions(words) -> list[Segment]:
         length = 0
 
     for text, start, end in words:
+        # Scribe emits standalone punctuation as its own word; on its own it is
+        # not a caption line ("."), so keep it only when attached to text.
+        if not any(char.isalnum() for char in text):
+            continue
         if buffer:
             gap = start - buffer[-1][2]
             duration = end - buffer[0][1]
@@ -591,6 +637,162 @@ class GoogleProvider(SubtitleProvider):
         return _google_post_json(url, payload, self._api_key)
 
 
+# --- ElevenLabs provider ----------------------------------------------------
+#
+# Scribe returns word-level timings, which are grouped into the same caption
+# lines as the Google provider. ElevenLabs has no text-translation endpoint, so
+# this provider only produces the source-language track; the pipeline skips the
+# target languages when ``supports_translation`` is false.
+
+ELEVENLABS_SPEECH_URL = "https://api.elevenlabs.io/v1/speech-to-text"
+ELEVENLABS_HTTP_TIMEOUT = 300.0
+
+# Scribe accepts files up to 5 GB / 10 hours; this is only a sane request size
+# that still keeps each upload comfortably small.
+ELEVENLABS_CHUNK_SECONDS = 480
+
+
+def elevenlabs_language_code(language: str) -> str:
+    """The ISO-639-1 code to pass to Scribe, or ``""`` to auto-detect.
+
+    ``ELEVENLABS_LANGUAGE_CODE`` overrides the source language; set it to
+    ``auto`` to let Scribe detect the language of every chunk.
+    """
+    override = (getattr(settings, "ELEVENLABS_LANGUAGE_CODE", "") or "").strip()
+    if override:
+        return "" if override.lower() == "auto" else override
+    return (language or "").strip().lower()
+
+
+def words_from_elevenlabs(result) -> list[tuple[str, float, float]]:
+    """Flatten a Scribe response into ``(text, start, end)`` timed words."""
+    words: list[tuple[str, float, float]] = []
+    for item in (result or {}).get("words") or []:
+        # "spacing" and "audio_event" entries carry no caption text.
+        if item.get("type") != "word":
+            continue
+        text = (item.get("text") or "").strip()
+        start = item.get("start")
+        end = item.get("end")
+        if not text or start is None or end is None:
+            continue
+        try:
+            words.append((text, float(start), float(end)))
+        except (TypeError, ValueError):
+            continue
+    return words
+
+
+def captions_from_elevenlabs(result) -> list[Segment]:
+    """Turn a Scribe response into timed caption segments."""
+    words = words_from_elevenlabs(result)
+    if words:
+        return build_captions(words)
+
+    # No word timings: keep the transcript as one cue spanning the audio.
+    text = ((result or {}).get("text") or "").strip()
+    if not text:
+        return []
+    duration = (result or {}).get("audio_duration_secs") or 0
+    try:
+        duration = float(duration)
+    except (TypeError, ValueError):
+        duration = 0.0
+    if duration <= 0:
+        duration = max(1.0, 0.4 * len(text.split()) + 0.5)
+    return [Segment(0.0, duration, text)]
+
+
+def _elevenlabs_error(response) -> str:
+    """A readable message taken from a failed ElevenLabs response."""
+    try:
+        detail = response.json().get("detail")
+    except ValueError:
+        detail = None
+    if isinstance(detail, dict):
+        message = detail.get("message") or detail.get("code") or ""
+    elif isinstance(detail, list):
+        message = "; ".join(
+            str(item.get("msg", item)) if isinstance(item, dict) else str(item)
+            for item in detail
+        )
+    else:
+        message = str(detail or "")
+    message = message or (getattr(response, "text", "") or "").strip()
+    return f"ElevenLabs rejected the request: {message or f'HTTP {response.status_code}'}"
+
+
+def _elevenlabs_transcribe_request(api_key: str, path: str, data: dict) -> dict:
+    """POST one audio file to Scribe and return the decoded JSON."""
+    try:
+        import httpx
+    except ImportError as exc:  # pragma: no cover - depends on environment
+        raise TranscriptionError(
+            "The 'httpx' package is not installed. Run: pip install httpx"
+        ) from exc
+
+    try:
+        with open(path, "rb") as handle:
+            response = httpx.post(
+                ELEVENLABS_SPEECH_URL,
+                headers={"xi-api-key": api_key},
+                data=data,
+                files={"file": (os.path.basename(path), handle, "audio/mpeg")},
+                timeout=ELEVENLABS_HTTP_TIMEOUT,
+            )
+    except (OSError, httpx.HTTPError) as exc:
+        raise TranscriptionError(f"Could not reach ElevenLabs: {exc}") from exc
+
+    if response.status_code >= 400:
+        raise TranscriptionError(_elevenlabs_error(response))
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise TranscriptionError("ElevenLabs returned an unexpected response.") from exc
+
+
+class ElevenLabsProvider(SubtitleProvider):
+    """ElevenLabs Scribe for speech-to-text.
+
+    Authenticates with ``ELEVENLABS_API_KEY``. Scribe returns word-level
+    timings, which become YouTube-style caption lines. ElevenLabs only
+    translates audio (through dubbing), not text, so this provider produces the
+    source-language track and the pipeline does not attempt translations.
+    """
+
+    name = "elevenlabs"
+    chunk_seconds = ELEVENLABS_CHUNK_SECONDS
+    supports_translation = False
+
+    def __init__(self):
+        api_key = (getattr(settings, "ELEVENLABS_API_KEY", "") or "").strip()
+        if not api_key:
+            raise TranscriptionError(
+                "ELEVENLABS_API_KEY is not set, so subtitles cannot be generated."
+            )
+        self._api_key = api_key
+
+    def transcribe(self, path: str, language: str) -> list[Segment]:
+        data = {
+            "model_id": (
+                getattr(settings, "ELEVENLABS_STT_MODEL", "") or "scribe_v2"
+            ).strip(),
+            "timestamps_granularity": "word",
+        }
+        code = elevenlabs_language_code(language)
+        if code:
+            data["language_code"] = code
+
+        result = _elevenlabs_transcribe_request(self._api_key, path, data)
+        return captions_from_elevenlabs(result)
+
+    def translate(self, segments: list[Segment], target_language: str) -> list[Segment]:
+        raise TranscriptionError(
+            "ElevenLabs does not provide text translation, so only the "
+            "source-language track can be generated."
+        )
+
+
 def provider_name() -> str:
     """The configured provider's short name."""
     return (getattr(settings, "SUBTITLE_PROVIDER", "openai") or "openai").strip().lower()
@@ -603,6 +805,8 @@ def get_provider() -> SubtitleProvider:
         return OpenAIProvider()
     if name == "google":
         return GoogleProvider()
+    if name == "elevenlabs":
+        return ElevenLabsProvider()
     raise TranscriptionError(f"Unknown subtitle provider: {name!r}")
 
 
@@ -613,12 +817,17 @@ def is_configured() -> bool:
         return bool(getattr(settings, "OPENAI_API_KEY", ""))
     if name == "google":
         return bool(getattr(settings, "GOOGLE_API_KEY", ""))
+    if name == "elevenlabs":
+        return bool(getattr(settings, "ELEVENLABS_API_KEY", ""))
     return False
 
 
 def configuration_hint() -> str:
     """The ``.env`` variable the configured provider needs to be switched on."""
-    return "GOOGLE_API_KEY" if provider_name() == "google" else "OPENAI_API_KEY"
+    return {
+        "google": "GOOGLE_API_KEY",
+        "elevenlabs": "ELEVENLABS_API_KEY",
+    }.get(provider_name(), "OPENAI_API_KEY")
 
 
 # --- Orchestration ----------------------------------------------------------
@@ -668,6 +877,10 @@ def generate_subtitles(video_id: int, include_lyrics: bool = True) -> dict:
 
         for target in targets:
             if target == source_language:
+                continue
+            if not provider.supports_translation:
+                # Providers with no text-translation API (ElevenLabs) still
+                # give a usable source-language track; don't fail the run.
                 continue
             translated = provider.translate(segments, target)
             _save_track(video, target, translated)

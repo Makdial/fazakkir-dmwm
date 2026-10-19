@@ -52,8 +52,9 @@ videos; every visitor can browse and play them.
 - **Automatic captions (CC), YouTube-style**: with one API key the server
   transcribes a video's audio in the spoken language and machine-translates it
   into every target language, so viewers pick a language from the same
-  **Subtitles** row. Two back ends ship: **OpenAI** (Whisper) and **Google
-  Cloud** (Speech-to-Text + Cloud Translation).
+  **Subtitles** row. Three back ends ship: **OpenAI** (Whisper), **Google
+  Cloud** (Speech-to-Text + Cloud Translation) and **ElevenLabs** (Scribe,
+  source language only).
 - **Responsive layout**: works on phones and tablets, with a collapsible
   hamburger menu, fluid video grid, stacked player controls and touch-friendly
   tap targets.
@@ -330,6 +331,7 @@ Pick the engine with `SUBTITLE_PROVIDER`:
 | --- | --- | --- | --- |
 | `openai` (default) | `whisper-1` | a chat model | `OPENAI_API_KEY` |
 | `google` | Cloud Speech-to-Text | Cloud Translation (NMT) | `GOOGLE_API_KEY` |
+| `elevenlabs` | Scribe | none (source track only) | `ELEVENLABS_API_KEY` |
 
 For Google, create an API key in the Cloud console and enable both
 **Speech-to-Text** and **Cloud Translation** on its project, then set:
@@ -346,8 +348,25 @@ Optional Google tuning: `GOOGLE_SPEECH_MODEL` (default `latest_long`),
 matters), `GOOGLE_SPEECH_ALTERNATIVE_LANGUAGES` (extra codes to accept) and
 `GOOGLE_TRANSLATE_MODEL` (`nmt`, the default, or the legacy `base`).
 
+For ElevenLabs, copy a key from **Settings → API keys** and set:
+
+```
+SUBTITLE_PROVIDER=elevenlabs
+ELEVENLABS_API_KEY=your-key
+SUBTITLE_SOURCE_LANGUAGE=wo
+ELEVENLABS_LANGUAGE_CODE=auto
+```
+
+Optional ElevenLabs tuning: `ELEVENLABS_STT_MODEL` (default `scribe_v2`) and
+`ELEVENLABS_LANGUAGE_CODE` (force one language, or `auto` to let Scribe detect
+it; empty passes `SUBTITLE_SOURCE_LANGUAGE` through). ElevenLabs translates
+audio (dubbing), not text, so it produces the source-language track only and
+`SUBTITLE_TARGET_LANGUAGES` is skipped — the run still succeeds and saves the
+captions it did produce. Pick `openai` or `google` when you need translated
+tracks too.
+
 Google's synchronous recogniser caps a single request at about a minute, so the
-audio is chunked more finely for Google than for OpenAI; the per-chunk
+audio is chunked more finely for Google than for the others; the per-chunk
 timestamps are shifted back onto the full timeline and the word timings are
 grouped into readable lines. The pipeline is pluggable — a provider only
 implements `transcribe` and `translate` (see `videos/transcription.py`).
