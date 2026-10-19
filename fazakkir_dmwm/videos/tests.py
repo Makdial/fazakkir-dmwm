@@ -775,13 +775,38 @@ class CustomPlayerTests(TestCase):
         self.assertIn('kind="subtitles"', body)
         self.assertIn(reverse("videos:subtitle_file", args=[self.video.id, "fr"]), body)
 
+    def test_cc_button_is_visible_on_the_page_below_the_player(self):
+        SubtitleTrack.objects.create(
+            video=self.video, language_code="fr", label="French", content="WEBVTT"
+        )
+        body = self.body()
+        # The headline control lives on the page, outside the player bar, so it
+        # is on screen without having to tap the video first.
+        self.assertIn('id="subtitleCcBtn"', body)
+        self.assertIn('id="subtitleCcMenu"', body)
+        self.assertIn('id="subtitleCcList"', body)
+        controls = body.index('class="subtitle-controls"')
+        self.assertIn('id="subtitleCcBtn"', body[controls:controls + 800])
+        # It sits after the player in the document, i.e. below it on the page.
+        self.assertGreater(controls, body.index('id="playerBar"'))
+
+    def test_page_cc_button_names_the_current_language(self):
+        SubtitleTrack.objects.create(
+            video=self.video, language_code="fr", label="French", content="WEBVTT"
+        )
+        body = self.body()
+        self.assertIn('id="subtitleCcCurrent"', body)
+        # The badge makes it unmistakably the caption control.
+        self.assertIn("cc-badge", body)
+        self.assertIn(">CC<", body)
+
     def test_cc_button_lives_in_the_control_bar(self):
         SubtitleTrack.objects.create(
             video=self.video, language_code="fr", label="French", content="WEBVTT"
         )
         body = self.body()
-        # The button and its menu are part of the bar, so captions can be turned
-        # on while watching — including in fullscreen and the audio player.
+        # The bar copy is still there, so captions can be turned on while
+        # watching — including in fullscreen and the audio player.
         self.assertIn('id="ccBtn"', body)
         self.assertIn('id="ccList"', body)
         bar = body.index('id="playerBar"')
@@ -801,16 +826,21 @@ class CustomPlayerTests(TestCase):
         self.assertIn("Off", body)
 
     def test_cc_button_is_absent_without_tracks(self):
-        self.assertNotIn('id="ccBtn"', self.body())
+        body = self.body()
+        self.assertNotIn('id="ccBtn"', body)
+        self.assertNotIn('id="subtitleCcBtn"', body)
+        self.assertNotIn('class="subtitle-controls"', body)
 
     def test_cc_menu_script_is_wired(self):
         SubtitleTrack.objects.create(
             video=self.video, language_code="fr", label="French", content="WEBVTT"
         )
         body = self.body()
-        self.assertIn("closeCcMenu", body)
-        self.assertIn('ccMenu.classList.toggle("open")', body)
-        self.assertIn('ccBtn.setAttribute("aria-expanded"', body)
+        self.assertIn("closeCcMenus", body)
+        self.assertIn('menu.classList.add("open")', body)
+        self.assertIn('btn.setAttribute("aria-expanded"', body)
+        # Every CC menu on the page is wired, not just the one in the bar.
+        self.assertIn('document.querySelectorAll(".cc-menu")', body)
 
 
 class AudioModeCoverTests(TestCase):
@@ -3598,7 +3628,7 @@ class PlayerScriptTests(TestCase):
         # already guards each lookup.
         conditional = {
             "audioStatus", "autoSubBtn", "autoSubMessage", "autoSubPanel",
-            "ccBtn", "ccMenu",
+            "subtitleCcCurrent",
         }
 
         output = self._run()

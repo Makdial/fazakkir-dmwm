@@ -121,16 +121,29 @@
 
         {% if subtitle_tracks %}
         <div class="subtitle-controls">
-            <span class="subtitle-title">{% trans "Subtitles" %}</span>
-            <div class="subtitle-toggle" role="group" aria-label="{% trans 'Subtitles' %}">
-                <button type="button" class="subtitle-btn active" data-lang=""
-                        onclick="setSubtitle('')">{% trans "Off" %}</button>
-                {% for track in subtitle_tracks %}
-                <button type="button" class="subtitle-btn" data-lang="{{ track.language_code }}"
-                        onclick="setSubtitle('{{ track.language_code }}')">
-                    {% if track.is_lyrics %}♪ {% endif %}{{ track.display_label }}
+            <div class="cc-menu subtitle-cc" id="subtitleCcMenu">
+                <button type="button" class="cc-btn subtitle-cc-btn" id="subtitleCcBtn"
+                        aria-haspopup="true" aria-expanded="false"
+                        aria-controls="subtitleCcList"
+                        aria-label="{% trans 'Subtitles' %}">
+                    <span class="cc-badge" aria-hidden="true">CC</span>
+                    <span class="cc-current" id="subtitleCcCurrent">{% trans "Off" %}</span>
+                    <span class="cc-caret" aria-hidden="true">▾</span>
                 </button>
-                {% endfor %}
+                <div class="cc-list" id="subtitleCcList" role="menu"
+                     aria-label="{% trans 'Caption language' %}">
+                    <button type="button" class="cc-item active" role="menuitem"
+                            data-lang="" onclick="setSubtitle('')">
+                        {% trans "Off" %}
+                    </button>
+                    {% for track in subtitle_tracks %}
+                    <button type="button" class="cc-item" role="menuitem"
+                            data-lang="{{ track.language_code }}"
+                            onclick="setSubtitle('{{ track.language_code }}')">
+                        {% if track.is_lyrics %}♪ {% endif %}{{ track.display_label }}
+                    </button>
+                    {% endfor %}
+                </div>
             </div>
         </div>
         {% endif %}
@@ -979,19 +992,22 @@ function applySubtitle(lang) {
             track.mode = (lang && code === lang) ? "showing" : "disabled"
         }
     })
-    // The language buttons live both below the player and in the CC menu above
-    // the bar; keep every copy in step with the choice.
-    document.querySelectorAll(".subtitle-btn, .cc-item").forEach(btn => {
+    // The language buttons live both below the player and in the CC menus;
+    // keep every copy in step with the choice.
+    document.querySelectorAll(".cc-item").forEach(btn => {
         btn.classList.toggle("active", (btn.dataset.lang || "") === lang)
     })
-    // A CC button with a language chosen reads as pressed, and shows which one.
-    const ccBtn = document.getElementById("ccBtn")
-    if (ccBtn) {
-        ccBtn.classList.toggle("active", Boolean(lang))
-        ccBtn.title = lang
-            ? "{% trans 'Subtitles' %}: " + ccLabel(lang)
+    const label = lang ? ccLabel(lang) : "{% trans 'Off' %}"
+    // The button in the control bar reads as pressed and shows the language.
+    document.querySelectorAll(".cc-btn").forEach(btn => {
+        btn.classList.toggle("active", Boolean(lang))
+        btn.title = lang
+            ? "{% trans 'Subtitles' %}: " + label
             : "{% trans 'Subtitles' %}"
-    }
+    })
+    // The always-visible button below the player spells the choice out.
+    const current = document.getElementById("subtitleCcCurrent")
+    if (current) current.textContent = label
 }
 
 function ccLabel(lang) {
@@ -1011,36 +1027,42 @@ try {
 } catch (e) {}
 
 // Ignore a remembered track that does not exist on this video.
-if (currentSubtitle && !document.querySelector(`.subtitle-btn[data-lang="${currentSubtitle}"]`)) {
+if (currentSubtitle && !document.querySelector(`.cc-item[data-lang="${currentSubtitle}"]`)) {
     currentSubtitle = ""
 }
 
 applySubtitle(currentSubtitle)
 
-// The CC menu above the bar: the button opens the language list and a click
-// outside (or on a language) closes it. Available in both player modes.
-const ccMenu = document.getElementById("ccMenu")
-const ccBtn = document.getElementById("ccBtn")
-
-function closeCcMenu() {
-    if (!ccMenu) return
-    ccMenu.classList.remove("open")
-    if (ccBtn) ccBtn.setAttribute("aria-expanded", "false")
+// Every CC menu (the one below the player, and the one in the bar) opens its
+// own language list; a click outside or on a language closes them all.
+function closeCcMenus() {
+    document.querySelectorAll(".cc-menu.open").forEach(menu => {
+        menu.classList.remove("open")
+        const btn = menu.querySelector(".cc-btn")
+        if (btn) btn.setAttribute("aria-expanded", "false")
+    })
 }
 
-if (ccMenu && ccBtn) {
-    ccBtn.addEventListener("click", (event) => {
+document.querySelectorAll(".cc-menu").forEach(menu => {
+    const btn = menu.querySelector(".cc-btn")
+    if (!btn) return
+    btn.addEventListener("click", (event) => {
         event.stopPropagation()
-        const open = ccMenu.classList.toggle("open")
-        ccBtn.setAttribute("aria-expanded", open ? "true" : "false")
+        const wasOpen = menu.classList.contains("open")
+        closeCcMenus()
+        if (!wasOpen) {
+            menu.classList.add("open")
+            btn.setAttribute("aria-expanded", "true")
+        }
     })
-    ccMenu.querySelectorAll(".cc-item").forEach(item => {
-        item.addEventListener("click", () => closeCcMenu())
+    menu.querySelectorAll(".cc-item").forEach(item => {
+        item.addEventListener("click", () => closeCcMenus())
     })
-    ccMenu.addEventListener("click", (event) => event.stopPropagation())
-    document.addEventListener("click", closeCcMenu)
-    document.addEventListener("fullscreenchange", closeCcMenu)
-}
+    menu.addEventListener("click", (event) => event.stopPropagation())
+})
+
+document.addEventListener("click", closeCcMenus)
+document.addEventListener("fullscreenchange", closeCcMenus)
 
 const csrf = '{{ csrf_token }}'
 

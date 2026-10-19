@@ -438,7 +438,8 @@ video::-webkit-media-controls-panel {
     color: var(--accent-red);
 }
 
-/* Subtitle / lyrics viewer controls */
+/* Subtitle / lyrics viewer control, always visible below the player so nobody
+   has to tap the video to find it. */
 .subtitle-controls {
     display: flex;
     align-items: center;
@@ -447,40 +448,78 @@ video::-webkit-media-controls-panel {
     margin: -8px 0 24px;
 }
 
-.subtitle-title {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.subtitle-toggle {
-    display: flex;
-    flex-wrap: wrap;
+/* The page-level CC menu is on the page background, not over the picture, so it
+   reads light-on-dark no more: it borrows the theme's own colours. */
+.subtitle-cc-btn {
+    display: inline-flex;
+    align-items: center;
     gap: 8px;
-}
-
-.subtitle-btn {
-    padding: 6px 14px;
+    padding: 7px 12px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-full);
-    color: var(--text-secondary);
+    color: var(--text-primary);
     font-family: inherit;
-    font-size: 0.85rem;
-    font-weight: 500;
+    font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-normal);
 }
 
-.subtitle-btn:hover {
-    color: var(--text-primary);
+.subtitle-cc-btn:hover {
     border-color: var(--accent-red);
 }
 
-.subtitle-btn.active {
+.subtitle-cc-btn .cc-badge {
+    padding: 1px 6px;
+    border: 1.5px solid currentColor;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.subtitle-cc-btn .cc-current {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.subtitle-cc-btn .cc-caret {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.subtitle-cc-btn.active {
+    border-color: var(--accent-red);
+}
+
+.subtitle-cc-btn.active .cc-badge {
     background: var(--accent-red);
     border-color: var(--accent-red);
     color: #fff;
+}
+
+.subtitle-cc-btn.active .cc-current {
+    color: var(--text-primary);
+}
+
+/* The page-level list drops down into the page, not up over the video. */
+.subtitle-cc .cc-list {
+    top: calc(100% + 8px);
+    bottom: auto;
+    left: 0;
+    right: auto;
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.subtitle-cc .cc-item {
+    color: var(--text-primary);
+}
+
+.subtitle-cc .cc-item:hover {
+    background: var(--bg-tertiary);
 }
 
 /* CC button + language menu, inside the control bar so captions can be turned
@@ -651,13 +690,9 @@ video::-webkit-media-controls-panel {
         gap: 8px;
     }
 
-    .subtitle-title {
-        width: 100%;
-    }
-
-    .subtitle-btn {
+    .subtitle-cc-btn {
         min-height: 40px;
-        padding: 8px 16px;
+        padding: 9px 16px;
     }
 
     .subtitle-form {
