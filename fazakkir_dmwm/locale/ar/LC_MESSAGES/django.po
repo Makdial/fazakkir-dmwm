@@ -183,6 +183,12 @@ msgstr "تم حفظ الترجمة"
 msgid "Subtitles"
 msgstr "الترجمات"
 
+msgid "Caption language"
+msgstr "لغة الترجمات"
+
+msgid "Subtitle language"
+msgstr "لغة الترجمات"
+
 msgid "Subtitles & lyrics"
 msgstr "الترجمات وكلمات الأغاني"
 

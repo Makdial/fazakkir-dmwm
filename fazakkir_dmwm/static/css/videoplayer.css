@@ -268,6 +268,25 @@
         height: 26px;
     }
 
+    /* Below the picture the bar is part of the page flow, so the language list
+       drops downward into the empty space instead of over the video. */
+    .cc-list {
+        position: absolute;
+        top: calc(100% + 8px);
+        bottom: auto;
+        background: var(--bg-secondary);
+        border-color: var(--border-color);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .cc-item {
+        color: var(--text-primary);
+    }
+
+    .cc-item:hover {
+        background: var(--bg-tertiary);
+    }
+
     .video-player.controls-visible::after {
         display: none;
     }
@@ -461,6 +480,72 @@ video::-webkit-media-controls-panel {
 .subtitle-btn.active {
     background: var(--accent-red);
     border-color: var(--accent-red);
+    color: #fff;
+}
+
+/* CC button + language menu, inside the control bar so captions can be turned
+   on (and the language chosen) while watching, including fullscreen and the
+   audio-only player. */
+.cc-menu {
+    position: relative;
+    display: inline-flex;
+}
+
+.cc-btn {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.cc-btn.active {
+    background: var(--bar-fg, #fff);
+    color: #111;
+}
+
+/* The list opens upward, since the bar sits at the bottom of the picture. */
+.cc-list {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    min-width: 160px;
+    max-width: 240px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 6px;
+    background: #1c1c1c;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 5;
+}
+
+.cc-menu.open .cc-list {
+    display: flex;
+}
+
+.cc-item {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm, 6px);
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.cc-item:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.cc-item.active {
+    background: var(--accent-red);
     color: #fff;
 }
 

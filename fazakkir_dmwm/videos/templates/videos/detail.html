@@ -90,6 +90,28 @@
                     </select>
                     <button type="button" class="player-btn" id="pipBtn" hidden
                             aria-label="{% trans 'Picture in picture' %}">⧉</button>
+                    {% if subtitle_tracks %}
+                    <div class="cc-menu" id="ccMenu">
+                        <button type="button" class="player-btn cc-btn" id="ccBtn"
+                                aria-haspopup="true" aria-expanded="false"
+                                aria-controls="ccList"
+                                aria-label="{% trans 'Subtitles' %}">CC</button>
+                        <div class="cc-list" id="ccList" role="menu"
+                             aria-label="{% trans 'Caption language' %}">
+                            <button type="button" class="cc-item active" role="menuitem"
+                                    data-lang="" onclick="setSubtitle('')">
+                                {% trans "Off" %}
+                            </button>
+                            {% for track in subtitle_tracks %}
+                            <button type="button" class="cc-item" role="menuitem"
+                                    data-lang="{{ track.language_code }}"
+                                    onclick="setSubtitle('{{ track.language_code }}')">
+                                {% if track.is_lyrics %}♪ {% endif %}{{ track.display_label }}
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                     <button type="button" class="player-btn" id="fullscreenBtn"
                             aria-label="{% trans 'Fullscreen' %}">⛶</button>
                 </div>
@@ -336,7 +358,7 @@
                 </p>
 
                 <form id="subtitleForm" class="subtitle-form" onsubmit="return uploadSubtitle(event)">
-                    <select id="subtitleLanguage" class="form-input" aria-label="{% trans 'Language' %}">
+                    <select id="subtitleLanguage" class="form-input" aria-label="{% trans 'Subtitle language' %}">
                         {% for code, name in subtitle_choices %}
                         <option value="{{ code }}">{{ name }}</option>
                         {% endfor %}
@@ -957,9 +979,24 @@ function applySubtitle(lang) {
             track.mode = (lang && code === lang) ? "showing" : "disabled"
         }
     })
-    document.querySelectorAll(".subtitle-btn").forEach(btn => {
+    // The language buttons live both below the player and in the CC menu above
+    // the bar; keep every copy in step with the choice.
+    document.querySelectorAll(".subtitle-btn, .cc-item").forEach(btn => {
         btn.classList.toggle("active", (btn.dataset.lang || "") === lang)
     })
+    // A CC button with a language chosen reads as pressed, and shows which one.
+    const ccBtn = document.getElementById("ccBtn")
+    if (ccBtn) {
+        ccBtn.classList.toggle("active", Boolean(lang))
+        ccBtn.title = lang
+            ? "{% trans 'Subtitles' %}: " + ccLabel(lang)
+            : "{% trans 'Subtitles' %}"
+    }
+}
+
+function ccLabel(lang) {
+    const item = document.querySelector(`.cc-item[data-lang="${lang}"]`)
+    return item ? item.textContent.trim() : lang
 }
 
 function setSubtitle(lang) {
@@ -979,6 +1016,31 @@ if (currentSubtitle && !document.querySelector(`.subtitle-btn[data-lang="${curre
 }
 
 applySubtitle(currentSubtitle)
+
+// The CC menu above the bar: the button opens the language list and a click
+// outside (or on a language) closes it. Available in both player modes.
+const ccMenu = document.getElementById("ccMenu")
+const ccBtn = document.getElementById("ccBtn")
+
+function closeCcMenu() {
+    if (!ccMenu) return
+    ccMenu.classList.remove("open")
+    if (ccBtn) ccBtn.setAttribute("aria-expanded", "false")
+}
+
+if (ccMenu && ccBtn) {
+    ccBtn.addEventListener("click", (event) => {
+        event.stopPropagation()
+        const open = ccMenu.classList.toggle("open")
+        ccBtn.setAttribute("aria-expanded", open ? "true" : "false")
+    })
+    ccMenu.querySelectorAll(".cc-item").forEach(item => {
+        item.addEventListener("click", () => closeCcMenu())
+    })
+    ccMenu.addEventListener("click", (event) => event.stopPropagation())
+    document.addEventListener("click", closeCcMenu)
+    document.addEventListener("fullscreenchange", closeCcMenu)
+}
 
 const csrf = '{{ csrf_token }}'
 

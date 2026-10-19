@@ -185,6 +185,12 @@ msgstr "Sous-titre enregistré"
 msgid "Subtitles"
 msgstr "Sous-titres"
 
+msgid "Caption language"
+msgstr "Langue des sous-titres"
+
+msgid "Subtitle language"
+msgstr "Langue des sous-titres"
+
 msgid "Subtitles & lyrics"
 msgstr "Sous-titres et paroles"
 

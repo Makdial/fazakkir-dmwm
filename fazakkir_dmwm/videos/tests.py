@@ -775,6 +775,43 @@ class CustomPlayerTests(TestCase):
         self.assertIn('kind="subtitles"', body)
         self.assertIn(reverse("videos:subtitle_file", args=[self.video.id, "fr"]), body)
 
+    def test_cc_button_lives_in_the_control_bar(self):
+        SubtitleTrack.objects.create(
+            video=self.video, language_code="fr", label="French", content="WEBVTT"
+        )
+        body = self.body()
+        # The button and its menu are part of the bar, so captions can be turned
+        # on while watching — including in fullscreen and the audio player.
+        self.assertIn('id="ccBtn"', body)
+        self.assertIn('id="ccList"', body)
+        bar = body.index('id="playerBar"')
+        self.assertIn('id="ccBtn"', body[bar:body.index("</div>", bar)])
+
+    def test_cc_menu_offers_off_and_every_language(self):
+        SubtitleTrack.objects.create(
+            video=self.video, language_code="fr", label="French", content="WEBVTT"
+        )
+        SubtitleTrack.objects.create(
+            video=self.video, language_code="ar", label="Arabic", content="WEBVTT"
+        )
+        body = self.body()
+        self.assertIn('id="ccList"', body)
+        for lang in ("", "fr", "ar"):
+            self.assertIn(f'data-lang="{lang}"', body)
+        self.assertIn("Off", body)
+
+    def test_cc_button_is_absent_without_tracks(self):
+        self.assertNotIn('id="ccBtn"', self.body())
+
+    def test_cc_menu_script_is_wired(self):
+        SubtitleTrack.objects.create(
+            video=self.video, language_code="fr", label="French", content="WEBVTT"
+        )
+        body = self.body()
+        self.assertIn("closeCcMenu", body)
+        self.assertIn('ccMenu.classList.toggle("open")', body)
+        self.assertIn('ccBtn.setAttribute("aria-expanded"', body)
+
 
 class AudioModeCoverTests(TestCase):
     """Listening to the MP3 shows the thumbnail instead of a black rectangle.
@@ -3556,9 +3593,13 @@ class PlayerScriptTests(TestCase):
         )
 
     def test_every_id_the_script_looks_up_exists_in_the_markup(self):
-        # These are only rendered when MP3 generation is running or the viewer
-        # can generate subtitles, and the script already guards each lookup.
-        conditional = {"audioStatus", "autoSubBtn", "autoSubMessage", "autoSubPanel"}
+        # These are only rendered when MP3 generation is running, the viewer can
+        # generate subtitles, or the video has caption tracks; the script
+        # already guards each lookup.
+        conditional = {
+            "audioStatus", "autoSubBtn", "autoSubMessage", "autoSubPanel",
+            "ccBtn", "ccMenu",
+        }
 
         output = self._run()
         line = [l for l in output.splitlines() if l.startswith("requested ids:")]

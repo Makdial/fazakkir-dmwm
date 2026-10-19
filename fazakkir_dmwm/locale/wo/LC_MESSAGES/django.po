@@ -183,6 +183,12 @@ msgstr "Sous-titrage bi bi kon jënd"
 msgid "Subtitles"
 msgstr "Sous-titrage"
 
+msgid "Caption language"
+msgstr "Làkk sous-titrage"
+
+msgid "Subtitle language"
+msgstr "Làkk sous-titrage"
+
 msgid "Subtitles & lyrics"
 msgstr "Sous-titrage ak kërlu yi"
 
