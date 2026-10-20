@@ -2462,6 +2462,133 @@ class ElevenLabsProviderSelectionTests(TestCase):
             )
 
 
+class ElevenLabsTranslationPairingTests(TestCase):
+    """ElevenLabs transcribes but cannot translate text.
+
+    Naming a second back end in ``SUBTITLE_TRANSLATION_PROVIDER`` pairs the
+    Scribe transcription with a real translation, so the target-language
+    caption tracks are still produced.
+    """
+
+    def test_elevenlabs_alone_has_no_translator(self):
+        with override_settings(
+            SUBTITLE_PROVIDER="elevenlabs",
+            SUBTITLE_TRANSLATION_PROVIDER="",
+            ELEVENLABS_API_KEY="k",
+        ):
+            provider = transcription.get_provider()
+            self.assertIsNone(transcription.get_translation_provider(provider))
+            self.assertFalse(transcription.translation_configured())
+
+    def test_a_google_translator_is_paired_with_the_elevenlabs_transcription(self):
+        with override_settings(
+            SUBTITLE_PROVIDER="elevenlabs",
+            SUBTITLE_TRANSLATION_PROVIDER="google",
+            ELEVENLABS_API_KEY="k",
+            GOOGLE_API_KEY="g",
+        ):
+            provider = transcription.get_provider()
+            translator = transcription.get_translation_provider(provider)
+            self.assertIsInstance(translator, transcription.GoogleProvider)
+            self.assertTrue(transcription.translation_configured())
+
+    def test_an_openai_translator_is_paired_too(self):
+        # The 'openai' package is not installed here, so the class is stubbed
+        # and only the wiring is checked.
+        with override_settings(
+            SUBTITLE_PROVIDER="elevenlabs",
+            SUBTITLE_TRANSLATION_PROVIDER="openai",
+            ELEVENLABS_API_KEY="k",
+            OPENAI_API_KEY="o",
+        ), mock.patch.object(transcription, "OpenAIProvider") as factory:
+            provider = transcription.get_provider()
+            translator = transcription.get_translation_provider(provider)
+
+        factory.assert_called_once()
+        self.assertIs(translator, factory.return_value)
+
+    def test_the_transcription_provider_still_translates_when_it_can(self):
+        with override_settings(
+            SUBTITLE_PROVIDER="google",
+            SUBTITLE_TRANSLATION_PROVIDER="",
+            GOOGLE_API_KEY="g",
+        ):
+            provider = transcription.get_provider()
+            translator = transcription.get_translation_provider(provider)
+            self.assertIs(translator, provider)
+            self.assertTrue(transcription.translation_configured())
+
+    def test_the_same_provider_is_not_built_twice(self):
+        with override_settings(
+            SUBTITLE_PROVIDER="google",
+            SUBTITLE_TRANSLATION_PROVIDER="google",
+            GOOGLE_API_KEY="g",
+        ):
+            provider = transcription.get_provider()
+            self.assertIs(transcription.get_translation_provider(provider), provider)
+
+    def test_an_unknown_translation_provider_is_rejected(self):
+        with override_settings(
+            SUBTITLE_PROVIDER="elevenlabs",
+            SUBTITLE_TRANSLATION_PROVIDER="babelfish",
+            ELEVENLABS_API_KEY="k",
+        ):
+            with self.assertRaises(transcription.TranscriptionError):
+                transcription.get_translation_provider(transcription.get_provider())
+
+    def test_the_target_tracks_are_created_with_a_paired_translator(self):
+        """A run with ElevenLabs + Google produces the French and English cues."""
+        user = make_user("pairing")
+        video = make_video(user, audio_file_id="audio/p.mp3", audio_status="ready")
+        segments = [transcription.Segment(0.0, 1.0, "salam")]
+
+        class FakeProvider(transcription.SubtitleProvider):
+            name = "elevenlabs"
+            supports_translation = False
+
+            def transcribe(self, path, language):
+                return list(segments)
+
+            def translate(self, segments, target_language):
+                raise AssertionError("the ElevenLabs provider must not translate")
+
+        class FakeTranslator(transcription.SubtitleProvider):
+            name = "google"
+
+            def transcribe(self, path, language):
+                return []
+
+            def translate(self, segments, target_language):
+                return [
+                    transcription.Segment(s.start, s.end, f"[{target_language}] {s.text}")
+                    for s in segments
+                ]
+
+        with override_settings(
+            SUBTITLE_PROVIDER="elevenlabs",
+            SUBTITLE_TRANSLATION_PROVIDER="google",
+            SUBTITLE_SOURCE_LANGUAGE="wo",
+            SUBTITLE_TARGET_LANGUAGES="fr,en",
+        ), mock.patch.object(
+            transcription, "get_provider", return_value=FakeProvider()
+        ), mock.patch.object(
+            transcription, "get_translation_provider", return_value=FakeTranslator()
+        ), mock.patch.object(
+            transcription, "download_audio", return_value="audio.mp3"
+        ), mock.patch.object(
+            transcription, "chunk_audio", return_value=[("chunk.mp3", 0.0)]
+        ):
+            result = transcription.generate_subtitles(video.id, include_lyrics=False)
+
+        self.assertEqual(sorted(result["languages"]), ["en", "fr", "wo"])
+        for code in ("wo", "fr", "en"):
+            track = video.subtitle_tracks.get(language_code=code)
+            self.assertIn("salam", track.content)
+            if code != "wo":
+                # The target tracks went through the translation provider.
+                self.assertIn(f"[{code}]", track.content)
+
+
 class ElevenLabsHttpLayerTests(TestCase):
     """The multipart wrapper that talks to Scribe."""
 

@@ -336,6 +336,13 @@ SUBTITLE_PROVIDER = os.environ.get("SUBTITLE_PROVIDER", "openai")
 SUBTITLE_SOURCE_LANGUAGE = os.environ.get("SUBTITLE_SOURCE_LANGUAGE", "ar")
 SUBTITLE_TARGET_LANGUAGES = os.environ.get("SUBTITLE_TARGET_LANGUAGES", "fr,en")
 
+# The back end that turns the transcribed cues into the target languages.
+# Empty means "use SUBTITLE_PROVIDER when it can translate". Set it to
+# "google" or "openai" to pair an ElevenLabs transcription (which cannot
+# translate text) with a real translation, so the French and English caption
+# tracks are still produced.
+SUBTITLE_TRANSLATION_PROVIDER = os.environ.get("SUBTITLE_TRANSLATION_PROVIDER", "")
+
 # --- OpenAI provider --------------------------------------------------------
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 # whisper-1 is used because it is the model that returns per-segment

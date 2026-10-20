@@ -8,9 +8,16 @@ The back end is pluggable.  A provider only has to implement two small methods
 (:meth:`SubtitleProvider.transcribe` and :meth:`SubtitleProvider.translate`), so
 a local/offline engine can be added later without touching anything else.
 
-Two providers ship today, chosen with ``SUBTITLE_PROVIDER``: :class:`OpenAIProvider`
-(``openai``) and :class:`GoogleProvider` (``google``, Google Cloud Speech-to-Text
-plus Cloud Translation).
+Three providers ship today, chosen with ``SUBTITLE_PROVIDER``: :class:`OpenAIProvider`
+(``openai``), :class:`GoogleProvider` (``google``, Google Cloud Speech-to-Text
+plus Cloud Translation) and :class:`ElevenLabsProvider` (``elevenlabs``, Scribe
+speech-to-text).
+
+ElevenLabs cannot translate text, so by itself it only produces the
+source-language track. Naming a second back end in
+``SUBTITLE_TRANSLATION_PROVIDER`` (``google`` or ``openai``) pairs an ElevenLabs
+transcription with a real translation, so the target-language caption tracks are
+created as well.
 
 Pipeline per video::
 
@@ -810,6 +817,57 @@ def get_provider() -> SubtitleProvider:
     raise TranscriptionError(f"Unknown subtitle provider: {name!r}")
 
 
+def translation_provider_name() -> str:
+    """The provider that translates the cues, or ``""`` for none.
+
+    An empty value means "use the transcription provider when it is able to
+    translate". ElevenLabs is not, so naming one here (``google`` or
+    ``openai``) is what lets an ElevenLabs transcription still produce the
+    French and English caption tracks.
+    """
+    return (
+        getattr(settings, "SUBTITLE_TRANSLATION_PROVIDER", "") or ""
+    ).strip().lower()
+
+
+def get_translation_provider(
+    provider: SubtitleProvider | None = None,
+) -> SubtitleProvider | None:
+    """Build the provider that translates the cues, or ``None``.
+
+    ``None`` means no translation is possible, so only the source-language
+    track is produced.
+    """
+    name = translation_provider_name()
+    if not name:
+        # No explicit choice: the transcription provider translates too when
+        # it can.
+        if provider is not None and provider.supports_translation:
+            return provider
+        return None
+
+    if provider is not None and provider.name == name:
+        return provider
+    if name == "openai":
+        return OpenAIProvider()
+    if name == "google":
+        return GoogleProvider()
+    raise TranscriptionError(f"Unknown translation provider: {name!r}")
+
+
+def translation_configured() -> bool:
+    """True when the cues can be translated into the target languages."""
+    name = translation_provider_name()
+    if name:
+        if name == "openai":
+            return bool(getattr(settings, "OPENAI_API_KEY", ""))
+        if name == "google":
+            return bool(getattr(settings, "GOOGLE_API_KEY", ""))
+        return False
+    # Without an explicit choice the transcription provider does the work.
+    return provider_name() in ("openai", "google")
+
+
 def is_configured() -> bool:
     """True when the configured provider has everything it needs to run."""
     name = provider_name()
@@ -851,6 +909,10 @@ def generate_subtitles(video_id: int, include_lyrics: bool = True) -> dict:
     ]
 
     provider = get_provider()
+    # ElevenLabs transcribes but cannot translate text, so a separate back end
+    # may be named to produce the target-language tracks. When there is none,
+    # only the source-language track is created.
+    translator = get_translation_provider(provider)
     workdir = tempfile.mkdtemp(prefix="fazakkir-subs-")
     try:
         audio_path = download_audio(video, os.path.join(workdir, "audio.mp3"))
@@ -878,11 +940,16 @@ def generate_subtitles(video_id: int, include_lyrics: bool = True) -> dict:
         for target in targets:
             if target == source_language:
                 continue
-            if not provider.supports_translation:
-                # Providers with no text-translation API (ElevenLabs) still
-                # give a usable source-language track; don't fail the run.
+            if translator is None:
+                # No text-translation API is configured (ElevenLabs alone), so
+                # the source-language track is all we can offer.
+                logger.info(
+                    "Skipping the %s track for video %s: no translation provider.",
+                    target,
+                    video_id,
+                )
                 continue
-            translated = provider.translate(segments, target)
+            translated = translator.translate(segments, target)
             _save_track(video, target, translated)
             created.append(target)
 
