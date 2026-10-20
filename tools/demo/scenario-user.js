@@ -183,8 +183,21 @@ module.exports = async function userScenario(rec, { captions }) {
   await rec.hush();
   await rec.hold(3.5);
 
+  // A search that finds nothing here offers to continue on YouTube. Run it on
+  // the search page itself, where a miss is actually possible, and point at the
+  // link the app hands the visitor.
+  await rec.spotlight(null);
+  await rec.goto("/search/?q=" + encodeURIComponent("nahnu fi dhille rasulillah"));
+  await rec.hush();
   await rec.step({
     step: "15",
+    text: c.youtube,
+    selector: ".youtube-fallback-link",
+    seconds: 5,
+  });
+
+  await rec.step({
+    step: "16",
     text: c.done,
     selector: ".navbar-brand",
     seconds: 4,

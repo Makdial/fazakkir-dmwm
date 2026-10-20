@@ -29,6 +29,7 @@ const USER = {
     playlist: "Save it to a playlist to build your own collection.",
     login: "Sign in to comment, save playlists and keep your place.",
     search: "Search by title or description to find a talk quickly.",
+    youtube: "If a search finds nothing here, one click continues it on YouTube.",
     done: "That's it. Enjoy the library.",
   },
   fr: {
@@ -46,6 +47,7 @@ const USER = {
     playlist: "Ajoutez-la à une liste de lecture pour créer votre collection.",
     login: "Connectez-vous pour commenter et garder vos listes.",
     search: "Recherchez par titre ou description pour trouver une causerie.",
+    youtube: "Si la recherche ne donne rien, un clic la poursuit sur YouTube.",
     done: "C'est tout. Bonne écoute.",
   },
   ar: {
@@ -63,6 +65,7 @@ const USER = {
     playlist: "أضفه إلى قائمة تشغيل لبناء مجموعتك الخاصة.",
     login: "سجّل الدخول للتعليق وحفظ القوائم.",
     search: "ابحث بالعنوان أو الوصف للوصول إلى درس بسرعة.",
+    youtube: "إذا لم يجد البحث شيئا هنا، فبضغطة واحدة يتابع على يوتيوب.",
     done: "هذا كل شيء. استمتع بالمكتبة.",
   },
   wo: {
@@ -80,6 +83,7 @@ const USER = {
     playlist: "Dugal ko ci ab liste ngir sos sa mbooloo.",
     login: "Duggal ngir waxtaan ak denc say liste.",
     search: "Seet ci título walla description ngir gis gaaw.",
+    youtube: "Su seet bi jotul dara fii, benn bësal di ko topp ci YouTube.",
     done: "Loolu la. Bég ci mbooloo mi.",
   },
 };
