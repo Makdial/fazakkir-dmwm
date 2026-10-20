@@ -332,6 +332,86 @@ video::-webkit-media-controls-panel {
     background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
 }
 
+/* Hide the browser's own caption rendering. The cues stay readable from
+   JavaScript ("hidden" mode) but the native box is never drawn, so the caption
+   below is the only one on screen and looks the same on every platform. */
+video::cue {
+    opacity: 0;
+}
+
+/* --- Captions (YouTube-style overlay) ------------------------------------ */
+
+/* Sits inside the picture, so it survives fullscreen and scales with the
+   video rather than the page. */
+.caption-layer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    /* Clear of the control bar, which floats over the bottom of the picture. */
+    bottom: 12%;
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    padding: 0 6%;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+}
+
+.caption-layer.is-visible {
+    opacity: 1;
+}
+
+.caption-text {
+    display: inline-block;
+    max-width: 100%;
+    padding: 4px 10px;
+    background: rgba(8, 8, 8, 0.75);
+    border-radius: 4px;
+    color: #fff;
+    font-size: 1.28rem;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: center;
+    /* A faint shadow keeps the text legible over a bright frame even before
+       the backdrop is painted. */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+    white-space: pre-line;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* A lyric track reads better centred and a little larger. */
+.video-player.audio-mode .caption-layer {
+    bottom: 6%;
+}
+
+/* On a phone the picture is small, so the text steps down with it. */
+@media (max-width: 768px) {
+    .caption-layer {
+        bottom: 14%;
+        padding: 0 4%;
+    }
+
+    .caption-text {
+        font-size: 1rem;
+        padding: 3px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .caption-text {
+        font-size: 0.9rem;
+    }
+}
+
+/* Right-to-left captions (Arabic, Wolof is Latin but Arabic must not be
+   forced left-aligned). */
+[dir="rtl"] .caption-text {
+    direction: rtl;
+    text-align: center;
+}
+
 /* Audio-only ("Listen (MP3)") mode */
 .audio-player {
     position: absolute;
@@ -586,6 +666,32 @@ video::-webkit-media-controls-panel {
 .cc-item.active {
     background: var(--accent-red);
     color: #fff;
+}
+
+/* Shown in place of the language list when a video has no captions yet, so the
+   menu explains itself instead of opening empty. */
+.cc-empty {
+    margin: 0;
+    padding: 8px 12px;
+    color: var(--text-secondary, #aaa);
+    font-size: 0.85rem;
+    line-height: 1.35;
+    white-space: normal;
+}
+
+/* The owner-facing action that fills the empty list. Reads as a menu item so
+   the menu stays a single, consistent list. */
+.cc-item.cc-generate {
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--accent-red, #e50914);
+    font-weight: 600;
+    white-space: normal;
+}
+
+.cc-item.cc-generate:disabled {
+    opacity: 0.7;
+    cursor: default;
+    white-space: normal;
 }
 
 /* Subtitle admin panel (staff only) */

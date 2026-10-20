@@ -12,7 +12,7 @@ from unittest import mock
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -842,11 +842,44 @@ class CustomPlayerTests(TestCase):
             self.assertIn(f'data-lang="{lang}"', body)
         self.assertIn("Off", body)
 
-    def test_cc_button_is_absent_without_tracks(self):
+    def test_cc_button_is_always_shown_even_without_tracks(self):
+        # A viewer should be able to see that captions exist as a feature and
+        # what they are set to, rather than hunting for a control that is not
+        # drawn at all. This is the case that made the caption UI look missing.
         body = self.body()
-        self.assertNotIn('id="ccBtn"', body)
-        self.assertNotIn('id="subtitleCcBtn"', body)
-        self.assertNotIn('class="subtitle-controls"', body)
+        self.assertIn('id="ccBtn"', body)
+        self.assertIn('id="subtitleCcBtn"', body)
+        self.assertIn('class="subtitle-controls"', body)
+        # With nothing to choose, the menu says so instead of opening empty.
+        self.assertIn("cc-empty", body)
+
+    def test_empty_cc_menu_offers_generate_to_writers_only(self):
+        # The owner can fill the gap from the place they noticed it.
+        writer = make_user("cc-writer")
+        Profile.objects.filter(user=writer).update(access_level=Profile.Access.WRITE)
+        staff_client = Client()
+        staff_client.force_login(writer)
+        staff_body = staff_client.get(
+            reverse("videos:detail", args=[self.video.id])
+        ).content.decode("utf-8")
+        self.assertIn("cc-generate", staff_body)
+        self.assertIn("generateSubtitles", staff_body)
+
+        # A plain viewer must not be offered the action at all.
+        self.assertNotIn("cc-generate", self.body())
+
+    def test_captions_are_drawn_by_the_page_not_the_browser(self):
+        # The native caption box cannot be styled to look the same everywhere,
+        # so the cues are painted into an overlay inside the picture instead.
+        SubtitleTrack.objects.create(
+            video=self.video, language_code="fr", label="French", content="WEBVTT"
+        )
+        body = self.body()
+        self.assertIn('id="captionLayer"', body)
+        self.assertIn('id="captionText"', body)
+        self.assertIn("parseVtt", body)
+        # The browser's own rendering is suppressed, not the cues themselves.
+        self.assertIn('track.mode = (lang && code === lang) ? "hidden" : "disabled"', body)
 
     def test_cc_menu_script_is_wired(self):
         SubtitleTrack.objects.create(

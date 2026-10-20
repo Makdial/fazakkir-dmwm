@@ -789,6 +789,12 @@ msgstr "انسخ الصوت وترجمه تلقائيًا دون رفع أي م�
 msgid "Generate subtitles"
 msgstr "إنشاء الترجمات"
 
+msgid "Generate captions"
+msgstr "إنشاء الترجمات"
+
+msgid "No captions for this video yet."
+msgstr "لا توجد ترجمات لهذا الفيديو بعد."
+
 msgid "Regenerate subtitles"
 msgstr "إعادة إنشاء الترجمات"
 

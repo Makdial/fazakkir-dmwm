@@ -765,6 +765,12 @@ msgstr "Transcribe audio bi ak Ji di tradui li, teul yees aucun fichier."
 msgid "Generate subtitles"
 msgstr "Generer sous-titrage"
 
+msgid "Generate captions"
+msgstr "Generer sous-titrage"
+
+msgid "No captions for this video yet."
+msgstr "Sous-titrage amul ci vidéo bii ba noppi."
+
 msgid "Regenerate subtitles"
 msgstr "Regenerer sous-titrage"
 

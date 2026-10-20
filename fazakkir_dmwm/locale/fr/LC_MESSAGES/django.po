@@ -768,6 +768,12 @@ msgstr "Transcrivez l'audio et traduisez-le automatiquement, sans envoyer de fic
 msgid "Generate subtitles"
 msgstr "Générer les sous-titres"
 
+msgid "Generate captions"
+msgstr "Générer les sous-titres"
+
+msgid "No captions for this video yet."
+msgstr "Pas encore de sous-titres pour cette vidéo."
+
 msgid "Regenerate subtitles"
 msgstr "Régénérer les sous-titres"
 

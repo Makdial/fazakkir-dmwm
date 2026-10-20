@@ -54,6 +54,15 @@
                      src="{{ video.display_thumbnail_url }}" alt="{{ video.title }}"
                      loading="lazy">
                 {% endif %}
+                {% comment %}
+                    Captions are drawn here rather than by the browser, so they
+                    can look the same on every platform and stay put in
+                    fullscreen. The browser's own rendering is hidden by hiding
+                    the text tracks from it (see applySubtitle).
+                {% endcomment %}
+                <div class="caption-layer" id="captionLayer" aria-live="polite" aria-atomic="true">
+                    <span class="caption-text" id="captionText"></span>
+                </div>
                 <div id="video-error" class="video-error" style="display: none;">
                     <span class="error-icon">⚠</span>
                     <p>{% trans "Video Unavailable" %}</p>
@@ -90,7 +99,6 @@
                     </select>
                     <button type="button" class="player-btn" id="pipBtn" hidden
                             aria-label="{% trans 'Picture in picture' %}">⧉</button>
-                    {% if subtitle_tracks %}
                     <div class="cc-menu" id="ccMenu">
                         <button type="button" class="player-btn cc-btn" id="ccBtn"
                                 aria-haspopup="true" aria-expanded="false"
@@ -108,10 +116,17 @@
                                     onclick="setSubtitle('{{ track.language_code }}')">
                                 {% if track.is_lyrics %}♪ {% endif %}{{ track.display_label }}
                             </button>
+                            {% empty %}
+                            <p class="cc-empty">{% trans "No captions for this video yet." %}</p>
+                            {% if can_write %}
+                            <button type="button" class="cc-item cc-generate"
+                                    onclick="closeCcMenus(); generateSubtitles(this)">
+                                {% trans "Generate captions" %}
+                            </button>
+                            {% endif %}
                             {% endfor %}
                         </div>
                     </div>
-                    {% endif %}
                     <button type="button" class="player-btn" id="fullscreenBtn"
                             aria-label="{% trans 'Fullscreen' %}">⛶</button>
                 </div>
@@ -119,7 +134,11 @@
             {# Closes .video-player-container, so the bar anchors to the video, not the page. #}
         </div>
 
-        {% if subtitle_tracks %}
+        {% comment %}
+            Always shown, even when the video has no captions yet: a viewer
+            should be able to see that the feature exists and what it is set to,
+            rather than hunting for a control that is not drawn at all.
+        {% endcomment %}
         <div class="subtitle-controls">
             <div class="cc-menu subtitle-cc" id="subtitleCcMenu">
                 <button type="button" class="cc-btn subtitle-cc-btn" id="subtitleCcBtn"
@@ -142,11 +161,23 @@
                             onclick="setSubtitle('{{ track.language_code }}')">
                         {% if track.is_lyrics %}♪ {% endif %}{{ track.display_label }}
                     </button>
+                    {% empty %}
+                    {% comment %}
+                        An owner can fix this from here; a viewer is told plainly
+                        that there is nothing to turn on, rather than being left
+                        wondering whether the control is broken.
+                    {% endcomment %}
+                    <p class="cc-empty">{% trans "No captions for this video yet." %}</p>
+                    {% if can_write %}
+                    <button type="button" class="cc-item cc-generate"
+                            onclick="closeCcMenus(); generateSubtitles(this)">
+                        {% trans "Generate captions" %}
+                    </button>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
         </div>
-        {% endif %}
 
         {% if audio_pending %}
         <div class="audio-status" id="audioStatus"
@@ -984,12 +1015,129 @@ showControls()
 
 let currentSubtitle = ""
 
+// --- Caption rendering ----------------------------------------------------
+//
+// Captions are drawn into `.caption-layer` instead of being left to the
+// browser. The browser's own rendering cannot be styled to match on every
+// platform, and it disappears behind the control bar; drawing them here keeps
+// one look everywhere and keeps them clear of the controls.
+//
+// The cues are read from the track's own WebVTT text, which this page can do
+// because the subtitle files are served from the same origin.
+
+const captionLayer = document.getElementById("captionLayer")
+const captionText = document.getElementById("captionText")
+
+// Parsed cue lists, keyed by "<player>:<language>", filled on first use.
+const cueCache = new Map()
+
+function activeMedia() {
+    // In audio mode the picture is hidden, so captions belong to the audio
+    // element; otherwise they belong to the video.
+    return (audioPlayer && audioPlayer.style.display !== "none") ? audioPlayer : videoPlayer
+}
+
+/** Parse WebVTT into [{start, end, text}], tolerating CRLF and SRT-ish input. */
+function parseVtt(raw) {
+    const cues = []
+    const blocks = String(raw).replace(/\r\n?/g, "\n").split(/\n{2,}/)
+    for (const block of blocks) {
+        const lines = block.split("\n").filter(line => line.trim() !== "")
+        if (!lines.length) continue
+        // Skip an optional numeric identifier line.
+        let index = 0
+        if (/^\d+$/.test(lines[0].trim())) index = 1
+        const timing = lines[index]
+        if (!timing || timing.indexOf("-->") === -1) continue
+        const [startRaw, endRaw] = timing.split("-->")
+        const start = vttTime(startRaw)
+        const end = vttTime((endRaw || "").trim().split(/\s+/)[0])
+        if (start === null || end === null) continue
+        const text = lines.slice(index + 1).join("\n")
+            .replace(/<[^>]+>/g, "")   // strip inline markup and karaoke tags
+            .trim()
+        if (text) cues.push({ start, end, text })
+    }
+    return cues
+}
+
+/** "00:00:01.000" (or "00:01.000") to seconds, or null when unreadable. */
+function vttTime(value) {
+    const parts = String(value).trim().split(":")
+    if (parts.length < 2) return null
+    const seconds = parseFloat(parts.pop().replace(",", "."))
+    const minutes = parseInt(parts.pop(), 10)
+    if (Number.isNaN(seconds) || Number.isNaN(minutes)) return null
+    let hours = 0
+    if (parts.length) hours = parseInt(parts.pop(), 10) || 0
+    return hours * 3600 + minutes * 60 + seconds
+}
+
+/** Fetch and cache the cues for one track. */
+async function cuesFor(player, lang) {
+    const key = (player === audioPlayer ? "a" : "v") + ":" + lang
+    if (cueCache.has(key)) return cueCache.get(key)
+    cueCache.set(key, [])   // set first, so a slow load is not fetched twice
+    try {
+        const el = player.querySelector(`track#${player === audioPlayer ? "a" : ""}track-${lang}`)
+        if (!el) return []
+        const response = await fetch(el.src)
+        if (!response.ok) return []
+        const cues = parseVtt(await response.text())
+        cueCache.set(key, cues)
+        return cues
+    } catch (e) {
+        return []
+    }
+}
+
+function hideCaption() {
+    if (captionLayer) captionLayer.classList.remove("is-visible")
+    if (captionText) captionText.textContent = ""
+}
+
+function showCaption(text) {
+    if (!captionText || !captionLayer) return
+    if (captionText.textContent === text) return
+    captionText.textContent = text
+    captionLayer.classList.add("is-visible")
+}
+
+// A single loop drives both players: it looks up the cue covering the current
+// playhead and paints it. Cheap enough to run every frame, and it keeps the
+// caption in step when the viewer scrubs or changes speed.
+function paintCaption() {
+    if (!currentSubtitle) return
+    const player = activeMedia()
+    if (!player) return
+    const cues = cueCache.get((player === audioPlayer ? "a" : "v") + ":" + currentSubtitle)
+    if (!cues || !cues.length) return
+    const now = player.currentTime
+    for (const cue of cues) {
+        if (now >= cue.start && now <= cue.end) {
+            showCaption(cue.text)
+            return
+        }
+    }
+    hideCaption()
+}
+
+// Repaint on the events that can change which cue is on screen, rather than
+// spinning a frame loop. A `requestAnimationFrame` loop that re-arms itself
+// recurses without bound wherever rAF runs synchronously (as it does under the
+// JS smoke harness), and playback events cover the same ground.
+function captionTick() {
+    paintCaption()
+}
+
 function applySubtitle(lang) {
     [videoPlayer, audioPlayer].forEach(el => {
         if (!el || !el.textTracks) return
         for (const track of el.textTracks) {
+            // Deliberately "hidden", never "showing": that stops the browser
+            // painting its own captions while still giving us the cues.
             const code = (track.id || "").replace(/^a?track-/, "")
-            track.mode = (lang && code === lang) ? "showing" : "disabled"
+            track.mode = (lang && code === lang) ? "hidden" : "disabled"
         }
     })
     // The language buttons live both below the player and in the CC menus;
@@ -1008,6 +1156,16 @@ function applySubtitle(lang) {
     // The always-visible button below the player spells the choice out.
     const current = document.getElementById("subtitleCcCurrent")
     if (current) current.textContent = label
+
+    if (!lang) {
+        hideCaption()
+        return
+    }
+    // Load the cues then repaint as soon as they arrive.
+    const player = activeMedia()
+    if (player) {
+        cuesFor(player, lang).then(() => paintCaption())
+    }
 }
 
 function ccLabel(lang) {
@@ -1032,6 +1190,17 @@ if (currentSubtitle && !document.querySelector(`.cc-item[data-lang="${currentSub
 }
 
 applySubtitle(currentSubtitle)
+
+// Repaint the caption whenever the playhead can have moved. `timeupdate` fires
+// about four times a second, which is enough for a caption strip, and seeking
+// and rate changes are covered explicitly so a scrub never leaves a stale cue.
+;[videoPlayer, audioPlayer].forEach(el => {
+    if (!el) return
+    el.addEventListener("timeupdate", captionTick)
+    el.addEventListener("seeked", captionTick)
+    el.addEventListener("ratechange", captionTick)
+    el.addEventListener("loadedmetadata", captionTick)
+})
 
 // Every CC menu (the one below the player, and the one in the bar) opens its
 // own language list; a click outside or on a language closes them all.
@@ -1127,6 +1296,47 @@ function deleteSubtitle(language) {
 // --- Automatic subtitles ---------------------------------------------------
 
 const autoSubPanel = document.getElementById("autoSubPanel");
+
+/**
+ * Start a caption run from inside the player's CC menu, which is the place a
+ * viewer notices the gap. There is no status element there, so the menu item
+ * itself carries the progress; the page reloads when the run finishes and the
+ * new languages appear in the list.
+ */
+function generateSubtitles(button) {
+    const panel = document.getElementById("autoSubPanel");
+    if (!panel) return;
+    button.disabled = true;
+    button.textContent = "{% trans 'Starting…' %}";
+    fetch(panel.dataset.generateUrl, {
+        method: "POST", headers: { "X-CSRFToken": csrf }
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                button.disabled = false;
+                button.textContent = "{% trans 'Generate captions' %}";
+                alert(data.error || "{% trans 'Failed.' %}");
+                return;
+            }
+            button.textContent = "{% trans 'Transcribing and translating…' %}";
+            const poll = () => {
+                fetch(panel.dataset.statusUrl)
+                    .then(r => r.json())
+                    .then(status => {
+                        if (!status.pending) { location.reload(); return }
+                        setTimeout(poll, 4000);
+                    })
+                    .catch(() => setTimeout(poll, 8000));
+            };
+            poll();
+        })
+        .catch(() => {
+            button.disabled = false;
+            button.textContent = "{% trans 'Generate captions' %}";
+        });
+}
+
 if (autoSubPanel) {
     const autoSubBtn = document.getElementById("autoSubBtn");
     const autoSubMessage = document.getElementById("autoSubMessage");
