@@ -764,13 +764,19 @@ function wireControls() {
     }
 
     function requestStageFullscreen() {
-        if (!playerStage) return false
-        const request = playerStage.requestFullscreen
-            || playerStage.webkitRequestFullscreen
-            || playerStage.msRequestFullscreen
+        // The control bar (and its CC menu) is a sibling of the picture, so
+        // fullscreening only the picture hid the caption controls. Expand the
+        // whole player box instead; the fullscreen CSS makes the picture fill
+        // it and keeps the bar floating over the bottom.
+        const container = playerStage && playerStage.closest(".video-player-container")
+        const target = container || playerStage
+        if (!target) return false
+        const request = target.requestFullscreen
+            || target.webkitRequestFullscreen
+            || target.msRequestFullscreen
         if (!request) return false
         try {
-            const result = request.call(playerStage)
+            const result = request.call(target)
             if (result && typeof result.catch === "function") result.catch(() => {})
             return true
         } catch (error) {
@@ -891,13 +897,22 @@ const canHover = window.matchMedia
     : false
 
 let pointerInsideStage = false
+// The bar floats over the bottom of the picture and is a sibling of the stage,
+// so moving down to a control crosses out of the stage a moment before the
+// pointer lands on the bar. Tracking the bar separately keeps the bar from
+// hiding itself out from under a pointer that is already on it.
+let pointerInsideBar = false
+
+function pointerInsidePlayer() {
+    return pointerInsideStage || pointerInsideBar
+}
 
 // The bar stays up while paused or while the pointer is over it, and fades away
 // only when the video is playing and nobody is aiming at anything.
 function shouldAutoHide() {
     if (!activePlayer) return false
     const playing = !activePlayer.paused && !activePlayer.ended
-    return playing && !pointerInsideStage
+    return playing && !pointerInsidePlayer()
 }
 
 function showControls() {
@@ -913,7 +928,7 @@ function showControls() {
 function hideControls() {
     if (!playerBar || !playerStage) return
     // Never yank the bar away from a pointer that is still resting on it.
-    if (pointerInsideStage && canHover) return
+    if (pointerInsidePlayer() && canHover) return
     playerBar.classList.remove("is-visible")
     playerStage.classList.remove("controls-visible")
 }
@@ -978,6 +993,20 @@ function wireAutoHide() {
     if (playerBar) {
         ;["pointerdown", "input", "change", "focusin"].forEach(name =>
             playerBar.addEventListener(name, () => showControls()))
+
+        if (canHover) {
+            // Reaching the bar keeps it up; leaving it lets the countdown run
+            // again. The button listeners above cover the case where the bar is
+            // reached without a mouseenter (a touch or a keyboard focus).
+            playerBar.addEventListener("mouseenter", () => {
+                pointerInsideBar = true
+                showControls()
+            })
+            playerBar.addEventListener("mouseleave", () => {
+                pointerInsideBar = false
+                if (shouldAutoHide()) hideControls()
+            })
+        }
     }
 
     ;[videoPlayer, audioPlayer].forEach(el => {
@@ -1108,6 +1137,8 @@ function showCaption(text) {
 // caption in step when the viewer scrubs or changes speed.
 function paintCaption() {
     if (!currentSubtitle) return
+    // The native iOS player draws them itself while it owns the screen.
+    if (nativeVideoFullscreen()) return
     const player = activeMedia()
     if (!player) return
     const cues = cueCache.get((player === audioPlayer ? "a" : "v") + ":" + currentSubtitle)
@@ -1130,16 +1161,28 @@ function captionTick() {
     paintCaption()
 }
 
+// On an iPhone the only fullscreen available expands the <video> element
+// itself, and the native player covers the whole page. The custom overlay
+// cannot be seen there, so for the duration of that fullscreen the chosen
+// track is handed to the browser ("showing") and our layer steps aside.
+function nativeVideoFullscreen() {
+    return Boolean(videoPlayer && videoPlayer.webkitDisplayingFullscreen)
+}
+
 function applySubtitle(lang) {
-    [videoPlayer, audioPlayer].forEach(el => {
+    const mode = nativeVideoFullscreen() ? "showing" : "hidden"
+    ;[videoPlayer, audioPlayer].forEach(el => {
         if (!el || !el.textTracks) return
         for (const track of el.textTracks) {
-            // Deliberately "hidden", never "showing": that stops the browser
-            // painting its own captions while still giving us the cues.
+            // "hidden" stops the browser painting its own captions while
+            // still giving us the cues; "showing" is only used while the
+            // native iOS player is the thing on screen.
             const code = (track.id || "").replace(/^a?track-/, "")
-            track.mode = (lang && code === lang) ? "hidden" : "disabled"
+            track.mode = (lang && code === lang) ? mode : "disabled"
         }
     })
+    // The native player paints the cues; keep our overlay out of the way.
+    if (mode === "showing") hideCaption()
     // The language buttons live both below the player and in the CC menus;
     // keep every copy in step with the choice.
     document.querySelectorAll(".cc-item").forEach(btn => {
@@ -1201,6 +1244,14 @@ applySubtitle(currentSubtitle)
     el.addEventListener("ratechange", captionTick)
     el.addEventListener("loadedmetadata", captionTick)
 })
+
+// Going in or out of the iPhone's native video fullscreen changes which
+// surface draws the captions, so the track mode is recomputed each time.
+if (videoPlayer) {
+    ["webkitbeginfullscreen", "webkitendfullscreen"].forEach(name => {
+        videoPlayer.addEventListener(name, () => applySubtitle(currentSubtitle))
+    })
+}
 
 // Every CC menu (the one below the player, and the one in the bar) opens its
 // own language list; a click outside or on a language closes them all.

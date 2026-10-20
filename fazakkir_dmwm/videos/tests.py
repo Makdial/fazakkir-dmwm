@@ -879,7 +879,12 @@ class CustomPlayerTests(TestCase):
         self.assertIn('id="captionText"', body)
         self.assertIn("parseVtt", body)
         # The browser's own rendering is suppressed, not the cues themselves.
-        self.assertIn('track.mode = (lang && code === lang) ? "hidden" : "disabled"', body)
+        self.assertIn('track.mode = (lang && code === lang) ? mode : "disabled"', body)
+        # ...except inside iPhone native fullscreen, where the native player is
+        # the only thing on screen and must be given the track to paint.
+        self.assertIn("function nativeVideoFullscreen()", body)
+        self.assertIn('? "showing" : "hidden"', body)
+        self.assertIn('"webkitbeginfullscreen", "webkitendfullscreen"', body)
 
     def test_cc_menu_script_is_wired(self):
         SubtitleTrack.objects.create(
@@ -1012,16 +1017,24 @@ class AutoHidingControlsTests(TestCase):
         guard = self.body[
             self.body.index("function hideControls()"):self.body.index("function toggleControls()")
         ]
-        self.assertIn("if (pointerInsideStage && canHover) return", guard)
+        self.assertIn("if (pointerInsidePlayer() && canHover) return", guard)
+
+    def test_the_pointer_is_tracked_on_the_bar_as_well_as_the_picture(self):
+        # The bar floats over the bottom of the picture and is a sibling of it,
+        # so moving down onto a control leaves the picture a moment before the
+        # pointer lands on the bar.
+        self.assertIn("function pointerInsidePlayer()", self.body)
+        self.assertIn("pointerInsideBar = true", self.body)
+        self.assertIn("pointerInsideBar = false", self.body)
 
     def test_playing_hides_only_when_nobody_is_hovering(self):
         self.assertIn("function shouldAutoHide()", self.body)
         helper = self.body[
             self.body.index("function shouldAutoHide()"):self.body.index("function showControls()")
         ]
-        self.assertIn("pointerInsideStage", helper)
+        self.assertIn("pointerInsidePlayer()", helper)
         # A paused video must always keep its controls up.
-        self.assertIn("return playing && !pointerInsideStage", helper)
+        self.assertIn("return playing && !pointerInsidePlayer()", helper)
         play = self.body[self.body.index('el.addEventListener("play"'):]
         self.assertIn("if (shouldAutoHide()) hideControls()", play[:400])
 
