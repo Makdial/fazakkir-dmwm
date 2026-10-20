@@ -9,6 +9,9 @@ wheels/
 # Collected by `manage.py collectstatic` (generated at deploy time)
 staticfiles/
 
+# Locally generated demo media (recreated by tools/demo/seed_demo.py)
+media/
+
 # Virtual environments
 .venv
 

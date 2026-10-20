@@ -250,6 +250,12 @@ STATICFILES_DIRS = [
 # serve static files itself.
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Media normally lives in Cloudflare R2 and is served from there, so these two
+# only exist to let the local video-walkthrough recorder (tools/demo) play
+# generated sample files in a browser. Production never reads them.
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / "media"
+
 # In production WhiteNoise serves the collected files (gzipped, with far-future
 # caching). The manifest adds a content hash to every filename so a deploy can
 # never serve a stale CSS or JS file to the service worker's cache.

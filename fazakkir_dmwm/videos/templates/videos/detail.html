@@ -271,13 +271,13 @@
                 </div>
                 <div class="share-networks">
                     <a class="share-network share-network-whatsapp" target="_blank" rel="noopener"
-                       data-share-network="video">WhatsApp</a>
+                       data-share-network="whatsapp" data-share-kind="video">WhatsApp</a>
                     <a class="share-network share-network-telegram" target="_blank" rel="noopener"
-                       data-share-network="video">Telegram</a>
+                       data-share-network="telegram" data-share-kind="video">Telegram</a>
                     <a class="share-network share-network-facebook" target="_blank" rel="noopener"
-                       data-share-network="video">Facebook</a>
+                       data-share-network="facebook" data-share-kind="video">Facebook</a>
                     <a class="share-network share-network-x" target="_blank" rel="noopener"
-                       data-share-network="video">X</a>
+                       data-share-network="x" data-share-kind="video">X</a>
                 </div>
                 <p class="share-hint" id="shareHint" hidden></p>
             </div>
@@ -1334,10 +1334,12 @@ function wireSharing() {
     })
 
     panel.querySelectorAll("[data-share-network]").forEach(link => {
-        const kind = link.dataset.shareNetwork
+        const network = link.dataset.shareNetwork
+        const kind = link.dataset.shareKind || "video"
         const url = shareUrl(kind)
-        if (!url) return
-        link.href = SHARE_NETWORK_URLS[kind](url, shareMessage(kind))
+        const build = SHARE_NETWORK_URLS[network]
+        if (!url || !build) return
+        link.href = build(url, shareMessage(kind))
     })
 
     // Close the panel when the visitor clicks elsewhere.

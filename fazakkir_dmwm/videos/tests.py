@@ -678,6 +678,23 @@ class VideoSharingTests(TestCase):
         self.assertContains(response, 'id="sharePanel"')
         self.assertNotContains(response, 'data-share="audio"')
 
+    def test_share_network_links_carry_a_network_and_a_kind(self):
+        # The links used to put the *kind* ("video"/"audio") in the network
+        # attribute, so the script looked up a network that does not exist and
+        # threw before it could ever fill the href in.
+        response = self.client.get(reverse("videos:detail", args=[self.with_audio.id]))
+        body = response.content.decode()
+        for network in ("whatsapp", "telegram", "facebook", "x"):
+            self.assertIn(f'data-share-network="{network}"', body)
+        self.assertNotIn('data-share-network="video"', body)
+        self.assertIn('data-share-kind="video"', body)
+
+    def test_share_script_guards_an_unknown_network(self):
+        response = self.client.get(reverse("videos:detail", args=[self.with_audio.id]))
+        body = response.content.decode()
+        self.assertIn("SHARE_NETWORK_URLS[network]", body)
+        self.assertNotIn("SHARE_NETWORK_URLS[kind](", body)
+
     def test_share_networks_are_prefilled_with_the_link(self):
         response = self.client.get(reverse("videos:detail", args=[self.with_audio.id]))
         body = response.content.decode()
