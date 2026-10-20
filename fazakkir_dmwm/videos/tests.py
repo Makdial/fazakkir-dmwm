@@ -2921,6 +2921,44 @@ class VideoSearchTests(TestCase):
         self.assertContains(response, reverse("videos:search"))
         self.assertContains(response, 'name="q"')
 
+    def test_no_results_offers_a_youtube_search_link(self):
+        response = self.client.get(reverse("videos:search"), {"q": "zzzznotathing"})
+        body = response.content.decode()
+        self.assertIn("youtube.com/results", body)
+        self.assertIn("zzzznotathing", body)
+        self.assertIn('target="_blank"', body)
+        self.assertIn('rel="noopener noreferrer"', body)
+
+    def test_youtube_link_carries_the_typed_query(self):
+        response = self.client.get(reverse("videos:search"), {"q": "mame cheikh"})
+        self.assertEqual(
+            response.context["youtube_url"],
+            "https://www.youtube.com/results?search_query=mame+cheikh",
+        )
+
+    def test_youtube_link_percent_encodes_awkward_characters(self):
+        # A space and an ampersand must survive the trip through the URL.
+        response = self.client.get(reverse("videos:search"), {"q": "a & b"})
+        self.assertEqual(
+            response.context["youtube_url"],
+            "https://www.youtube.com/results?search_query=a+%26+b",
+        )
+
+    def test_youtube_link_shows_even_when_results_exist(self):
+        # The point is "I did not find it here", which is still true when a
+        # partial match exists; the fallback is always offered once a search ran.
+        response = self.client.get(reverse("videos:search"), {"q": "mame"})
+        self.assertIn("youtube.com/results", response.content.decode())
+
+    def test_no_youtube_link_before_a_search_is_run(self):
+        response = self.client.get(reverse("videos:search"))
+        self.assertNotIn("youtube.com/results", response.content.decode())
+        self.assertEqual(response.context["youtube_url"], "")
+
+    def test_blank_query_offers_no_youtube_link(self):
+        response = self.client.get(reverse("videos:search"), {"q": "   "})
+        self.assertEqual(response.context["youtube_url"], "")
+
 
 class AudioOnlyUploadTests(TestCase):
     """An administrator can upload an MP3 with no video behind it."""

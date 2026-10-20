@@ -894,6 +894,18 @@ msgstr "لا توجد نتائج"
 msgid "Nothing matched. Try a different word, or a year such as 2000."
 msgstr "لا توجد نتائج. جرّب كلمة أخرى أو سنة مثل 2000."
 
+msgid "Not the one you wanted? The rest may be on YouTube."
+msgstr "لم تجد ما تريد؟ البقية قد تكون على يوتيوب."
+
+msgid "Still looking? This video may be on YouTube."
+msgstr "ما زلت تبحث؟ قد يكون هذا المقطع على يوتيوب."
+
+msgid "Search YouTube for %(query)s"
+msgstr "ابحث عن %(query)s على يوتيوب"
+
+msgid "Opens YouTube in a new tab."
+msgstr "يفتح يوتيوب في تبويب جديد."
+
 msgid "Open the link below to choose a new one:"
 msgstr "افتح الرابط أدناه لاختيار كلمة مرور جديدة:"
 

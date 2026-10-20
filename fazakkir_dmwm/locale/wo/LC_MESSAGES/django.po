@@ -870,6 +870,18 @@ msgstr "Benni bir"
 msgid "Nothing matched. Try a different word, or a year such as 2000."
 msgstr "Benni bir. Jëmm ci saf kumam wala sa cascadeur man ni 2000."
 
+msgid "Not the one you wanted? The rest may be on YouTube."
+msgstr "Moo xaajoo? Yeneen yi man nañu nekk ci YouTube."
+
+msgid "Still looking? This video may be on YouTube."
+msgstr "Ba léegi di seet? Video bii man na nekk ci YouTube."
+
+msgid "Search YouTube for %(query)s"
+msgstr "Seet %(query)s ci YouTube"
+
+msgid "Opens YouTube in a new tab."
+msgstr "Mu day ubbi YouTube ci ab tab bu bees."
+
 msgid "Open the link below to choose a new one:"
 msgstr "Ubbi link mi ci ndaw yi teg bir mbirtee bees:"
 

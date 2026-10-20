@@ -873,6 +873,18 @@ msgstr "Aucun résultat"
 msgid "Nothing matched. Try a different word, or a year such as 2000."
 msgstr "Aucun résultat. Essayez un autre mot ou une année comme 2000."
 
+msgid "Not the one you wanted? The rest may be on YouTube."
+msgstr "Pas celle que vous cherchiez ? La suite est peut-être sur YouTube."
+
+msgid "Still looking? This video may be on YouTube."
+msgstr "Toujours introuvable ? Cette vidéo est peut-être sur YouTube."
+
+msgid "Search YouTube for %(query)s"
+msgstr "Rechercher %(query)s sur YouTube"
+
+msgid "Opens YouTube in a new tab."
+msgstr "Ouvre YouTube dans un nouvel onglet."
+
 msgid "Open the link below to choose a new one:"
 msgstr "Ouvrez le lien ci-dessous pour en choisir un nouveau :"
 

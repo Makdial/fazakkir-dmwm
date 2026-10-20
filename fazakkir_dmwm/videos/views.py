@@ -4,6 +4,8 @@ import re
 import tempfile
 from pathlib import Path
 
+from urllib.parse import urlencode
+
 from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -40,6 +42,11 @@ from .transcription import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Where a viewer is sent when the library has nothing that matches. The same
+# link works from every country and needs no API key: it is simply YouTube's
+# own results page for the words the visitor typed.
+YOUTUBE_SEARCH_URL = "https://www.youtube.com/results?"
 
 
 def video_detail(request, video_id):
@@ -171,10 +178,22 @@ def video_search(request):
     videos = videos.distinct()
     schedule_missing_durations(videos)
 
+    # When the library has nothing to offer, hand the visitor off to YouTube
+    # rather than leaving them at a dead end. The query is passed through
+    # verbatim so the search they already typed is the search that runs there.
+    youtube_url = ""
+    if query:
+        youtube_url = YOUTUBE_SEARCH_URL + urlencode({"search_query": query})
+
     return render(
         request,
         "videos/search.html",
-        {"videos": videos, "query": query, "words": words},
+        {
+            "videos": videos,
+            "query": query,
+            "words": words,
+            "youtube_url": youtube_url,
+        },
     )
 
 
