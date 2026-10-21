@@ -933,6 +933,7 @@ def generate_subtitles(video_id: int, include_lyrics: bool = True) -> dict:
             raise TranscriptionError("No speech was detected in this video.")
 
         created: list[str] = []
+        warnings: list[str] = []
         if source_language:
             _save_track(video, source_language, segments)
             created.append(source_language)
@@ -949,7 +950,17 @@ def generate_subtitles(video_id: int, include_lyrics: bool = True) -> dict:
                     video_id,
                 )
                 continue
-            translated = translator.translate(segments, target)
+            try:
+                translated = translator.translate(segments, target)
+            except TranscriptionError as exc:
+                # The source-language track is already saved, so a translation
+                # that runs out of credit or is rejected must not throw the
+                # whole run away: the captions that do exist still work.
+                logger.warning(
+                    "Translation into %s failed for video %s: %s", target, video_id, exc
+                )
+                warnings.append(f"{target}: {exc}")
+                continue
             _save_track(video, target, translated)
             created.append(target)
 
@@ -958,7 +969,7 @@ def generate_subtitles(video_id: int, include_lyrics: bool = True) -> dict:
             # which is how they behave when uploaded by hand.
             _save_lyrics(video, segments)
 
-        return {"languages": created, "cues": len(segments)}
+        return {"languages": created, "cues": len(segments), "warnings": warnings}
     finally:
         _remove_tree(workdir)
 
@@ -1082,7 +1093,7 @@ def generate_and_record(video_id: int) -> bool:
     ``auto_subtitle_error`` so background workers and bulk runs stay alive.
     """
     try:
-        generate_subtitles(video_id)
+        summary = generate_subtitles(video_id)
     except TranscriptionError as exc:
         logger.warning("Subtitle generation failed for video %s: %s", video_id, exc)
         Video.objects.filter(id=video_id).update(
@@ -1099,8 +1110,15 @@ def generate_and_record(video_id: int) -> bool:
             job_started_at=None,
         )
         return False
+
+    # A run that saved the source track but could not translate it is still a
+    # success: the captions that exist work, and the warning says what did
+    # not make it.
+    warnings = summary.get("warnings") or []
     Video.objects.filter(id=video_id).update(
-        auto_subtitle_status="ready", auto_subtitle_error="", job_started_at=None
+        auto_subtitle_status="ready",
+        auto_subtitle_error="; ".join(warnings)[:500],
+        job_started_at=None,
     )
     return True
 

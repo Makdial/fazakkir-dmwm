@@ -2588,6 +2588,69 @@ class ElevenLabsTranslationPairingTests(TestCase):
                 # The target tracks went through the translation provider.
                 self.assertIn(f"[{code}]", track.content)
 
+    def test_a_failing_translation_keeps_the_source_track(self):
+        """A translation with no credit must not throw away the captions."""
+        user = make_user("partial")
+        video = make_video(user, audio_file_id="audio/p.mp3", audio_status="ready")
+        segments = [transcription.Segment(0.0, 1.0, "salam")]
+
+        class FakeProvider(transcription.SubtitleProvider):
+            name = "elevenlabs"
+            supports_translation = False
+
+            def transcribe(self, path, language):
+                return list(segments)
+
+            def translate(self, segments, target_language):
+                raise AssertionError("the ElevenLabs provider must not translate")
+
+        class BrokenTranslator(transcription.SubtitleProvider):
+            name = "openai"
+
+            def transcribe(self, path, language):
+                return []
+
+            def translate(self, segments, target_language):
+                raise transcription.TranscriptionError("You have no credits remaining.")
+
+        with override_settings(
+            SUBTITLE_PROVIDER="elevenlabs",
+            SUBTITLE_TRANSLATION_PROVIDER="openai",
+            SUBTITLE_SOURCE_LANGUAGE="wo",
+            SUBTITLE_TARGET_LANGUAGES="fr,en",
+        ), mock.patch.object(
+            transcription, "get_provider", return_value=FakeProvider()
+        ), mock.patch.object(
+            transcription, "get_translation_provider", return_value=BrokenTranslator()
+        ), mock.patch.object(
+            transcription, "download_audio", return_value="audio.mp3"
+        ), mock.patch.object(
+            transcription, "chunk_audio", return_value=[("chunk.mp3", 0.0)]
+        ):
+            summary = transcription.generate_subtitles(video.id, include_lyrics=False)
+
+        # The Wolof track exists and both translations are reported as broken.
+        self.assertEqual(summary["languages"], ["wo"])
+        self.assertEqual(len(summary["warnings"]), 2)
+        self.assertTrue(video.subtitle_tracks.filter(language_code="wo").exists())
+        self.assertFalse(video.subtitle_tracks.filter(language_code="fr").exists())
+
+    def test_a_run_with_a_broken_translation_is_still_ready(self):
+        """The video keeps its captions, so the run is not marked as failed."""
+        user = make_user("partialstatus")
+        video = make_video(user, audio_file_id="audio/p.mp3", audio_status="ready")
+
+        with mock.patch.object(
+            transcription,
+            "generate_subtitles",
+            return_value={"languages": ["wo"], "cues": 1, "warnings": ["fr: no credits"]},
+        ):
+            self.assertTrue(transcription.generate_and_record(video.id))
+
+        video.refresh_from_db()
+        self.assertEqual(video.auto_subtitle_status, "ready")
+        self.assertIn("no credits", video.auto_subtitle_error)
+
 
 class ElevenLabsHttpLayerTests(TestCase):
     """The multipart wrapper that talks to Scribe."""
