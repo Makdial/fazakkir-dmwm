@@ -28,6 +28,7 @@ from videos.audio_tasks import (
 from videos.models import Comment, Video
 from videos.transcription import (
     audio_sweep_status as subtitle_sweep_status,
+    subtitle_progress,
     start_subtitle_sweep,
 )
 
@@ -351,15 +352,24 @@ def subtitle_generate(request):
 
 @read_required
 def subtitle_status(request):
-    """Report the progress of the bulk caption run."""
+    """Report the progress of the bulk caption run.
+
+    The counters come from the database rather than the thread that runs the
+    sweep: gunicorn serves from two workers, so half the requests land in a
+    process that never started the run and would always answer "not running".
+    """
     state = subtitle_sweep_status()
+    counted = subtitle_progress()
     return JsonResponse(
         {
-            "running": state["running"],
-            "total": state["total"],
-            "done": state["done"],
-            "succeeded": state["succeeded"],
-            "failed": state["failed"],
+            # A run is in flight when a video is marked processing, whatever
+            # worker answers this request.
+            "running": bool(state["running"] or counted["processing"]),
+            "total": counted["total"] or state["total"],
+            "done": counted["done"],
+            "succeeded": counted["succeeded"],
+            "failed": counted["failed"],
+            "processing": counted["processing"],
         }
     )
 

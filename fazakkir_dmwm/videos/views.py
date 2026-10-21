@@ -319,19 +319,32 @@ def video_upload_page(request):
     )
 
 
-# The cover travels as a base64 data URL inside a normal form field. A phone
-# photo is many megabytes, and Django refuses a request whose fields are too
-# large before any view runs, which used to look like an unexplained failure.
+# The cover travels either as a streamed file part (preferred) or, from an older
+# page, as a base64 data URL inside a normal form field. A phone photo is many
+# megabytes, and Django refuses a request whose fields are too large before any
+# view runs, which used to look like an unexplained failure.
 MAX_THUMBNAIL_CHARS = 4 * 1024 * 1024
+MAX_THUMBNAIL_BYTES = 8 * 1024 * 1024  # the same limit the image form allows
 
 
-def _validated_thumbnail(thumbnail_data: str) -> str:
-    """Check the chosen cover before a single byte is stored.
+def _thumbnail_payload(request) -> bytes | str:
+    """Return the chosen cover, or "" when none was chosen.
 
-    Returns the data URL unchanged, or "" when no cover was chosen. Raises
-    ``ValueError`` with a message the uploader can act on.
+    Raises ``ValueError`` with a message the uploader can act on. A file part is
+    preferred; the base64 field is still read so an older page keeps working.
     """
-    data = (thumbnail_data or "").strip()
+    upload = request.FILES.get("thumbnail_file")
+    if upload is not None:
+        if upload.size > MAX_THUMBNAIL_BYTES:
+            raise ValueError(_("That picture is too large. Please choose a smaller one."))
+        raw = upload.read()
+        if not raw or not is_image(raw):
+            raise ValueError(
+                _("That file is not a picture the site can show. Please choose a JPEG or PNG image.")
+            )
+        return raw
+
+    data = (request.POST.get("thumbnail_data") or "").strip()
     if not data:
         return ""
     if not data.startswith("data:image"):
@@ -351,21 +364,21 @@ def _validated_thumbnail(thumbnail_data: str) -> str:
         raise ValueError(
             _("That file is not a picture the site can show. Please choose a JPEG or PNG image.")
         )
-    return data
+    return raw
 
 
-def _store_thumbnail(thumbnail_data: str, base_name: str) -> tuple[str, str, str]:
+def _store_thumbnail(thumbnail: bytes | str, base_name: str) -> tuple[str, str, str]:
     """Store an already validated cover.
 
     Returns ``(file_id, url, warning)``. A cover that cannot be stored must not
     throw away the media that was just uploaded, so the failure comes back as a
     warning the page can show instead of an error.
     """
-    if not thumbnail_data:
+    if not thumbnail:
         return "", "", ""
     try:
         thumb = upload_thumbnail(
-            file_data=thumbnail_data, file_name=base_name + "_thumb.jpg"
+            file_data=thumbnail, file_name=base_name + "_thumb.jpg"
         )
     except StorageError:
         logger.warning(
@@ -393,7 +406,7 @@ def video_upload(request):
     # Checked first, so a bad cover cannot reject an upload that already spent
     # minutes on the wire.
     try:
-        thumbnail_data = _validated_thumbnail(request.POST.get("thumbnail_data", ""))
+        thumbnail = _thumbnail_payload(request)
     except ValueError as exc:
         return JsonResponse({"success": False, "error": str(exc)})
 
@@ -420,7 +433,7 @@ def video_upload(request):
         # An audio upload has no frame to sample, so the picture is the one
         # the owner chose on the upload page (if any).
         thumbnail_file_id, thumbnail_url, warning = _store_thumbnail(
-            thumbnail_data, base_name
+            thumbnail, base_name
         )
 
         video = Video.objects.create(
@@ -469,7 +482,7 @@ def video_upload(request):
 
     # Stored after the video, and never fatal: the footage is what matters.
     thumbnail_file_id, thumbnail_url, warning = _store_thumbnail(
-        thumbnail_data, video_file.name.rsplit(".", 1)[0]
+        thumbnail, video_file.name.rsplit(".", 1)[0]
     )
 
     video = Video.objects.create(

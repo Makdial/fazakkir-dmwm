@@ -107,6 +107,9 @@
 <script>
 const $ = id => document.getElementById(id);
 let customThumbnailChosen = false;
+// The chosen picture, kept as a real file so it travels as a file part: a form
+// field carrying base64 is limited in size and inflates the picture by a third.
+let thumbnailBlob = null;
 
 function setThumbnail(dataUrl) {
     if (!dataUrl) return;
@@ -114,6 +117,17 @@ function setThumbnail(dataUrl) {
     $("thumbPreview").classList.add("visible");
     $("thumb-label").style.display = "none";
     $("thumbnailData").value = dataUrl;
+    thumbnailBlob = dataUrlToBlob(dataUrl);
+}
+
+function dataUrlToBlob(dataUrl) {
+    const [header, body] = dataUrl.split(",");
+    const match = /data:([^;]+)/.exec(header);
+    const mime = match ? match[1] : "image/jpeg";
+    const binary = atob(body);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
 }
 
 // Capture a frame from the selected video so every upload gets a thumbnail.
@@ -260,6 +274,7 @@ $("customThumbnail").onchange = async e => {
             customThumbnailChosen = false;
             $("customThumbnail").value = "";
             $("thumbnailData").value = "";
+            thumbnailBlob = null;
             $("thumbPreview").classList.remove("visible");
             $("thumb-label").style.display = "";
             $("errorContainer").innerHTML =
@@ -282,9 +297,18 @@ $("uploadForm").onsubmit = async e => {
     window.onbeforeunload = () => "{% trans 'Upload in progress' %}";
 
     try {
+        const body = new FormData(e.target);
+        // A file part is streamed and has no field-size limit, so the picture
+        // goes that way; the hidden field is only left for a browser whose
+        // canvas could not produce one.
+        if (thumbnailBlob) {
+            body.set("thumbnail_file", thumbnailBlob, "cover.jpg");
+            body.delete("thumbnail_data");
+        }
+
         const res = await fetch("{% url 'videos:upload_submit' %}", {
             method: "POST",
-            body: new FormData(e.target)
+            body: body
         });
 
         // A refused request answers with a page, not JSON; reading it as text

@@ -3713,6 +3713,44 @@ class AudioOnlyUploadTests(TestCase):
         self.assertIn("customThumbnailGroup", body)
         self.assertIn("An audio upload has no picture of its own", body)
 
+    @mock.patch("videos.views.get_duration", return_value=0.0)
+    @mock.patch("videos.views.upload_thumbnail")
+    @mock.patch("videos.views.upload_audio")
+    def test_the_cover_can_arrive_as_a_file(
+        self, upload_audio, upload_thumbnail, duration
+    ):
+        # A file part is streamed, so a large picture never hits the form-field
+        # limit that used to reject the whole upload.
+        upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
+        upload_thumbnail.return_value = {"path": "thumbnails/c.png", "url": ""}
+
+        response = self.audio_post(
+            thumbnail_data="",
+            thumbnail_file=SimpleUploadedFile(
+                "cover.jpg", self.jpeg_bytes(), content_type="image/jpeg"
+            ),
+        )
+
+        self.assertTrue(response.json()["success"])
+        stored = upload_thumbnail.call_args.kwargs["file_data"]
+        self.assertTrue(stored.startswith(b"\xff\xd8\xff"))
+        self.assertEqual(Video.objects.get().thumbnail_file_id, "thumbnails/c.png")
+
+    @mock.patch("videos.views.upload_audio")
+    def test_a_large_cover_file_is_refused_with_a_readable_message(
+        self, upload_audio
+    ):
+        response = self.audio_post(
+            thumbnail_data="",
+            thumbnail_file=SimpleUploadedFile(
+                "huge.jpg", b"\xff\xd8\xff" + b"\x00" * (9 * 1024 * 1024),
+                content_type="image/jpeg",
+            ),
+        )
+        self.assertFalse(response.json()["success"])
+        self.assertIn("too large", response.json()["error"])
+        upload_audio.assert_not_called()
+
     @mock.patch("videos.views.upload_audio")
     def test_a_picture_that_is_not_an_image_is_refused_before_uploading(
         self, upload_audio
@@ -3787,11 +3825,13 @@ class AudioOnlyUploadTests(TestCase):
         self.assertIn("could not be read", response.json()["error"])
         self.assertFalse(Video.objects.exists())
 
+    def jpeg_bytes(self) -> bytes:
+        """A tiny but genuinely valid JPEG header."""
+        return b"\xff\xd8\xff\xe0" + b"\x00" * 32
+
     def jpeg_data_url(self) -> str:
         """A tiny but genuinely valid JPEG header, as the browser would send."""
-        return "data:image/jpeg;base64," + base64.b64encode(
-            b"\xff\xd8\xff\xe0" + b"\x00" * 32
-        ).decode()
+        return "data:image/jpeg;base64," + base64.b64encode(self.jpeg_bytes()).decode()
 
     def test_audio_upload_without_a_file_is_rejected(self):
         response = self.audio_post(audio_file=None)

@@ -1810,6 +1810,25 @@ def audio_sweep_status() -> dict:
         return dict(_SWEEP_STATE)
 
 
+def subtitle_progress() -> dict:
+    """Count the caption work from the database.
+
+    The in-process counters above only exist in the worker that started the run.
+    These counters are visible to every worker, so the dashboard tells the truth
+    whichever one answers the request.
+    """
+    videos = Video.objects.exclude(audio_file_id="")
+    return {
+        "total": videos.count(),
+        "processing": videos.filter(auto_subtitle_status="processing").count(),
+        "succeeded": videos.filter(auto_subtitle_status="ready").count(),
+        "failed": videos.filter(auto_subtitle_status="failed").count(),
+        "done": videos.filter(
+            auto_subtitle_status__in=("ready", "failed")
+        ).count(),
+    }
+
+
 def _run_for_video(video_id: int) -> None:
     close_old_connections()
     try:

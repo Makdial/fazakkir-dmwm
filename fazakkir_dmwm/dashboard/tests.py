@@ -222,22 +222,46 @@ class SubtitleSweepDashboardTests(DashboardBaseTests):
             response = self.client.post(reverse("dashboard:subtitle_generate"))
         self.assertFalse(response.json()["started"])
 
-    def test_the_status_reports_the_progress(self):
+    def test_the_status_counts_the_videos_in_the_database(self):
+        # Each worker answers from its own memory, so the counters must come
+        # from the database: the worker that started the run is not necessarily
+        # the one answering this request.
         self.client.login(username="root", password="pw12345678")
+        for index, status in enumerate(("ready", "ready", "failed", "processing")):
+            Video.objects.create(
+                user=self.admin,
+                title=f"video {index}",
+                audio_file_id=f"audio/{index}.mp3",
+                auto_subtitle_status=status,
+            )
+        # A video with no audio can never be captioned and is not counted.
+        Video.objects.create(user=self.admin, title="silent", file_id="videos/x.mp4")
+
+        data = self.client.get(reverse("dashboard:subtitle_status")).json()
+
+        self.assertTrue(data["running"])  # one video is in flight right now
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["done"], 3)
+        self.assertEqual(data["succeeded"], 2)
+        self.assertEqual(data["failed"], 1)
+        self.assertEqual(data["processing"], 1)
+
+    def test_a_run_that_ended_is_not_reported_as_running(self):
+        self.client.login(username="root", password="pw12345678")
+        Video.objects.create(
+            user=self.admin,
+            title="done",
+            audio_file_id="audio/done.mp3",
+            auto_subtitle_status="ready",
+        )
         with mock.patch(
             "dashboard.views.subtitle_sweep_status",
-            return_value={
-                "running": True,
-                "total": 12,
-                "done": 4,
-                "succeeded": 3,
-                "failed": 1,
-            },
+            return_value={"running": False, "total": 0, "done": 0,
+                          "succeeded": 0, "failed": 0},
         ):
             data = self.client.get(reverse("dashboard:subtitle_status")).json()
-        self.assertTrue(data["running"])
-        self.assertEqual(data["total"], 12)
-        self.assertEqual(data["done"], 4)
+        self.assertFalse(data["running"])
+        self.assertEqual(data["done"], 1)
 
     def test_the_start_needs_a_post(self):
         self.client.login(username="root", password="pw12345678")
