@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 from io import StringIO
 from html.parser import HTMLParser
+import json
 import re
 import shutil
 import subprocess
@@ -2650,6 +2651,142 @@ class ElevenLabsTranslationPairingTests(TestCase):
         video.refresh_from_db()
         self.assertEqual(video.auto_subtitle_status, "ready")
         self.assertIn("no credits", video.auto_subtitle_error)
+
+
+class PuterProviderSelectionTests(TestCase):
+    """``SUBTITLE_PROVIDER=puter`` is wired into the same switches."""
+
+    def test_puter_is_selected_by_the_setting(self):
+        with override_settings(SUBTITLE_PROVIDER="puter", PUTER_AUTH_TOKEN="t"):
+            self.assertIsInstance(transcription.get_provider(), transcription.PuterProvider)
+
+    def test_puter_needs_a_token_to_be_configured(self):
+        with override_settings(SUBTITLE_PROVIDER="puter", PUTER_AUTH_TOKEN=""):
+            self.assertFalse(transcription.is_configured())
+        with override_settings(SUBTITLE_PROVIDER="puter", PUTER_AUTH_TOKEN="t"):
+            self.assertTrue(transcription.is_configured())
+
+    def test_the_hint_names_the_puter_token(self):
+        with override_settings(SUBTITLE_PROVIDER="puter"):
+            self.assertEqual(transcription.configuration_hint(), "PUTER_AUTH_TOKEN")
+
+    def test_puter_cannot_translate_text(self):
+        with override_settings(SUBTITLE_PROVIDER="puter", PUTER_AUTH_TOKEN="t"):
+            provider = transcription.get_provider()
+            self.assertFalse(provider.supports_translation)
+            self.assertIsNone(transcription.get_translation_provider(provider))
+
+
+class PuterHttpLayerTests(TestCase):
+    """The driver call that talks to Puter's AI gateway."""
+
+    class _Response:
+        def __init__(self, status_code=200, payload=None, text=""):
+            self.status_code = status_code
+            self._payload = payload
+            self.text = text
+
+        def json(self):
+            if self._payload is None:
+                raise ValueError("no json body")
+            return self._payload
+
+    def _audio_file(self, data=b"fake-mp3-bytes"):
+        directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, directory, ignore_errors=True)
+        path = Path(directory) / "chunk.mp3"
+        path.write_bytes(data)
+        return str(path)
+
+    def test_the_call_carries_the_token_and_the_audio(self):
+        response = self._Response(200, {"text": "salam"})
+        with mock.patch("httpx.post", return_value=response) as post:
+            result = transcription._puter_transcribe_request(
+                "tok", self._audio_file(), {"provider": "gemini"}
+            )
+
+        self.assertEqual(result, {"text": "salam"})
+        url = post.call_args.args[0]
+        self.assertEqual(url, transcription.PUTER_DRIVER_URL)
+        headers = post.call_args.kwargs["headers"]
+        self.assertEqual(headers["Authorization"], "Bearer tok")
+
+        body = json.loads(post.call_args.kwargs["content"].decode("utf-8"))
+        self.assertEqual(body["interface"], "puter-speech2txt")
+        self.assertEqual(body["driver"], "ai-speech2txt")
+        self.assertEqual(body["method"], "transcribe")
+        self.assertEqual(body["auth_token"], "tok")
+        self.assertTrue(body["args"]["file"].startswith("data:audio/mpeg;base64,"))
+        self.assertEqual(body["args"]["provider"], "gemini")
+
+    def test_a_result_envelope_is_unwrapped(self):
+        response = self._Response(200, {"result": {"text": "salam"}})
+        with mock.patch("httpx.post", return_value=response):
+            result = transcription._puter_transcribe_request(
+                "tok", self._audio_file(), {}
+            )
+        self.assertEqual(result, {"text": "salam"})
+
+    def test_an_error_response_is_reported(self):
+        response = self._Response(402, {"error": {"message": "no allowance left"}})
+        with mock.patch("httpx.post", return_value=response):
+            with self.assertRaises(transcription.TranscriptionError) as caught:
+                transcription._puter_transcribe_request("tok", self._audio_file(), {})
+        self.assertIn("no allowance left", str(caught.exception))
+
+    def test_gemini_is_asked_for_word_timings(self):
+        with override_settings(PUTER_STT_PROVIDER="gemini", PUTER_STT_MODEL=""):
+            provider = transcription.PuterProvider.__new__(transcription.PuterProvider)
+            provider._token = "tok"
+            with mock.patch.object(
+                transcription, "_puter_transcribe_request", return_value={"text": "x"}
+            ) as call:
+                provider.transcribe(self._audio_file(), "wo")
+
+        args = call.call_args.args[2]
+        self.assertEqual(args["provider"], "gemini")
+        self.assertEqual(args["model"], "gemini-3.5-transcribe")
+        self.assertEqual(args["timestamp_granularities"], ["word"])
+        self.assertEqual(args["language"], "wo")
+
+
+class PuterCaptionTests(TestCase):
+    """The answer from Puter becomes the usual caption lines."""
+
+    def test_word_timings_become_caption_lines(self):
+        result = {
+            "text": "salam",
+            "words": [
+                {"text": "salam", "start": 0.0, "end": 0.8},
+                {"text": "alay", "start": 0.9, "end": 1.5},
+            ],
+        }
+        segments = transcription.captions_from_puter_result(result)
+        self.assertEqual(len(segments), 1)
+        self.assertEqual(segments[0].text, "salam alay")
+        self.assertAlmostEqual(segments[0].start, 0.0)
+        self.assertAlmostEqual(segments[0].end, 1.5)
+
+    def test_provider_segments_are_used_when_there_are_no_words(self):
+        result = {
+            "text": "salam alay",
+            "segments": [{"text": "salam alay", "start": 1.0, "end": 3.0}],
+        }
+        segments = transcription.captions_from_puter_result(result)
+        self.assertEqual(len(segments), 1)
+        self.assertEqual(segments[0].text, "salam alay")
+        self.assertAlmostEqual(segments[0].start, 1.0)
+
+    def test_bare_text_becomes_one_cue(self):
+        segments = transcription.captions_from_puter_result(
+            {"text": "salam alay", "duration": 4.0}
+        )
+        self.assertEqual(len(segments), 1)
+        self.assertAlmostEqual(segments[0].end, 4.0)
+
+    def test_an_empty_answer_gives_no_cues(self):
+        self.assertEqual(transcription.captions_from_puter_result({}), [])
+        self.assertEqual(transcription.captions_from_puter_result(None), [])
 
 
 class ElevenLabsHttpLayerTests(TestCase):

@@ -330,6 +330,8 @@ STORAGE_ALERT_EMAIL = os.environ.get("STORAGE_ALERT_EMAIL", "makhoutech@gmail.co
 #   google  ->  Cloud Speech-to-Text + Cloud Translation, needs GOOGLE_API_KEY
 #   elevenlabs -> Scribe speech-to-text, needs ELEVENLABS_API_KEY. It has no
 #                 text-translation API, so only the source track is produced.
+#   puter   ->  Puter's AI gateway, needs PUTER_AUTH_TOKEN. Same limitation:
+#               only the source track, unless a translation provider is named.
 #
 # See videos/transcription.py for all providers.
 SUBTITLE_PROVIDER = os.environ.get("SUBTITLE_PROVIDER", "openai")
@@ -374,6 +376,19 @@ ELEVENLABS_STT_MODEL = os.environ.get("ELEVENLABS_STT_MODEL", "scribe_v2")
 # Exact ISO-639-1/639-3 code to force for Scribe, or "auto" to let it detect the
 # language. Empty means pass SUBTITLE_SOURCE_LANGUAGE through.
 ELEVENLABS_LANGUAGE_CODE = os.environ.get("ELEVENLABS_LANGUAGE_CODE", "")
+
+# --- Puter provider ---------------------------------------------------------
+# Puter's AI gateway transcribes through one driver endpoint. The token comes
+# from the Puter account that pays for the usage (Puter uses the "user-pays"
+# model, so the bill lands on that account rather than on this site).
+PUTER_AUTH_TOKEN = os.environ.get("PUTER_AUTH_TOKEN", "")
+# Which Puter back end transcribes: gemini, openai or xai. Only Gemini
+# returns the per-word timings the caption lines are built from.
+PUTER_STT_PROVIDER = os.environ.get("PUTER_STT_PROVIDER", "gemini")
+PUTER_STT_MODEL = os.environ.get("PUTER_STT_MODEL", "gemini-3.5-transcribe")
+# Force one language for the transcription, or "auto" to let it detect. Empty
+# means pass SUBTITLE_SOURCE_LANGUAGE through.
+PUTER_LANGUAGE_CODE = os.environ.get("PUTER_LANGUAGE_CODE", "")
 
 # How long a background MP3 / subtitle job may stay "processing" before it is
 # assumed abandoned and marked retryable. Free hosts such as Render kill the web

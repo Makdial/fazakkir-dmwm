@@ -10,12 +10,12 @@ a local/offline engine can be added later without touching anything else.
 
 Three providers ship today, chosen with ``SUBTITLE_PROVIDER``: :class:`OpenAIProvider`
 (``openai``), :class:`GoogleProvider` (``google``, Google Cloud Speech-to-Text
-plus Cloud Translation) and :class:`ElevenLabsProvider` (``elevenlabs``, Scribe
-speech-to-text).
+plus Cloud Translation), :class:`ElevenLabsProvider` (``elevenlabs``, Scribe
+speech-to-text) and :class:`PuterProvider` (``puter``, Puter's AI gateway).
 
-ElevenLabs cannot translate text, so by itself it only produces the
-source-language track. Naming a second back end in
-``SUBTITLE_TRANSLATION_PROVIDER`` (``google`` or ``openai``) pairs an ElevenLabs
+ElevenLabs and Puter cannot translate text, so by themselves they only produce
+the source-language track. Naming a second back end in
+``SUBTITLE_TRANSLATION_PROVIDER`` (``google`` or ``openai``) pairs such a
 transcription with a real translation, so the target-language caption tracks are
 created as well.
 
@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import base64
 import html
+import json
 import logging
 import os
 import re
@@ -800,6 +801,207 @@ class ElevenLabsProvider(SubtitleProvider):
         )
 
 
+# --- Puter provider ----------------------------------------------------------
+#
+# Puter's AI gateway is reached through one driver endpoint. The audio is
+# sent the same way the browser SDK sends it (as a data URL inside the
+# request body) and the answer carries per-word timings, which become the
+# usual caption lines.
+#
+# Puter follows the "user-pays" model: the account that owns the auth token
+# covers the usage, so the site operator pays through that account rather
+# than through a separate API bill.
+
+PUTER_DRIVER_URL = "https://api.puter.com/drivers/call"
+PUTER_HTTP_TIMEOUT = 300.0
+
+# Gemini allows half an hour of audio when word timestamps are wanted, but
+# keeping the pieces short keeps each request body small.
+PUTER_CHUNK_SECONDS = 300
+
+
+def puter_stt_provider() -> str:
+    """Which Puter back end transcribes: ``gemini``, ``openai`` or ``xai``."""
+    return (getattr(settings, "PUTER_STT_PROVIDER", "") or "gemini").strip().lower()
+
+
+def puter_stt_model() -> str:
+    """The model Puter should transcribe with."""
+    configured = (getattr(settings, "PUTER_STT_MODEL", "") or "").strip()
+    if configured:
+        return configured
+    return "gemini-3.5-transcribe"
+
+
+def puter_language_code(language: str) -> str:
+    """The language hint to send, or ``""`` to let Puter decide.
+
+    ``PUTER_LANGUAGE_CODE`` overrides the source language; set it to ``auto``
+    to let the back end detect the language of every chunk.
+    """
+    override = (getattr(settings, "PUTER_LANGUAGE_CODE", "") or "").strip()
+    if override:
+        return "" if override.lower() == "auto" else override
+    return (language or "").strip().lower()
+
+
+def words_from_puter_result(result) -> list[tuple[str, float, float]]:
+    """Flatten a Puter answer into ``(text, start, end)`` timed words."""
+    words: list[tuple[str, float, float]] = []
+    for item in (result or {}).get("words") or []:
+        text = (item.get("text") or "").strip()
+        if not text:
+            continue
+        try:
+            start = float(item.get("start") or 0.0)
+            end = float(item.get("end") or 0.0)
+        except (TypeError, ValueError):
+            continue
+        words.append((text, start, end))
+    return words
+
+
+def captions_from_puter_result(result) -> list[Segment]:
+    """Turn a Puter answer into timed caption segments."""
+    words = words_from_puter_result(result)
+    if words:
+        return build_captions(words)
+
+    # No word timings: use the segments the back end returned itself.
+    segments: list[Segment] = []
+    for item in (result or {}).get("segments") or []:
+        text = (item.get("text") or "").strip()
+        if not text:
+            continue
+        try:
+            start = float(item.get("start") or 0.0)
+            end = float(item.get("end") or start)
+        except (TypeError, ValueError):
+            continue
+        segments.append(Segment(start, end, text))
+    if segments:
+        return segments
+
+    # Last resort: the whole transcript as one cue.
+    text = ((result or {}).get("text") or "").strip()
+    if not text:
+        return []
+    try:
+        duration = float((result or {}).get("duration") or 0.0)
+    except (TypeError, ValueError):
+        duration = 0.0
+    if duration <= 0:
+        duration = max(1.0, 0.4 * len(text.split()) + 0.5)
+    return [Segment(0.0, duration, text)]
+
+
+def _puter_error(response) -> str:
+    """A readable message taken from a failed Puter response."""
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = {}
+    message = payload.get("message") or payload.get("error") if isinstance(payload, dict) else ""
+    if isinstance(message, dict):
+        message = message.get("message") or message.get("code") or ""
+    message = str(message or (getattr(response, "text", "") or "").strip())
+    return f"Puter rejected the request: {message or f'HTTP {response.status_code}'}"
+
+
+def _puter_transcribe_request(token: str, path: str, args: dict) -> dict:
+    """Send one audio file to Puter's driver endpoint and return the answer."""
+    try:
+        import httpx
+    except ImportError as exc:  # pragma: no cover - depends on environment
+        raise TranscriptionError(
+            "The 'httpx' package is not installed. Run: pip install httpx"
+        ) from exc
+
+    with open(path, "rb") as handle:
+        audio = base64.b64encode(handle.read()).decode("ascii")
+
+    body = {
+        "interface": "puter-speech2txt",
+        "driver": "ai-speech2txt",
+        "method": "transcribe",
+        "args": {"file": f"data:audio/mpeg;base64,{audio}", **args},
+        "test_mode": False,
+        "auth_token": token,
+    }
+
+    try:
+        response = httpx.post(
+            PUTER_DRIVER_URL,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "text/plain;actually=json",
+            },
+            content=json.dumps(body).encode("utf-8"),
+            timeout=PUTER_HTTP_TIMEOUT,
+        )
+    except httpx.HTTPError as exc:
+        raise TranscriptionError(f"Could not reach Puter: {exc}") from exc
+
+    if response.status_code >= 400:
+        raise TranscriptionError(_puter_error(response))
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise TranscriptionError("Puter returned an unexpected response.") from exc
+
+    if not isinstance(payload, dict):
+        return {}
+    if payload.get("error"):
+        raise TranscriptionError(_puter_error(response))
+    # The driver answers with the transcript itself, sometimes wrapped in a
+    # "result" envelope.
+    inner = payload.get("result")
+    if isinstance(inner, dict):
+        return inner
+    return payload
+
+
+class PuterProvider(SubtitleProvider):
+    """Puter's AI gateway for speech-to-text.
+
+    Authenticates with ``PUTER_AUTH_TOKEN``, the token from the Puter account
+    that pays for the usage. The answer carries per-word timings, which become
+    YouTube-style caption lines. Puter has no text-translation API, so this
+    provider produces the source-language track and the pipeline uses a
+    separate provider (see ``SUBTITLE_TRANSLATION_PROVIDER``) for the targets.
+    """
+
+    name = "puter"
+    chunk_seconds = PUTER_CHUNK_SECONDS
+    supports_translation = False
+
+    def __init__(self):
+        token = (getattr(settings, "PUTER_AUTH_TOKEN", "") or "").strip()
+        if not token:
+            raise TranscriptionError(
+                "PUTER_AUTH_TOKEN is not set, so subtitles cannot be generated."
+            )
+        self._token = token
+
+    def transcribe(self, path: str, language: str) -> list[Segment]:
+        args = {"provider": puter_stt_provider(), "model": puter_stt_model()}
+        code = puter_language_code(language)
+        if code:
+            args["language"] = code
+        if args["provider"] == "gemini":
+            # Only Gemini returns the per-word timings the caption lines need.
+            args["timestamp_granularities"] = ["word"]
+
+        result = _puter_transcribe_request(self._token, path, args)
+        return captions_from_puter_result(result)
+
+    def translate(self, segments: list[Segment], target_language: str) -> list[Segment]:
+        raise TranscriptionError(
+            "Puter does not provide text translation, so only the "
+            "source-language track can be generated."
+        )
+
+
 def provider_name() -> str:
     """The configured provider's short name."""
     return (getattr(settings, "SUBTITLE_PROVIDER", "openai") or "openai").strip().lower()
@@ -814,6 +1016,8 @@ def get_provider() -> SubtitleProvider:
         return GoogleProvider()
     if name == "elevenlabs":
         return ElevenLabsProvider()
+    if name == "puter":
+        return PuterProvider()
     raise TranscriptionError(f"Unknown subtitle provider: {name!r}")
 
 
@@ -877,6 +1081,8 @@ def is_configured() -> bool:
         return bool(getattr(settings, "GOOGLE_API_KEY", ""))
     if name == "elevenlabs":
         return bool(getattr(settings, "ELEVENLABS_API_KEY", ""))
+    if name == "puter":
+        return bool(getattr(settings, "PUTER_AUTH_TOKEN", ""))
     return False
 
 
@@ -885,6 +1091,7 @@ def configuration_hint() -> str:
     return {
         "google": "GOOGLE_API_KEY",
         "elevenlabs": "ELEVENLABS_API_KEY",
+        "puter": "PUTER_AUTH_TOKEN",
     }.get(provider_name(), "OPENAI_API_KEY")
 
 
