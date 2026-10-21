@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 from io import StringIO
 from html.parser import HTMLParser
+import base64
 import json
 import re
 import shutil
@@ -24,6 +25,7 @@ from . import transcription
 from .audio import AudioExtractionError
 from .audio_tasks import generate_audio, schedule_audio_generation
 from .models import Comment, Playlist, PlaylistItem, SubtitleTrack, Video
+from . import r2_storage
 from .r2_storage import StorageError
 
 
@@ -3701,6 +3703,7 @@ class AudioOnlyUploadTests(TestCase):
         self.assertIn("customThumbnailGroup", body)
         self.assertIn("An audio upload has no picture of its own", body)
 
+
     def test_audio_upload_without_a_file_is_rejected(self):
         response = self.audio_post(audio_file=None)
         self.assertFalse(response.json()["success"])
@@ -3745,6 +3748,41 @@ class AudioOnlyUploadTests(TestCase):
         self.assertContains(response, 'name="media_type"')
         self.assertContains(response, 'name="audio_file"')
         self.assertContains(response, 'name="video_file"')
+
+class ThumbnailTypeTests(TestCase):
+    """A picture is stored under the name it really has.
+
+    Handing a PNG to the browser as a ".jpg" works in most browsers but not
+    in all of them, and the type is what a download is named from.
+    """
+
+    PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 20
+    JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 20
+
+    def test_a_png_is_stored_as_a_png(self):
+        content_type, extension = r2_storage._sniff_image(self.PNG)
+        self.assertEqual(content_type, "image/png")
+        self.assertEqual(extension, ".png")
+
+    def test_a_jpeg_is_stored_as_a_jpeg(self):
+        content_type, extension = r2_storage._sniff_image(self.JPEG)
+        self.assertEqual(content_type, "image/jpeg")
+        self.assertEqual(extension, ".jpg")
+
+    def test_an_unknown_header_falls_back_to_jpeg(self):
+        content_type, extension = r2_storage._sniff_image(b"not an image")
+        self.assertEqual(content_type, "image/jpeg")
+        self.assertEqual(extension, ".jpg")
+
+    def test_the_stored_name_follows_the_picture(self):
+        with mock.patch("videos.r2_storage.upload_object") as upload:
+            result = r2_storage.upload_thumbnail(
+                "data:image/png;base64," + base64.b64encode(self.PNG).decode(),
+                "cover.jpg",
+            )
+        self.assertTrue(result["path"].endswith(".png"))
+        self.assertEqual(upload.call_args.kwargs["content_type"], "image/png")
+
 
 class DurationDisplayTests(TestCase):
     """Videos and audio show their length on the thumbnail, like YouTube."""

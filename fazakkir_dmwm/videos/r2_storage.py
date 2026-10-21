@@ -279,10 +279,35 @@ def upload_video(file_data: bytes | BinaryIO, file_name: str, folder: str = "vid
     return {"path": path, "url": stored_url(path)}
 
 
+# The picture types that can be recognised from the first few bytes of the
+# file, so a PNG is not stored under a ".jpg" name.
+_IMAGE_SIGNATURES = (
+    (b"\x89PNG\r\n\x1a\n", "image/png", ".png"),
+    (b"\xff\xd8\xff", "image/jpeg", ".jpg"),
+    (b"GIF87a", "image/gif", ".gif"),
+    (b"GIF89a", "image/gif", ".gif"),
+)
+
+
+def _sniff_image(data: bytes) -> tuple[str, str]:
+    """Return the ``(content type, extension)`` of an image by its header."""
+    for signature, content_type, extension in _IMAGE_SIGNATURES:
+        if data.startswith(signature):
+            return content_type, extension
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp", ".webp"
+    # Anything else is stored as a JPEG, which is what the browser is told.
+    return "image/jpeg", ".jpg"
+
+
 def upload_thumbnail(file_data, file_name: str, folder: str = "thumbnails") -> dict:
-    path = _object_path(folder, file_name, ALLOWED_IMAGE_EXTENSIONS)
-    content_type = mimetypes.guess_type(path)[0] or "image/jpeg"
-    upload_object(path, _decode_image_payload(file_data), content_type=content_type)
+    data = _decode_image_payload(file_data)
+    content_type, extension = _sniff_image(data)
+    # The picture is stored under the name it really has, so the browser is
+    # told the right type instead of being handed a PNG called ".jpg".
+    name = Path(file_name or "thumbnail").stem + extension
+    path = _object_path(folder, name, ALLOWED_IMAGE_EXTENSIONS)
+    upload_object(path, data, content_type=content_type)
     return {"path": path, "url": stored_url(path)}
 
 
