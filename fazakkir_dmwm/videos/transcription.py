@@ -45,7 +45,7 @@ from django.utils import timezone
 
 from . import r2_storage
 from .models import SubtitleTrack, Video
-from .subtitles import label_for
+from .subtitles import label_for, parse_vtt
 
 logger = logging.getLogger(__name__)
 
@@ -1804,6 +1804,86 @@ def _remove_tree(path: str) -> None:
         shutil.rmtree(path, ignore_errors=True)
     except OSError:
         pass
+
+
+def translate_existing_tracks(video_id: int, include_lyrics: bool = True) -> dict:
+    """Add the missing language tracks to a video that is already transcribed.
+
+    Speech-to-text is billed by the minute; translation costs a fraction of it.
+    A video whose source track exists but whose French or English track does not
+    (because the translator was unavailable at the time, for instance) is
+    therefore completed from the transcript already stored, without listening to
+    the audio again.
+
+    Returns a summary dict with the languages that were created. Raises
+    :class:`TranscriptionError` when there is nothing to translate or no
+    translation provider is configured.
+    """
+    video = Video.objects.filter(id=video_id).first()
+    if video is None:
+        raise TranscriptionError("This video no longer exists.")
+
+    source_language = getattr(settings, "SUBTITLE_SOURCE_LANGUAGE", "ar")
+    targets = [
+        code.strip()
+        for code in getattr(settings, "SUBTITLE_TARGET_LANGUAGES", "fr,en").split(",")
+        if code.strip()
+    ]
+
+    translator = get_translation_provider()
+    if translator is None:
+        raise TranscriptionError(
+            "No translation provider is configured. Set "
+            "SUBTITLE_TRANSLATION_PROVIDER and its API key first."
+        )
+
+    # Prefer the configured source language, then the lyrics track (which holds
+    # the same transcript), then any other track that is not a target.
+    tracks = {track.language_code: track for track in video.subtitle_tracks.all()}
+    origin = None
+    for code in [source_language, "lyrics", *[c for c in tracks if c not in targets]]:
+        if code and code in tracks:
+            origin = tracks[code]
+            break
+    if origin is None:
+        raise TranscriptionError(
+            "This video has no transcript to translate yet. Generate the "
+            "captions first."
+        )
+
+    cues = parse_vtt(origin.content)
+    if not cues:
+        raise TranscriptionError(
+            f"The {origin.language_code} track is empty, so there is nothing to "
+            "translate."
+        )
+    segments = [Segment(start, end, text) for start, end, text in cues]
+
+    # A translator such as Google is told the source language only while
+    # transcribing, so set it here before asking it for a translation.
+    if hasattr(translator, "_source_language"):
+        translator._source_language = origin.language_code
+
+    created: list[str] = []
+    warnings: list[str] = []
+    for target in targets:
+        if target == origin.language_code or target in tracks:
+            continue
+        try:
+            translated = translator.translate(segments, target)
+        except TranscriptionError as exc:
+            logger.warning(
+                "Translation into %s failed for video %s: %s", target, video_id, exc
+            )
+            warnings.append(f"{target}: {exc}")
+            continue
+        _save_track(video, target, translated)
+        created.append(target)
+
+    if include_lyrics and not _has_lyrics(video):
+        _save_lyrics(video, segments)
+
+    return {"languages": created, "cues": len(segments), "warnings": warnings}
 
 
 # --- Background scheduling --------------------------------------------------

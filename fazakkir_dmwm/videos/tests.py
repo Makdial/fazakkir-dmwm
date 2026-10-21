@@ -27,6 +27,7 @@ from . import audio
 from .audio import AudioExtractionError
 from .audio_tasks import generate_audio, schedule_audio_generation
 from .models import Comment, Playlist, PlaylistItem, SubtitleTrack, Video
+from .subtitles import label_for, parse_vtt
 from . import r2_storage
 from .r2_storage import StorageError
 
@@ -2086,9 +2087,270 @@ class GenerateSubtitlesCommandTests(TestCase):
         self.assertIn("No videos need subtitles", out.getvalue())
 
 
+class ParseVttTests(TestCase):
+    """Reading a stored WebVTT track back into (start, end, text) cues."""
+
+    def test_round_trips_a_built_track(self):
+        segments = [
+            transcription.Segment(0.0, 1.5, "Dem am bennu goor."),
+            transcription.Segment(62.25, 64.0, "Amoul nday."),
+        ]
+        cues = parse_vtt(transcription.build_vtt(segments))
+        self.assertEqual(len(cues), 2)
+        self.assertEqual(cues[0][2], "Dem am bennu goor.")
+        self.assertAlmostEqual(cues[0][0], 0.0)
+        self.assertAlmostEqual(cues[0][1], 1.5)
+        self.assertAlmostEqual(cues[1][0], 62.25)
+        self.assertAlmostEqual(cues[1][1], 64.0)
+
+    def test_ignores_the_header_and_cue_settings(self):
+        from videos.subtitles import parse_vtt
+
+        content = (
+            "WEBVTT\n\n"
+            "00:00:01.000 --> 00:00:02.000 align:start position:10%\n"
+            "Hello there\n"
+        )
+        cues = parse_vtt(content)
+        self.assertEqual(cues, [(1.0, 2.0, "Hello there")])
+
+    def test_keeps_multi_line_cues_together(self):
+        from videos.subtitles import parse_vtt
+
+        content = "WEBVTT\n\n00:00:00.000 --> 00:00:03.000\nfirst line\nsecond line\n"
+        cues = parse_vtt(content)
+        self.assertEqual(cues, [(0.0, 3.0, "first line\nsecond line")])
+
+    def test_empty_or_plain_text_has_no_cues(self):
+        from videos.subtitles import parse_vtt
+
+        self.assertEqual(parse_vtt(""), [])
+        self.assertEqual(parse_vtt("just words, no timings"), [])
+
+
+class TranslateExistingTracksTests(TestCase):
+    """Filling the missing languages from a transcript that already exists."""
+
+    def setUp(self):
+        self.user = make_user("owner")
+
+        class FakeTranslator(transcription.SubtitleProvider):
+            name = "google"
+
+            def __init__(self):
+                self._source_language = ""
+                self.calls = []
+
+            def transcribe(self, path, language):
+                return []
+
+            def translate(self, segments, target_language):
+                self.calls.append((len(segments), target_language))
+                return [
+                    transcription.Segment(
+                        s.start, s.end, f"[{target_language}] {s.text}"
+                    )
+                    for s in segments
+                ]
+
+        self.translator = FakeTranslator()
+
+    def _video_with_source(self, code="wo"):
+        video = make_video(self.user, audio_file_id="audio/a.mp3")
+        SubtitleTrack.objects.create(
+            video=video,
+            language_code=code,
+            label=label_for(code),
+            content=transcription.build_vtt(
+                [
+                    transcription.Segment(0.0, 2.0, "Dem am bennu goor."),
+                    transcription.Segment(2.0, 4.0, "Amoul nday."),
+                ]
+            ),
+        )
+        return video
+
+    def _override(self):
+        return override_settings(
+            SUBTITLE_TRANSLATION_PROVIDER="google",
+            SUBTITLE_SOURCE_LANGUAGE="wo",
+            SUBTITLE_TARGET_LANGUAGES="fr,en",
+        )
+
+    def test_adds_only_the_missing_language(self):
+        video = self._video_with_source()
+        SubtitleTrack.objects.create(
+            video=video, language_code="fr", label="French", content="WEBVTT"
+        )
+        with self._override(), mock.patch.object(
+            transcription, "get_translation_provider", return_value=self.translator
+        ):
+            result = transcription.translate_existing_tracks(video.id)
+
+        self.assertEqual(result["languages"], ["en"])
+        self.assertEqual([call[1] for call in self.translator.calls], ["en"])
+        self.assertEqual(result["cues"], 2)
+
+    def test_translation_reuses_the_stored_timing(self):
+        video = self._video_with_source()
+        with self._override(), mock.patch.object(
+            transcription, "get_translation_provider", return_value=self.translator
+        ):
+            transcription.translate_existing_tracks(video.id)
+
+        from videos.subtitles import parse_vtt
+
+        track = video.subtitle_tracks.get(language_code="en")
+        cues = parse_vtt(track.content)
+        self.assertEqual(cues[0][2], "[en] Dem am bennu goor.")
+        self.assertAlmostEqual(cues[0][0], 0.0)
+        self.assertAlmostEqual(cues[0][1], 2.0)
+
+    def test_tells_the_translator_which_language_it_is_reading(self):
+        video = self._video_with_source(code="wo")
+        with self._override(), mock.patch.object(
+            transcription, "get_translation_provider", return_value=self.translator
+        ):
+            transcription.translate_existing_tracks(video.id)
+        self.assertEqual(self.translator._source_language, "wo")
+
+    def test_falls_back_to_the_lyrics_track(self):
+        # No wo track, but the lyrics track holds the same transcript.
+        video = make_video(self.user, audio_file_id="audio/a.mp3")
+        SubtitleTrack.objects.create(
+            video=video,
+            language_code="lyrics",
+            label="Lyrics",
+            is_lyrics=True,
+            content=transcription.build_vtt(
+                [transcription.Segment(0.0, 1.0, "one"), transcription.Segment(1.0, 2.0, "two")]
+            ),
+        )
+        with self._override(), mock.patch.object(
+            transcription, "get_translation_provider", return_value=self.translator
+        ):
+            result = transcription.translate_existing_tracks(video.id)
+
+        self.assertEqual(sorted(result["languages"]), ["en", "fr"])
+
+    def test_creates_the_lyrics_track_when_it_is_missing(self):
+        video = self._video_with_source()
+        self.assertFalse(video.subtitle_tracks.filter(language_code="lyrics").exists())
+        with self._override(), mock.patch.object(
+            transcription, "get_translation_provider", return_value=self.translator
+        ):
+            transcription.translate_existing_tracks(video.id)
+        self.assertTrue(video.subtitle_tracks.filter(language_code="lyrics").exists())
+
+    def test_refuses_when_there_is_no_transcript(self):
+        video = make_video(self.user, audio_file_id="audio/a.mp3")
+        with self._override(), mock.patch.object(
+            transcription, "get_translation_provider", return_value=self.translator
+        ):
+            with self.assertRaises(transcription.TranscriptionError) as ctx:
+                transcription.translate_existing_tracks(video.id)
+        self.assertIn("no transcript", str(ctx.exception).lower())
+
+    def test_refuses_without_a_translation_provider(self):
+        video = self._video_with_source()
+        with self._override(), mock.patch.object(
+            transcription, "get_translation_provider", return_value=None
+        ):
+            with self.assertRaises(transcription.TranscriptionError) as ctx:
+                transcription.translate_existing_tracks(video.id)
+        self.assertIn("No translation provider", str(ctx.exception))
+
+    def test_a_failing_translation_does_not_lose_the_others(self):
+        class HalfBroken(transcription.SubtitleProvider):
+            name = "google"
+
+            def transcribe(self, path, language):
+                return []
+
+            def translate(self, segments, target_language):
+                if target_language == "en":
+                    raise transcription.TranscriptionError("insufficient_funds")
+                return [
+                    transcription.Segment(s.start, s.end, f"[{target_language}]")
+                    for s in segments
+                ]
+
+        video = self._video_with_source()
+        with self._override(), mock.patch.object(
+            transcription, "get_translation_provider", return_value=HalfBroken()
+        ):
+            result = transcription.translate_existing_tracks(video.id)
+
+        self.assertEqual(result["languages"], ["fr"])
+        self.assertEqual(len(result["warnings"]), 1)
+        self.assertIn("en", result["warnings"][0])
+
+
+class TranslateTracksCommandTests(TestCase):
+    """The ``translatetracks`` command."""
+
+    def setUp(self):
+        self.user = make_user("owner")
+        self.video = make_video(self.user, audio_file_id="audio/a.mp3")
+        SubtitleTrack.objects.create(
+            video=self.video,
+            language_code="wo",
+            label="Wolof",
+            content=transcription.build_vtt(
+                [transcription.Segment(0.0, 1.0, "one"), transcription.Segment(1.0, 2.0, "two")]
+            ),
+        )
+
+    @mock.patch("videos.transcription.translation_configured", return_value=False)
+    def test_refuses_without_a_translator(self, _configured):
+        out = StringIO()
+        call_command("translatetracks", stdout=out, stderr=out)
+        self.assertIn("No translation provider is configured", out.getvalue())
+
+    @mock.patch("videos.transcription.translation_configured", return_value=True)
+    @mock.patch("videos.transcription.translate_existing_tracks")
+    def test_processes_videos_missing_a_target_language(self, translate, _configured):
+        translate.return_value = {"languages": ["fr", "en"], "cues": 2, "warnings": []}
+        out = StringIO()
+        with override_settings(
+            SUBTITLE_SOURCE_LANGUAGE="wo", SUBTITLE_TARGET_LANGUAGES="fr,en"
+        ):
+            call_command("translatetracks", stdout=out)
+
+        translate.assert_called_once()
+        self.assertEqual(translate.call_args[0][0], self.video.id)
+        self.assertIn("2 track(s) created", out.getvalue())
+
+    @mock.patch("videos.transcription.translation_configured", return_value=True)
+    @mock.patch("videos.transcription.translate_existing_tracks")
+    def test_skips_a_video_that_already_has_every_track(self, translate, _configured):
+        for code in ("fr", "en"):
+            SubtitleTrack.objects.create(
+                video=self.video, language_code=code, label=code, content="WEBVTT"
+            )
+        out = StringIO()
+        with override_settings(
+            SUBTITLE_SOURCE_LANGUAGE="wo", SUBTITLE_TARGET_LANGUAGES="fr,en"
+        ):
+            call_command("translatetracks", stdout=out)
+
+        translate.assert_not_called()
+        self.assertIn("already has all its language tracks", out.getvalue())
+
+    @mock.patch("videos.transcription.translation_configured", return_value=True)
+    @mock.patch("videos.transcription.translate_existing_tracks")
+    def test_ignores_videos_without_a_transcript(self, translate, _configured):
+        make_video(self.user, title="No track", audio_file_id="audio/b.mp3")
+        out = StringIO()
+        with override_settings(
+            SUBTITLE_SOURCE_LANGUAGE="wo", SUBTITLE_TARGET_LANGUAGES="fr,en"
+        ):
+            call_command("translatetracks", stdout=out)
+        self.assertEqual(translate.call_count, 1)
+
+
 class GoogleLanguageCodeTests(TestCase):
     """Our short codes mapped to what each Google API expects."""
-
     def test_short_codes_are_mapped_for_speech(self):
         with override_settings(GOOGLE_SPEECH_LANGUAGE=""):
             self.assertEqual(transcription.speech_language_code("ar"), "ar-SA")

@@ -8,6 +8,13 @@ ALLOWED_SUBTITLE_EXTENSIONS = {".vtt", ".srt", ".txt"}
 # SRT uses 00:00:01,500 while WebVTT uses 00:00:01.500.
 _SRT_TIMESTAMP = re.compile(r"(\d{2}):(\d{2}):(\d{2}),(\d{3})")
 
+# A WebVTT timing line: 00:00:01.500 --> 00:00:03.000 (hours optional, settings
+# after the end time ignored). Used to read a stored track back into cues.
+_VTT_TIMING = re.compile(
+    r"^(?:(\d{1,2}):)?(\d{2}):(\d{2})\.(\d{3})\s*-->\s*"
+    r"(?:(\d{1,2}):)?(\d{2}):(\d{2})\.(\d{3})"
+)
+
 
 def _decode(content: bytes | str) -> str:
     if isinstance(content, bytes):
@@ -48,6 +55,54 @@ def normalize_to_vtt(content: bytes | str) -> str:
 
     # Plain text (e.g. lyrics without timings): one cue from 0 to the end.
     return f"WEBVTT\n\n00:00:00.000 --> 99:59:59.000\n{stripped}\n"
+
+
+def parse_vtt(content: bytes | str) -> list[tuple[float, float, str]]:
+    """Read a stored WebVTT track back into ``(start, end, text)`` cues.
+
+    The automatic pipeline saves each track it produces; this is what lets an
+    existing transcript be re-used (translated into another language, for
+    example) instead of paying to transcribe the same audio again.
+    """
+    text = _decode(content).replace("\r\n", "\n").replace("\r", "\n")
+    cues: list[tuple[float, float, str]] = []
+    start: float | None = None
+    end: float | None = None
+    body: list[str] = []
+
+    def flush() -> None:
+        if start is None or end is None:
+            return
+        joined = "\n".join(body).strip()
+        if joined:
+            cues.append((start, end, joined))
+
+    for line in text.split("\n"):
+        match = _VTT_TIMING.match(line.strip())
+        if match:
+            flush()
+            hours, minutes, seconds, millis, e_hours, e_minutes, e_seconds, e_millis = (
+                match.groups()
+            )
+            start = (
+                int(hours or 0) * 3600
+                + int(minutes) * 60
+                + int(seconds)
+                + int(millis) / 1000
+            )
+            end = (
+                int(e_hours or 0) * 3600
+                + int(e_minutes) * 60
+                + int(e_seconds)
+                + int(e_millis) / 1000
+            )
+            body = []
+            continue
+        if start is not None:
+            body.append(line)
+
+    flush()
+    return cues
 
 
 # Every language a subtitle track can use, as a single source of truth so the
