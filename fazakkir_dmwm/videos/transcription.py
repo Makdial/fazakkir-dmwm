@@ -691,8 +691,10 @@ def words_from_elevenlabs(result) -> list[tuple[str, float, float]]:
     """Flatten a Scribe response into ``(text, start, end)`` timed words."""
     words: list[tuple[str, float, float]] = []
     for item in (result or {}).get("words") or []:
-        # "spacing" and "audio_event" entries carry no caption text.
-        if item.get("type") != "word":
+        # Some back ends tag their entries ("spacing" and "audio_event" carry
+        # no caption text); others leave the tag off entirely.
+        kind = item.get("type")
+        if kind is not None and kind != "word":
             continue
         text = (item.get("text") or "").strip()
         start = item.get("start")
@@ -1449,8 +1451,11 @@ class PuterProvider(SubtitleProvider):
         if code:
             args["language"] = code
         if args["provider"] == "gemini":
-            # Only Gemini returns the per-word timings the caption lines need.
+            # Only Gemini asks for the per-word timings in this way; the
+            # other back ends return them on their own.
             args["timestamp_granularities"] = ["word"]
+        elif args["provider"] == "xai":
+            args["diarize"] = True
 
         result = _puter_transcribe_request(self._token, path, args)
         return captions_from_puter_result(result)

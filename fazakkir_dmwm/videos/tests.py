@@ -2735,6 +2735,31 @@ class PuterHttpLayerTests(TestCase):
                 transcription._puter_transcribe_request("tok", self._audio_file(), {})
         self.assertIn("no allowance left", str(caught.exception))
 
+    def test_the_words_of_the_xai_back_end_are_read(self):
+        """xAI leaves the type tag off, so the words must not be skipped."""
+        result = {
+            "text": "Góor gi ni baret",
+            "words": [
+                {"text": "Góor", "start": 0.14, "end": 0.52, "speaker": 0},
+                {"text": "gi", "start": 0.74, "end": 0.86, "speaker": 0},
+            ],
+        }
+        words = transcription.words_from_puter_result(result)
+        self.assertEqual(len(words), 2)
+        self.assertEqual(words[0][0], "Góor")
+        self.assertAlmostEqual(words[1][2], 0.86)
+
+    def test_entries_that_are_not_words_are_skipped(self):
+        result = {
+            "words": [
+                {"type": "spacing", "text": " ", "start": 0, "end": 0.1},
+                {"type": "word", "text": "salam", "start": 0.2, "end": 0.9},
+            ]
+        }
+        words = transcription.words_from_puter_result(result)
+        self.assertEqual(len(words), 1)
+        self.assertEqual(words[0][0], "salam")
+
     def test_gemini_is_asked_for_word_timings(self):
         with override_settings(PUTER_STT_PROVIDER="gemini", PUTER_STT_MODEL=""):
             provider = transcription.PuterProvider.__new__(transcription.PuterProvider)

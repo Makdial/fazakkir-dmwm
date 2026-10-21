@@ -382,10 +382,11 @@ ELEVENLABS_LANGUAGE_CODE = os.environ.get("ELEVENLABS_LANGUAGE_CODE", "")
 # from the Puter account that pays for the usage (Puter uses the "user-pays"
 # model, so the bill lands on that account rather than on this site).
 PUTER_AUTH_TOKEN = os.environ.get("PUTER_AUTH_TOKEN", "")
-# Which Puter back end transcribes: gemini, openai or xai. Only Gemini
-# returns the per-word timings the caption lines are built from.
-PUTER_STT_PROVIDER = os.environ.get("PUTER_STT_PROVIDER", "gemini")
-PUTER_STT_MODEL = os.environ.get("PUTER_STT_MODEL", "gemini-3.5-transcribe")
+# Which Puter back end transcribes: xai, gemini or openai. xAI (Grok) is
+# the default because it returns the per-word timings the caption lines are
+# built from and it handles Wolof well.
+PUTER_STT_PROVIDER = os.environ.get("PUTER_STT_PROVIDER", "xai")
+PUTER_STT_MODEL = os.environ.get("PUTER_STT_MODEL", "grok-voice-transcribe-2.0")
 # Force one language for the transcription, or "auto" to let it detect. Empty
 # means pass SUBTITLE_SOURCE_LANGUAGE through.
 PUTER_LANGUAGE_CODE = os.environ.get("PUTER_LANGUAGE_CODE", "")
