@@ -1881,6 +1881,27 @@ def schedule_subtitle_generation(video_id: int, retry: bool = False) -> bool:
     return True
 
 
+def _out_of_credit(message: str) -> bool:
+    """True when a failure means the account has no credit left.
+
+    Running the rest of a bulk job would only repeat the same rejection, so the
+    sweep stops instead and leaves the remaining videos untouched. They stay
+    "not attempted", so the next run (or the monthly quota reset) picks them up.
+    """
+    text = (message or "").lower()
+    return any(
+        marker in text
+        for marker in (
+            "insufficient_funds",
+            "not enough credits",
+            "exceeds your quota",
+            "quota",
+            "credit",
+            "billing",
+        )
+    )
+
+
 def _sweep_videos() -> None:
     """Generate subtitles for every video that still needs them, one at a time."""
     # A video that already has captions is left alone: re-transcribing hours of
@@ -1906,6 +1927,21 @@ def _sweep_videos() -> None:
         with _SWEEP_LOCK:
             _SWEEP_STATE["done"] += 1
             _SWEEP_STATE["succeeded" if succeeded else "failed"] += 1
+
+        if not succeeded:
+            error = (
+                Video.objects.filter(id=video_id)
+                .values_list("auto_subtitle_error", flat=True)
+                .first()
+                or ""
+            )
+            if _out_of_credit(error):
+                logger.warning(
+                    "Stopping the caption run: the account is out of credit (%s). "
+                    "The remaining videos were left for the next run.",
+                    error[:160],
+                )
+                break
 
 
 def generate_and_record(video_id: int) -> bool:

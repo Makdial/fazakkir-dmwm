@@ -1920,6 +1920,46 @@ class SubtitleStatusWorkflowTests(TestCase):
         self.assertEqual(record.call_count, 1)
         self.assertNotEqual(record.call_args.args[0], self.video.id)
 
+    def test_bulk_sweep_stops_when_the_account_runs_out_of_credit(self):
+        later = make_video(self.user, title="Later", audio_file_id="audio/later.mp3")
+
+        def fail_first(video_id):
+            Video.objects.filter(id=video_id).update(
+                auto_subtitle_error=(
+                    "ElevenLabs rejected the request: This request exceeds your "
+                    "quota of 10000. You have 20 credits remaining."
+                )
+            )
+            return False
+
+        with mock.patch(
+            "videos.transcription.generate_and_record", side_effect=fail_first
+        ) as record:
+            transcription._sweep_videos()
+
+        # One rejection is enough to know the rest will be rejected too.
+        self.assertEqual(record.call_count, 1)
+        later.refresh_from_db()
+        # Untouched, so the next run (or the monthly reset) picks it up.
+        self.assertEqual(later.auto_subtitle_status, "")
+
+    def test_bulk_sweep_carries_on_after_an_ordinary_failure(self):
+        later = make_video(self.user, title="Later", audio_file_id="audio/later.mp3")
+
+        def fail_first(video_id):
+            Video.objects.filter(id=video_id).update(
+                auto_subtitle_error="Only 1% of this recording could be made out."
+            )
+            return False
+
+        with mock.patch(
+            "videos.transcription.generate_and_record", side_effect=fail_first
+        ) as record:
+            transcription._sweep_videos()
+
+        # A recording that cannot be captioned is not a reason to skip the rest.
+        self.assertEqual(record.call_count, 2)
+
     @mock.patch("videos.transcription.threading.Thread")
     def test_start_sweep_runs_once(self, thread):
         self.assertTrue(transcription.start_subtitle_sweep())
