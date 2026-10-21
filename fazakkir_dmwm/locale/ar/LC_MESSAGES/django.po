@@ -1117,3 +1117,6 @@ msgstr "جارٍ إنشاء الترجمات…"
 
 msgid "A subtitle run is already in progress."
 msgstr "هناك بالفعل عملية إنشاء ترجمات قيد التقدم."
+
+msgid "An audio upload has no picture of its own, so choose one to show on the card"
+msgstr "لا للصوت صورة خاصة به، اختر صورة تظهر على البطاقة"

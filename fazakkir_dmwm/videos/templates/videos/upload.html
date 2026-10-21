@@ -94,7 +94,7 @@
                 </label>
                 <input type="file" id="customThumbnail" accept="image/*" style="display:none;"/>
                 <input type="hidden" name="thumbnail_data" id="thumbnailData"/>
-                <span class="help-text">{% trans "Leave empty to auto-generate a thumbnail from your video" %}</span>
+                <span class="help-text" id="thumbnailHelp">{% trans "Leave empty to auto-generate a thumbnail from your video" %}</span>
             </div>
 
             <button type="submit" class="btn-submit" id="submitBtn">{% trans "Upload Video" %}</button>
@@ -200,8 +200,13 @@ function showUploadType() {
     videoInput.disabled = audioOnly;
     audioInput.disabled = !audioOnly;
 
-    // An audio upload has no frame to sample, so there is nothing to thumbnail.
-    $("customThumbnailGroup").hidden = audioOnly;
+    // An audio upload has no frame to sample, so the picture is never
+    // generated for it, but the owner can still choose one to show on the
+    // card and on the page.
+    $("customThumbnailGroup").hidden = false;
+    $("thumbnailHelp").textContent = audioOnly
+        ? "{% trans 'An audio upload has no picture of its own, so choose one to show on the card' %}"
+        : "{% trans 'Leave empty to auto-generate a thumbnail from your video' %}";
 
     const labels = audioOnly ? UPLOAD_LABELS.audio : UPLOAD_LABELS.video;
     $("uploadHeading").textContent = labels.heading;

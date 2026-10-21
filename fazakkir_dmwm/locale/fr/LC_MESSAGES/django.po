@@ -1096,3 +1096,6 @@ msgstr "Génération des sous-titres…"
 
 msgid "A subtitle run is already in progress."
 msgstr "Une génération de sous-titres est déjà en cours."
+
+msgid "An audio upload has no picture of its own, so choose one to show on the card"
+msgstr "Un audio n'a pas d'image, choisissez-en une à montrer sur la carte"

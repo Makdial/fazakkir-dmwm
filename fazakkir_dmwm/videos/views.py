@@ -335,6 +335,21 @@ def video_upload(request):
         except StorageError as exc:
             return JsonResponse({"success": False, "error": str(exc)})
 
+        # An audio upload has no frame to sample, so the picture is the one
+        # the owner chose on the upload page (if any).
+        thumbnail_file_id = ""
+        thumbnail_url = ""
+        if thumbnail_data.startswith("data:image"):
+            try:
+                thumb = upload_thumbnail(
+                    file_data=thumbnail_data,
+                    file_name=Path(audio_file.name).stem + "_thumb.jpg",
+                )
+            except StorageError as exc:
+                return JsonResponse({"success": False, "error": str(exc)})
+            thumbnail_file_id = thumb["path"]
+            thumbnail_url = thumb["url"]
+
         video = Video.objects.create(
             user=request.user,
             title=form.cleaned_data["title"],
@@ -342,6 +357,8 @@ def video_upload(request):
             media_type="audio",
             file_id="",
             video_url="",
+            thumbnail_file_id=thumbnail_file_id,
+            thumbnail_url=thumbnail_url,
             audio_file_id=result["path"],
             audio_url=result["url"],
             audio_status="ready",

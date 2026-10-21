@@ -1093,3 +1093,6 @@ msgstr "Ndongo nekkuti yi…"
 
 msgid "A subtitle run is already in progress."
 msgstr "Njëkk ndiaga teccit yi ci doon."
+
+msgid "An audio upload has no picture of its own, so choose one to show on the card"
+msgstr "Waaxtu mbir mi am ci seen, fecc sa yi mbir bu lay tegal ci karte"

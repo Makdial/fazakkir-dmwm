@@ -3667,6 +3667,40 @@ class AudioOnlyUploadTests(TestCase):
         # The MP3 link is what people actually want.
         self.assertTrue(video.audio_download_url)
 
+    @mock.patch("videos.views.upload_thumbnail")
+    @mock.patch("videos.views.upload_audio")
+    def test_an_audio_upload_can_carry_a_thumbnail(self, upload_audio, upload_thumbnail):
+        upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
+        upload_thumbnail.return_value = {
+            "path": "thumbnails/rec_thumb.jpg",
+            "url": "https://example.com/rec_thumb.jpg",
+        }
+
+        response = self.audio_post(thumbnail_data="data:image/jpeg;base64,AAAA")
+
+        self.assertTrue(response.json()["success"])
+        video = Video.objects.get()
+        self.assertEqual(video.thumbnail_file_id, "thumbnails/rec_thumb.jpg")
+        self.assertEqual(video.thumbnail_url, "https://example.com/rec_thumb.jpg")
+        self.assertTrue(video.display_thumbnail_url)
+
+    @mock.patch("videos.views.upload_thumbnail")
+    @mock.patch("videos.views.upload_audio")
+    def test_an_audio_upload_without_a_thumbnail_still_works(self, upload_audio, upload_thumbnail):
+        upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
+        response = self.audio_post()
+        self.assertTrue(response.json()["success"])
+        upload_thumbnail.assert_not_called()
+        video = Video.objects.get()
+        self.assertEqual(video.thumbnail_file_id, "")
+        self.assertEqual(video.display_thumbnail_url, "")
+
+    def test_the_upload_page_offers_a_thumbnail_for_an_audio_upload(self):
+        body = self.client.get(reverse("videos:upload")).content.decode()
+        # The picker is no longer hidden when the audio type is chosen.
+        self.assertIn("customThumbnailGroup", body)
+        self.assertIn("An audio upload has no picture of its own", body)
+
     def test_audio_upload_without_a_file_is_rejected(self):
         response = self.audio_post(audio_file=None)
         self.assertFalse(response.json()["success"])
