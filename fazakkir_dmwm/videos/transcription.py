@@ -1859,8 +1859,16 @@ def schedule_subtitle_generation(video_id: int, retry: bool = False) -> bool:
 
 
 def _sweep_videos() -> None:
-    """Generate subtitles for every eligible video, one at a time."""
-    video_ids = list(eligible_subtitle_queryset().order_by("id").values_list("id", flat=True))
+    """Generate subtitles for every video that still needs them, one at a time."""
+    # A video that already has captions is left alone: re-transcribing hours of
+    # audio would only spend credit to replace a good track. A single video can
+    # still be redone from its own button.
+    pending = (
+        eligible_subtitle_queryset()
+        .exclude(auto_subtitle_status="ready")
+        .order_by("id")
+    )
+    video_ids = list(pending.values_list("id", flat=True))
     with _SWEEP_LOCK:
         _SWEEP_STATE.update(
             running=True, total=len(video_ids), done=0, succeeded=0, failed=0

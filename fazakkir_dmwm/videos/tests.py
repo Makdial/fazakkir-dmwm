@@ -1874,6 +1874,18 @@ class SubtitleStatusWorkflowTests(TestCase):
         for call in record.call_args_list:
             self.assertNotEqual(call.args[0], None)
 
+    @mock.patch("videos.transcription.generate_and_record", return_value=True)
+    def test_bulk_sweep_leaves_finished_videos_alone(self, record):
+        # Re-transcribing hours of audio only spends credit to replace a track
+        # that is already there.
+        Video.objects.filter(id=self.video.id).update(auto_subtitle_status="ready")
+        make_video(self.user, title="Waiting", audio_file_id="audio/wait.mp3")
+
+        transcription._sweep_videos()
+
+        self.assertEqual(record.call_count, 1)
+        self.assertNotEqual(record.call_args.args[0], self.video.id)
+
     @mock.patch("videos.transcription.threading.Thread")
     def test_start_sweep_runs_once(self, thread):
         self.assertTrue(transcription.start_subtitle_sweep())
