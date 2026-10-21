@@ -321,15 +321,17 @@ $("uploadForm").onsubmit = async e => {
 
         if (data && data.success) {
             if (data.warning) {
+                // The file is saved; only its picture failed. Show the message
+                // instead of a spinner, then go to the library.
                 $("uploadOverlay").classList.remove("active");
+                $("submitBtn").disabled = false;
                 $("errorContainer").innerHTML =
                     `<ul class="error-list"><li>${data.warning}</li></ul>`;
-                $("uploadStatus").textContent = "{% trans 'Upload complete!' %}";
-                $("uploadOverlay").classList.add("active");
-            } else {
-                $("uploadStatus").textContent = "{% trans 'Upload complete!' %}";
+                setTimeout(() => location.href = '{% url "videos:list" %}', 3500);
+                return;
             }
-            setTimeout(() => location.href = '{% url "videos:list" %}', data.warning ? 2500 : 500);
+            $("uploadStatus").textContent = "{% trans 'Upload complete!' %}";
+            setTimeout(() => location.href = '{% url "videos:list" %}', 500);
             return;
         }
 
