@@ -1759,6 +1759,40 @@ class TranscriptionPipelineTests(TestCase):
             with self.assertRaises(transcription.TranscriptionError):
                 transcription.generate_subtitles(video.id)
 
+    def test_a_barely_heard_recording_is_not_published_as_captions(self):
+        # Singing or chanting can leave a transcriber with a few stray phrases.
+        # Saving those would look like a finished job, so the run fails instead.
+        video = make_video(self.user, audio_file_id="audio/a.mp3")
+        Video.objects.filter(id=video.id).update(duration_seconds=600)
+        video.refresh_from_db()
+        provider_patch, audio_patch, chunk_patch = self._patch_pipeline(
+            [("c0.mp3", 0.0)]
+        )
+        self.provider.transcribe = lambda path, language: [
+            transcription.Segment(0, 1.0, "one"), transcription.Segment(200, 201, "two")
+        ]
+        with provider_patch, audio_patch, chunk_patch:
+            with self.assertRaises(transcription.TranscriptionError) as caught:
+                transcription.generate_subtitles(video.id)
+
+        self.assertIn("could be made out", str(caught.exception))
+        # Nothing half-finished reaches the page.
+        self.assertEqual(video.subtitle_tracks.count(), 0)
+
+    def test_a_short_clip_with_a_few_words_still_gets_captions(self):
+        # Two seconds of speech in a thirty second clip is all there is.
+        video = make_video(self.user, audio_file_id="audio/a.mp3")
+        Video.objects.filter(id=video.id).update(duration_seconds=30)
+        provider_patch, audio_patch, chunk_patch = self._patch_pipeline(
+            [("c0.mp3", 0.0)]
+        )
+        self.provider.transcribe = lambda path, language: [
+            transcription.Segment(0, 1.0, "one")
+        ]
+        with provider_patch, audio_patch, chunk_patch:
+            result = transcription.generate_subtitles(video.id)
+        self.assertIn("ar", result["languages"])
+
     def test_existing_lyrics_are_not_overwritten(self):
         video = make_video(self.user, audio_file_id="audio/a.mp3")
         SubtitleTrack.objects.create(

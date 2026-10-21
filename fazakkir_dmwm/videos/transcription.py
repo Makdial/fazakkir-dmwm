@@ -57,6 +57,14 @@ CHUNK_SAMPLE_RATE = 16000
 CHUNK_BITRATE = "32k"
 TRANSLATE_BATCH = 40
 
+# A transcript that covers almost none of a recording is not captions: it is a
+# handful of phrases the transcriber happened to catch. Below these limits the
+# run fails instead of publishing them, so a finished video always has captions
+# that actually match it. Short clips are exempt, because a few words of speech
+# can be all there is.
+MIN_COVERAGE_SECONDS = 120
+MIN_COVERAGE_RATIO = 0.05
+
 
 class TranscriptionError(Exception):
     """Raised when the pipeline cannot produce subtitles."""
@@ -1697,6 +1705,21 @@ def generate_subtitles(video_id: int, include_lyrics: bool = True) -> dict:
 
         if not segments:
             raise TranscriptionError("No speech was detected in this video.")
+
+        # A transcriber that barely hears a loud recording (singing, chanting,
+        # a language it does not know) returns a handful of stray phrases. Those
+        # are not captions, and saving them would look like a finished job, so
+        # the run fails with a message the owner can act on instead.
+        spoken = sum(max(0.0, segment.end - segment.start) for segment in segments)
+        length = video.duration_seconds or 0
+        if length >= MIN_COVERAGE_SECONDS and spoken < length * MIN_COVERAGE_RATIO:
+            raise TranscriptionError(
+                f"Only {spoken / max(length, 1):.0%} of this recording could be "
+                "made out, which is too little to publish as captions. The "
+                "transcriber probably does not handle this kind of recording "
+                "(singing or chanting, for example). Try again with another "
+                "transcription provider."
+            )
 
         created: list[str] = []
         warnings: list[str] = []
