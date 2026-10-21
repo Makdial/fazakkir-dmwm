@@ -101,6 +101,48 @@ class DashboardAccessTests(DashboardBaseTests):
         self.assertEqual(self.client.get(reverse("dashboard:comments")).status_code, 200)
 
 
+class CaptionColumnTests(DashboardBaseTests):
+    """The videos table says which captions each video actually has."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.login(username="root", password="pw12345678")
+
+    def render(self) -> str:
+        return self.client.get(reverse("dashboard:videos")).content.decode()
+
+    def test_a_video_with_captions_lists_the_languages(self):
+        from videos.models import SubtitleTrack
+
+        video = Video.objects.create(user=self.admin, title="With captions")
+        for code in ("wo", "fr", "lyrics"):
+            SubtitleTrack.objects.create(
+                video=video, language_code=code, label=code, content="WEBVTT\n"
+            )
+
+        body = self.render()
+
+        self.assertIn("lyrics", body)
+        self.assertIn("fr, wo", body)
+
+    def test_a_failed_video_shows_the_reason(self):
+        Video.objects.create(
+            user=self.admin,
+            title="Failed captions",
+            auto_subtitle_status="failed",
+            auto_subtitle_error="This request exceeds your quota of 10000.",
+        )
+        body = self.render()
+        self.assertIn("Failed", body)
+        # The reason is available on hover, which is where the owner finds out
+        # that the account, not the video, is the problem.
+        self.assertIn("quota of 10000", body)
+
+    def test_a_video_that_was_never_attempted_is_muted(self):
+        Video.objects.create(user=self.admin, title="No captions yet")
+        self.assertIn(">None<", self.render().replace("\n", ""))
+
+
 class CleanupTests(DashboardBaseTests):
     def test_cleanup_removes_only_orphans(self):
         Video.objects.create(

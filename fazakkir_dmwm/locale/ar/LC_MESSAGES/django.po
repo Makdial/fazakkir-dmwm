@@ -1156,3 +1156,12 @@ msgstr "تعذر قراءة هذا الملف كصوت. اختر ملف MP3 أو
 
 msgid "That file could not be converted to MP3. Please choose another file."
 msgstr "تعذر تحويل هذا الملف إلى MP3. اختر ملفا آخر."
+
+msgid "Captions"
+msgstr "الترجمة"
+
+msgid "Working"
+msgstr "جارٍ"
+
+msgid "lyrics"
+msgstr "الكلمات"

@@ -1135,3 +1135,12 @@ msgstr "Ce fichier n'a pas pu être lu comme audio. Choisissez un MP3, WAV ou M4
 
 msgid "That file could not be converted to MP3. Please choose another file."
 msgstr "Ce fichier n'a pas pu être converti en MP3. Choisissez un autre fichier."
+
+msgid "Captions"
+msgstr "Sous-titres"
+
+msgid "Working"
+msgstr "En cours"
+
+msgid "lyrics"
+msgstr "paroles"

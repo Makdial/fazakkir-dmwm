@@ -1132,3 +1132,12 @@ msgstr "Manuñu jàng fiye bii ni baax. Tannal MP3, WAV walla M4A."
 
 msgid "That file could not be converted to MP3. Please choose another file."
 msgstr "Manuñu soppi fiye bii ci MP3. Tannal beneen fiye."
+
+msgid "Captions"
+msgstr "Nattukaay yi"
+
+msgid "Working"
+msgstr "Mungi dox"
+
+msgid "lyrics"
+msgstr "baat yi"

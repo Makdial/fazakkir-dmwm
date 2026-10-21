@@ -52,6 +52,28 @@ def _audio_badge(video) -> tuple[str, str]:
     return _("Not generated"), "muted"
 
 
+def _caption_badge(video) -> tuple[str, str]:
+    """Return ``(label, css_class)`` describing a video's captions.
+
+    The languages are named, so the dashboard shows what a video actually has
+    rather than only that something happened.
+    """
+    codes = sorted(
+        code for code in video.subtitle_tracks.values_list("language_code", flat=True)
+    )
+    if codes:
+        # Lyrics ride along with the source language, so list them last.
+        named = [code for code in codes if code != "lyrics"]
+        if "lyrics" in codes:
+            named.append(_("lyrics"))
+        return ", ".join(named), "badge-ok"
+    if video.auto_subtitle_status == "processing":
+        return _("Working"), "badge-warning"
+    if video.auto_subtitle_status == "failed":
+        return _("Failed"), "badge-critical"
+    return _("None"), "muted"
+
+
 def _to_int(value, default: int) -> int:
     try:
         return int(str(value).strip())
@@ -124,6 +146,7 @@ def video_manage(request):
         paths = [video.file_id, video.thumbnail_file_id, video.audio_file_id]
         total = sum(report.sizes.get(path, 0) for path in paths if path)
         audio_label, audio_class = _audio_badge(video)
+        caption_label, caption_class = _caption_badge(video)
         rows.append(
             {
                 "video": video,
@@ -132,6 +155,8 @@ def video_manage(request):
                 "comment_total": video.comment_total,
                 "audio_label": audio_label,
                 "audio_class": audio_class,
+                "caption_label": caption_label,
+                "caption_class": caption_class,
             }
         )
 
