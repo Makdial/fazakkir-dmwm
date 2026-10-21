@@ -2189,7 +2189,6 @@ class TranslateExistingTracksTests(TestCase):
 
         self.assertEqual(result["languages"], ["en"])
         self.assertEqual([call[1] for call in self.translator.calls], ["en"])
-        self.assertEqual(result["cues"], 2)
 
     def test_translation_reuses_the_stored_timing(self):
         video = self._video_with_source()
@@ -2284,6 +2283,118 @@ class TranslateExistingTracksTests(TestCase):
         self.assertEqual(result["languages"], ["fr"])
         self.assertEqual(len(result["warnings"]), 1)
         self.assertIn("en", result["warnings"][0])
+
+
+class TranslateFromTheBestTrackTests(TestCase):
+    """Wolof is written in Latin and Arabic script; only one of them translates.
+
+    Cloud Translation reads Latin Wolof and translates it, but hands Arabic
+    script (Ajami) back unchanged. Choosing the wrong track would publish an
+    "English" track full of untranslated text.
+    """
+
+    def setUp(self):
+        self.user = make_user("owner")
+
+    def _video(self):
+        video = make_video(self.user, audio_file_id="audio/a.mp3")
+        SubtitleTrack.objects.create(
+            video=video,
+            language_code="wo",
+            label="Wolof",
+            content=transcription.build_vtt(
+                [
+                    transcription.Segment(0.0, 1.0, "\u0642\u064f\u0646\u0652\u0643\u0652"),
+                    transcription.Segment(1.0, 2.0, "\u0628\u0650\u0645\u064e\u062a\u064e\u0648\u064e\u0651\u062e\u0652"),
+                ]
+            ),
+        )
+        SubtitleTrack.objects.create(
+            video=video,
+            language_code="fr",
+            label="French",
+            content=transcription.build_vtt(
+                [
+                    transcription.Segment(0.0, 1.0, "Quel est le sens"),
+                    transcription.Segment(1.0, 2.0, "Pourquoi"),
+                ]
+            ),
+        )
+        return video
+
+    def test_sorts_latin_script_tracks_first(self):
+        video = self._video()
+        tracks = {t.language_code: t for t in video.subtitle_tracks.all()}
+        origins = transcription._translation_origins(tracks, ["en"], "wo")
+        self.assertEqual([t.language_code for t in origins], ["fr", "wo"])
+
+    def test_falls_through_a_translator_that_returns_the_text_unchanged(self):
+        video = self._video()
+
+        class CopyCat(transcription.SubtitleProvider):
+            name = "google"
+
+            def __init__(self):
+                self._source_language = ""
+                self.seen = []
+
+            def transcribe(self, path, language):
+                return []
+
+            def translate(self, segments, target_language):
+                self.seen.append(self._source_language)
+                if self._source_language == "fr":
+                    return [
+                        transcription.Segment(s.start, s.end, "What is the meaning")
+                        for s in segments
+                    ]
+                # Ajami comes back untouched, as the real API does.
+                return list(segments)
+
+        translator = CopyCat()
+        with override_settings(
+            SUBTITLE_TRANSLATION_PROVIDER="google",
+            SUBTITLE_SOURCE_LANGUAGE="wo",
+            SUBTITLE_TARGET_LANGUAGES="en",
+        ), mock.patch.object(
+            transcription, "get_translation_provider", return_value=translator
+        ):
+            result = transcription.translate_existing_tracks(video.id)
+
+        self.assertEqual(result["languages"], ["en"])
+        self.assertEqual(translator.seen, ["fr"])
+        content = video.subtitle_tracks.get(language_code="en").content
+        self.assertIn("What is the meaning", content)
+        self.assertNotIn("\u0642\u064f\u0646\u0652\u0643\u0652", content)
+
+    def test_reports_when_no_track_could_be_translated(self):
+        video = self._video()
+        video.subtitle_tracks.filter(language_code="fr").delete()
+
+        class CopyCat(transcription.SubtitleProvider):
+            name = "google"
+
+            def __init__(self):
+                self._source_language = ""
+
+            def transcribe(self, path, language):
+                return []
+
+            def translate(self, segments, target_language):
+                return list(segments)
+
+        with override_settings(
+            SUBTITLE_TRANSLATION_PROVIDER="google",
+            SUBTITLE_SOURCE_LANGUAGE="wo",
+            SUBTITLE_TARGET_LANGUAGES="en",
+        ), mock.patch.object(
+            transcription, "get_translation_provider", return_value=CopyCat()
+        ):
+            result = transcription.translate_existing_tracks(video.id)
+
+        self.assertEqual(result["languages"], [])
+        self.assertEqual(len(result["warnings"]), 1)
+        self.assertFalse(video.subtitle_tracks.filter(language_code="en").exists())
 
 
 class TranslateTracksCommandTests(TestCase):

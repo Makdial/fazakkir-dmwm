@@ -65,6 +65,13 @@ TRANSLATE_BATCH = 40
 MIN_COVERAGE_SECONDS = 120
 MIN_COVERAGE_RATIO = 0.05
 
+# Wolof is written in both Latin and Arabic script (Ajami). Cloud Translation
+# reads Latin Wolof well but treats Ajami as an unknown language and hands the
+# characters straight back, so a track that is mostly Arabic script is a poor
+# thing to translate *from* when a Latin-script track exists.
+ARABIC_RANGE = (0x0600, 0x06FF)
+LATIN_SAMPLE_LIMIT = 100000
+
 
 class TranscriptionError(Exception):
     """Raised when the pipeline cannot produce subtitles."""
@@ -1837,53 +1844,140 @@ def translate_existing_tracks(video_id: int, include_lyrics: bool = True) -> dic
             "SUBTITLE_TRANSLATION_PROVIDER and its API key first."
         )
 
-    # Prefer the configured source language, then the lyrics track (which holds
-    # the same transcript), then any other track that is not a target.
     tracks = {track.language_code: track for track in video.subtitle_tracks.all()}
-    origin = None
-    for code in [source_language, "lyrics", *[c for c in tracks if c not in targets]]:
-        if code and code in tracks:
-            origin = tracks[code]
-            break
-    if origin is None:
+    origins = _translation_origins(tracks, targets, source_language)
+    if not origins:
         raise TranscriptionError(
             "This video has no transcript to translate yet. Generate the "
             "captions first."
         )
 
-    cues = parse_vtt(origin.content)
-    if not cues:
-        raise TranscriptionError(
-            f"The {origin.language_code} track is empty, so there is nothing to "
-            "translate."
-        )
-    segments = [Segment(start, end, text) for start, end, text in cues]
-
     # A translator such as Google is told the source language only while
-    # transcribing, so set it here before asking it for a translation.
-    if hasattr(translator, "_source_language"):
-        translator._source_language = origin.language_code
-
+    # transcribing; it is set again below for whichever track we translate from.
     created: list[str] = []
     warnings: list[str] = []
     for target in targets:
-        if target == origin.language_code or target in tracks:
+        if target in tracks:
             continue
-        try:
-            translated = translator.translate(segments, target)
-        except TranscriptionError as exc:
-            logger.warning(
-                "Translation into %s failed for video %s: %s", target, video_id, exc
-            )
-            warnings.append(f"{target}: {exc}")
+
+        translated: list[Segment] = []
+        for origin in origins:
+            if target == origin.language_code:
+                continue
+            cues = parse_vtt(origin.content)
+            if not cues:
+                continue
+            segments = [Segment(start, end, text) for start, end, text in cues]
+            if hasattr(translator, "_source_language"):
+                translator._source_language = origin.language_code
+            try:
+                attempt = translator.translate(segments, target)
+            except TranscriptionError as exc:
+                logger.warning(
+                    "Translation into %s from %s failed for video %s: %s",
+                    target,
+                    origin.language_code,
+                    video_id,
+                    exc,
+                )
+                warnings.append(f"{target} from {origin.language_code}: {exc}")
+                continue
+            if _same_text(attempt, segments):
+                # The translator handed the text back unchanged, which is what
+                # happens when it cannot read the script (Ajami Wolof, for
+                # example). Saving that would offer an English track full of
+                # another language, so try the next track instead.
+                logger.warning(
+                    "Translating video %s from %s into %s returned the text "
+                    "unchanged; trying another track.",
+                    video_id,
+                    origin.language_code,
+                    target,
+                )
+                warnings.append(
+                    f"{target} from {origin.language_code}: the translator could "
+                    "not read this text, so it was left untranslated."
+                )
+                continue
+            translated = attempt
+            break
+
+        if not translated:
             continue
         _save_track(video, target, translated)
         created.append(target)
 
     if include_lyrics and not _has_lyrics(video):
-        _save_lyrics(video, segments)
+        best = origins[0]
+        cues = parse_vtt(best.content)
+        if cues:
+            _save_lyrics(
+                video, [Segment(start, end, text) for start, end, text in cues]
+            )
 
-    return {"languages": created, "cues": len(segments), "warnings": warnings}
+    return {"languages": created, "warnings": warnings}
+
+
+def _arabic_share(content: str) -> float:
+    """How much of ``content`` is Arabic script, ignoring timings and markup."""
+    letters = [
+        ch
+        for ch in content[:LATIN_SAMPLE_LIMIT]
+        if ch.isalpha()
+    ]
+    if not letters:
+        return 0.0
+    arabic = sum(1 for ch in letters if ARABIC_RANGE[0] <= ord(ch) <= ARABIC_RANGE[1])
+    return arabic / len(letters)
+
+
+def _translation_origins(
+    tracks: dict, targets: list[str], source_language: str
+) -> list:
+    """The tracks to translate from, best first.
+
+    A track in the configured source language is the natural choice, but Wolof
+    is also written in Arabic script and a translation API cannot read that.
+    Tracks that are mostly Latin script are therefore tried first, so a video
+    whose source track is Ajami is translated from its French or English track
+    instead of producing an untranslated copy.
+    """
+    candidates = [
+        track
+        for code, track in tracks.items()
+        if code and code != "lyrics" and code not in targets
+    ]
+    if not candidates:
+        # Nothing but the lyrics track: it holds the same transcript.
+        lyrics = tracks.get("lyrics")
+        candidates = [lyrics] if lyrics is not None else []
+
+    def rank(track):
+        # A track the translator cannot read (Ajami Wolof) is worse than one in
+        # another language, so script comes first and the source language only
+        # breaks the tie between two readable tracks.
+        return (
+            1 if _arabic_share(track.content) > 0.5 else 0,
+            0 if track.language_code == source_language else 1,
+        )
+
+    return sorted(candidates, key=rank)
+
+
+def _same_text(translated: list[Segment], original: list[Segment]) -> bool:
+    """True when a translation came back with the text unchanged."""
+    if len(translated) != len(original):
+        return False
+    compared = 0
+    same = 0
+    for new, old in zip(translated, original):
+        old_text = old.text.strip()
+        if not old_text:
+            continue
+        compared += 1
+        if new.text.strip() == old_text:
+            same += 1
+    return compared > 0 and same == compared
 
 
 # --- Background scheduling --------------------------------------------------

@@ -82,8 +82,7 @@ class Command(BaseCommand):
             if result["languages"]:
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f"  -> added {', '.join(result['languages'])} "
-                        f"({result['cues']} cues)"
+                        f"  -> added {', '.join(result['languages'])}"
                     )
                 )
             for warning in result["warnings"]:
