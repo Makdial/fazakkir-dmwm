@@ -1489,9 +1489,10 @@ class PuterProvider(SubtitleProvider):
         prompt = (
             "Translate the following subtitle lines into "
             f"{target_language}. Keep the numbering exactly as it is and return "
-            "only the translated lines, one per line, with no numbering, no extra "
-            "commentary and no empty lines. Preserve the meaning, punctuation and "
-            "line breaks within each numbered line.\n\n" + numbered
+            "only the translated lines, one per line, each starting with its "
+            "number, with no extra commentary and no empty lines. Preserve the "
+            "meaning, punctuation and line breaks within each numbered line.\n\n"
+            + numbered
         )
         payload = _puter_chat_request(
             self._token,
@@ -1502,20 +1503,49 @@ class PuterProvider(SubtitleProvider):
             },
         )
         content = _puter_message_text(payload)
+        mapping = self._parse_numbered(content, len(texts))
 
-        lines = [line.strip() for line in content.splitlines() if line.strip()]
-        cleaned: list[str] = []
-        for index, line in enumerate(lines):
-            prefix = f"{index}:"
-            if line.startswith(prefix):
-                line = line[len(prefix) :].strip()
-            cleaned.append(line)
+        if len(mapping) == len(texts):
+            return [mapping[index] for index in range(len(texts))]
 
-        if len(cleaned) != len(texts):
-            raise TranscriptionError(
-                f"Expected {len(texts)} translated lines but got {len(cleaned)}."
-            )
-        return cleaned
+        if len(texts) > 1:
+            # Fewer lines came back than were asked for. A short batch is much
+            # easier for the model to keep in step, so the batch is halved and
+            # each half is translated on its own.
+            half = len(texts) // 2
+            return self._translate_batch(
+                texts[:half], target_language, model
+            ) + self._translate_batch(texts[half:], target_language, model)
+
+        # A single line could not be translated: keep the original so the
+        # track stays complete rather than losing a caption.
+        return [texts[0]]
+
+    @staticmethod
+    def _parse_numbered(content: str, expected: int) -> dict[int, str]:
+        """Read back the numbered lines of a translation.
+
+        The number in front of a line says which line it belongs to, so a
+        model that drops or reorders one still lines up. A line without a
+        number takes the next free place.
+        """
+        found: dict[int, str] = {}
+        position = 0
+        for raw_line in (content or "").splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            index = None
+            match = re.match(r"^(\d+)\s*[:.)]\s*(.*)$", line)
+            if match:
+                index = int(match.group(1))
+                line = match.group(2).strip()
+            if index is None or index >= expected or index in found:
+                index = position
+            if index < expected:
+                found[index] = line
+                position = index + 1
+        return found
 
 
 def provider_name() -> str:

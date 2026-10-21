@@ -3006,14 +3006,42 @@ class PuterTranslationTests(TestCase):
             result = provider._translate_batch(["un", "deux"], "fr", "m")
         self.assertEqual(result, ["un", "deux"])
 
-    def test_a_wrong_number_of_lines_is_reported(self):
+    def test_a_short_answer_is_tried_again_in_smaller_pieces(self):
+        provider = self._provider()
+        calls = []
+
+        def fake_chat(token, args):
+            calls.append(args)
+            return {"message": {"content": "0: un"}}
+
+        with mock.patch(
+            "videos.transcription._puter_chat_request", side_effect=fake_chat
+        ):
+            result = provider._translate_batch(["un", "deux"], "fr", "m")
+
+        # The batch is halved and each half is asked for on its own, so the
+        # line that was dropped does not cost a caption.
+        self.assertGreaterEqual(len(calls), 2)
+        self.assertEqual(len(result), 2)
+
+    def test_a_line_that_cannot_be_translated_keeps_its_text(self):
         provider = self._provider()
         with mock.patch(
             "videos.transcription._puter_chat_request",
-            return_value={"message": {"content": "un"}},
+            return_value={"message": {"content": ""}},
         ):
-            with self.assertRaises(transcription.TranscriptionError):
-                provider._translate_batch(["un", "deux"], "fr", "m")
+            result = provider._translate_batch(["un"], "fr", "m")
+        self.assertEqual(result, ["un"])
+
+    def test_the_numbers_line_the_translation_up(self):
+        provider = self._provider()
+        # The model answers out of order; the numbers say what goes where.
+        with mock.patch(
+            "videos.transcription._puter_chat_request",
+            return_value={"message": {"content": "1: deux\n0: un"}},
+        ):
+            result = provider._translate_batch(["un", "deux"], "fr", "m")
+        self.assertEqual(result, ["un", "deux"])
 
     def test_the_cues_keep_their_timings(self):
         provider = self._provider()
