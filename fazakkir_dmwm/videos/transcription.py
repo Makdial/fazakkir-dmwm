@@ -252,6 +252,21 @@ class SubtitleProvider:
     def translate(self, segments: list[Segment], target_language: str) -> list[Segment]:
         raise NotImplementedError
 
+    def translate_from_audio(
+        self,
+        audio_path: str,
+        source_language: str,
+        target_language: str,
+        segments: list[Segment],
+    ) -> list[Segment]:
+        """Produce the target-language cues from the audio itself.
+
+        A provider that translates a whole transcript (rather than a list of
+        cues) needs the audio to work from. The default says it cannot, and
+        the pipeline falls back to :meth:`translate`.
+        """
+        return []
+
 
 class OpenAIProvider(SubtitleProvider):
     """OpenAI: ``whisper-1`` for speech-to-text, a chat model for translation.
@@ -801,6 +816,373 @@ class ElevenLabsProvider(SubtitleProvider):
         )
 
 
+# --- AssemblyAI provider -----------------------------------------------------
+#
+# AssemblyAI transcribes a file by uploading it, submitting a job and
+# polling for the result. The answer carries per-word timings, which become
+# the usual caption lines.
+#
+# It also translates: a transcript can be sent to the LLM Gateway with a list
+# of target languages, and the whole text comes back translated. That is a
+# whole-text translation, so the translated sentences are spread over the cue
+# timings we already have.
+
+ASSEMBLYAI_API_URL = "https://api.assemblyai.com/v2"
+ASSEMBLYAI_HTTP_TIMEOUT = 300.0
+ASSEMBLYAI_POLL_SECONDS = 3.0
+ASSEMBLYAI_POLL_ATTEMPTS = 120
+
+# A sentence ends on one of these, and a cue is never longer than this.
+SENTENCE_ENDINGS = ".!?…؟"
+
+
+def _assemblyai_error(response) -> str:
+    """A readable message taken from a failed AssemblyAI response."""
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = {}
+    message = payload.get("error") or (getattr(response, "text", "") or "").strip()
+    return f"AssemblyAI rejected the request: {message or f'HTTP {response.status_code}'}"
+
+
+def split_sentences(text: str) -> list[str]:
+    """Split a block of text into sentences."""
+    sentences: list[str] = []
+    current: list[str] = []
+    for chunk in re.split(r"(?<=[.!?…؟])\s+", (text or "").strip()):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        current.append(chunk)
+        if chunk[-1] in SENTENCE_ENDINGS:
+            sentences.append(" ".join(current))
+            current = []
+    if current:
+        sentences.append(" ".join(current))
+    return sentences
+
+
+def assemblyai_sentences(transcript) -> list[tuple[float, float, str]]:
+    """Group AssemblyAI's words into sentences with their timings.
+
+    Returns ``[(start, end, text), ...]`` in seconds.
+    """
+    words = (transcript or {}).get("words") or []
+    sentences: list[tuple[float, float, str]] = []
+    buffer: list[str] = []
+    start = 0.0
+    end = 0.0
+
+    for word in words:
+        text = (word.get("text") or "").strip()
+        if not text:
+            continue
+        try:
+            word_start = float(word.get("start") or 0) / 1000.0
+            word_end = float(word.get("end") or 0) / 1000.0
+        except (TypeError, ValueError):
+            continue
+        if not buffer:
+            start = word_start
+        buffer.append(text)
+        end = word_end
+        if text[-1] in SENTENCE_ENDINGS:
+            sentences.append((start, end, " ".join(buffer)))
+            buffer = []
+
+    if buffer:
+        sentences.append((start, end, " ".join(buffer)))
+    return sentences
+
+
+def captions_from_assemblyai(transcript) -> list[Segment]:
+    """Turn an AssemblyAI transcript into timed caption segments."""
+    words: list[tuple[str, float, float]] = []
+    for word in (transcript or {}).get("words") or []:
+        text = (word.get("text") or "").strip()
+        if not text:
+            continue
+        try:
+            words.append(
+                (text, float(word.get("start") or 0) / 1000.0, float(word.get("end") or 0) / 1000.0)
+            )
+        except (TypeError, ValueError):
+            continue
+    if words:
+        return build_captions(words)
+
+    # No word timings: use the utterances instead.
+    segments: list[Segment] = []
+    for item in (transcript or {}).get("utterances") or []:
+        text = (item.get("text") or "").strip()
+        if not text:
+            continue
+        try:
+            start = float(item.get("start") or 0) / 1000.0
+            end = float(item.get("end") or 0) / 1000.0
+        except (TypeError, ValueError):
+            continue
+        segments.append(Segment(start, end, text))
+    return segments
+
+
+def spread_translation(
+    segments: list[Segment], sentences: list[tuple[float, float, str]]
+) -> list[Segment]:
+    """Spread translated sentences over the timings of the original cues.
+
+    AssemblyAI translates a whole transcript, not one cue at a time, so the
+    translated sentences are handed out to the cues they overlap. A sentence
+    covering several cues is split between them in proportion to how long
+    each cue lasts, which keeps the text in step with the picture.
+    """
+    if not segments:
+        return []
+    if not sentences:
+        return [Segment(s.start, s.end, s.text) for s in segments]
+
+    translated: list[Segment] = []
+    for segment in segments:
+        # The sentence that overlaps this cue the most.
+        best = None
+        best_overlap = 0.0
+        for start, end, text in sentences:
+            overlap = min(end, segment.end) - max(start, segment.start)
+            if overlap > best_overlap:
+                best_overlap = overlap
+                best = (start, end, text)
+        if best is None:
+            translated.append(Segment(segment.start, segment.end, segment.text))
+            continue
+        translated.append(Segment(segment.start, segment.end, best[2]))
+
+    # A sentence that spans several cues would otherwise be repeated on each
+    # of them, so it is divided between them instead.
+    for index, (start, end, text) in enumerate(sentences):
+        covered = [
+            i
+            for i, segment in enumerate(translated)
+            if min(end, segment.end) - max(start, segment.start) > 0
+        ]
+        if len(covered) < 2:
+            continue
+        total = sum(
+            max(0.0, min(end, translated[i].end) - max(start, translated[i].start))
+            for i in covered
+        )
+        if total <= 0:
+            continue
+        position = 0
+        for number, cue in enumerate(covered):
+            share = max(
+                0.0, min(end, translated[cue].end) - max(start, translated[cue].start)
+            )
+            cut = len(text) if number == len(covered) - 1 else int(
+                round(len(text) * (share / total))
+            )
+            cut = max(position, min(len(text), cut))
+            translated[cue] = Segment(
+                translated[cue].start, translated[cue].end, text[position:cut].strip()
+            )
+            position = cut
+
+    return [segment for segment in translated if segment.text]
+
+
+class AssemblyAIProvider(SubtitleProvider):
+    """AssemblyAI for speech-to-text and for the translation of the cues.
+
+    Authenticates with ``ASSEMBLYAI_API_KEY``. The audio is uploaded and
+    transcribed; the answer carries per-word timings, which become the
+    caption lines. AssemblyAI can also translate a transcript, so this
+    provider can produce the target-language tracks on its own.
+    """
+
+    name = "assemblyai"
+    supports_translation = True
+
+    def __init__(self):
+        api_key = (getattr(settings, "ASSEMBLYAI_API_KEY", "") or "").strip()
+        if not api_key:
+            raise TranscriptionError(
+                "ASSEMBLYAI_API_KEY is not set, so subtitles cannot be generated."
+            )
+        self._key = api_key
+
+    # -- HTTP ----------------------------------------------------------------
+
+    def _headers(self) -> dict:
+        return {"authorization": self._key}
+
+    def _upload(self, path: str) -> str:
+        """Send a local audio file to AssemblyAI and return its address."""
+        try:
+            import httpx
+        except ImportError as exc:  # pragma: no cover - depends on environment
+            raise TranscriptionError(
+                "The 'httpx' package is not installed. Run: pip install httpx"
+            ) from exc
+
+        with open(path, "rb") as handle:
+            try:
+                response = httpx.post(
+                    f"{ASSEMBLYAI_API_URL}/upload",
+                    headers=self._headers(),
+                    files={"file": (os.path.basename(path), handle, "audio/mpeg")},
+                    timeout=ASSEMBLYAI_HTTP_TIMEOUT,
+                )
+            except httpx.HTTPError as exc:
+                raise TranscriptionError(f"Could not reach AssemblyAI: {exc}") from exc
+
+        if response.status_code >= 400:
+            raise TranscriptionError(_assemblyai_error(response))
+        try:
+            return response.json()["upload_url"]
+        except (ValueError, KeyError) as exc:
+            raise TranscriptionError(
+                "AssemblyAI did not return an upload address."
+            ) from exc
+
+    def _submit(self, upload_url: str, translate_to: list[str]) -> str:
+        """Start a transcription job and return its id."""
+        try:
+            import httpx
+        except ImportError as exc:  # pragma: no cover - depends on environment
+            raise TranscriptionError(
+                "The 'httpx' package is not installed. Run: pip install httpx"
+            ) from exc
+
+        payload: dict = {
+            "audio_url": upload_url,
+            "language_detection": True,
+            "punctuate": True,
+            "format_text": True,
+        }
+        if translate_to:
+            payload["speech_understanding"] = {
+                "request": {
+                    "translation": {
+                        "target_languages": translate_to,
+                        "formal": False,
+                        "force_translation": True,
+                    }
+                }
+            }
+
+        try:
+            response = httpx.post(
+                f"{ASSEMBLYAI_API_URL}/transcript",
+                headers={**self._headers(), "content-type": "application/json"},
+                json=payload,
+                timeout=ASSEMBLYAI_HTTP_TIMEOUT,
+            )
+        except httpx.HTTPError as exc:
+            raise TranscriptionError(f"Could not reach AssemblyAI: {exc}") from exc
+
+        if response.status_code >= 400:
+            raise TranscriptionError(_assemblyai_error(response))
+        try:
+            return response.json()["id"]
+        except (ValueError, KeyError) as exc:
+            raise TranscriptionError(
+                "AssemblyAI did not return a transcript id."
+            ) from exc
+
+    def _wait(self, transcript_id: str) -> dict:
+        """Poll until the transcript is ready, then return it."""
+        try:
+            import httpx
+        except ImportError as exc:  # pragma: no cover - depends on environment
+            raise TranscriptionError(
+                "The 'httpx' package is not installed. Run: pip install httpx"
+            ) from exc
+
+        import time
+
+        for _ in range(ASSEMBLYAI_POLL_ATTEMPTS):
+            try:
+                response = httpx.get(
+                    f"{ASSEMBLYAI_API_URL}/transcript/{transcript_id}",
+                    headers=self._headers(),
+                    timeout=ASSEMBLYAI_HTTP_TIMEOUT,
+                )
+            except httpx.HTTPError as exc:
+                raise TranscriptionError(f"Could not reach AssemblyAI: {exc}") from exc
+
+            if response.status_code >= 400:
+                raise TranscriptionError(_assemblyai_error(response))
+            try:
+                body = response.json()
+            except ValueError as exc:
+                raise TranscriptionError(
+                    "AssemblyAI returned an unexpected response."
+                ) from exc
+
+            status = body.get("status")
+            if status == "completed":
+                return body
+            if status == "error":
+                raise TranscriptionError(
+                    f"AssemblyAI could not transcribe the audio: {body.get('error')}"
+                )
+            time.sleep(ASSEMBLYAI_POLL_SECONDS)
+
+        raise TranscriptionError("AssemblyAI did not finish in time.")
+
+    def _transcript(self, path: str, translate_to: list[str]) -> dict:
+        """Upload, submit and wait for one audio file."""
+        upload_url = self._upload(path)
+        transcript_id = self._submit(upload_url, translate_to)
+        return self._wait(transcript_id)
+
+    # -- Provider interface --------------------------------------------------
+
+    def transcribe(self, path: str, language: str) -> list[Segment]:
+        transcript = self._transcript(path, [])
+        return captions_from_assemblyai(transcript)
+
+    def translate(self, segments: list[Segment], target_language: str) -> list[Segment]:
+        raise TranscriptionError(
+            "AssemblyAI translates a transcript, not a list of cues. Use the "
+            "audio to produce the translated tracks."
+        )
+
+    def translate_from_audio(
+        self,
+        audio_path: str,
+        source_language: str,
+        target_language: str,
+        segments: list[Segment],
+    ) -> list[Segment]:
+        """Produce the target-language cues from the audio itself.
+
+        AssemblyAI transcribes the audio, translates its transcript, and the
+        translated sentences are spread over the cue timings that were
+        already worked out, so the tracks stay in step.
+        """
+        transcript = self._transcript(audio_path, [target_language])
+        translated = (transcript.get("translated_texts") or {}).get(target_language, "")
+        if not (translated or "").strip():
+            return []
+
+        # The translated text is matched with the sentences of the original
+        # transcript, in order, and those carry the timings.
+        original = split_sentences(transcript.get("text") or "")
+        pieces = split_sentences(translated)
+        sentences: list[tuple[float, float, str]] = []
+        index = 0
+        for start, end, _text in assemblyai_sentences(transcript):
+            piece = pieces[index] if index < len(pieces) else ""
+            sentences.append((start, end, piece))
+            index += 1
+        if not sentences and pieces:
+            # No word timings: fall back to the plain sentences.
+            sentences = [(0.0, 0.0, piece) for piece in pieces]
+
+        return spread_translation(segments, sentences)
+
+
 # --- Puter provider ----------------------------------------------------------
 #
 # Puter's AI gateway is reached through one driver endpoint. The audio is
@@ -1018,6 +1400,8 @@ def get_provider() -> SubtitleProvider:
         return ElevenLabsProvider()
     if name == "puter":
         return PuterProvider()
+    if name == "assemblyai":
+        return AssemblyAIProvider()
     raise TranscriptionError(f"Unknown subtitle provider: {name!r}")
 
 
@@ -1056,6 +1440,8 @@ def get_translation_provider(
         return OpenAIProvider()
     if name == "google":
         return GoogleProvider()
+    if name == "assemblyai":
+        return AssemblyAIProvider()
     raise TranscriptionError(f"Unknown translation provider: {name!r}")
 
 
@@ -1067,6 +1453,8 @@ def translation_configured() -> bool:
             return bool(getattr(settings, "OPENAI_API_KEY", ""))
         if name == "google":
             return bool(getattr(settings, "GOOGLE_API_KEY", ""))
+        if name == "assemblyai":
+            return bool(getattr(settings, "ASSEMBLYAI_API_KEY", ""))
         return False
     # Without an explicit choice the transcription provider does the work.
     return provider_name() in ("openai", "google")
@@ -1083,6 +1471,8 @@ def is_configured() -> bool:
         return bool(getattr(settings, "ELEVENLABS_API_KEY", ""))
     if name == "puter":
         return bool(getattr(settings, "PUTER_AUTH_TOKEN", ""))
+    if name == "assemblyai":
+        return bool(getattr(settings, "ASSEMBLYAI_API_KEY", ""))
     return False
 
 
@@ -1092,6 +1482,7 @@ def configuration_hint() -> str:
         "google": "GOOGLE_API_KEY",
         "elevenlabs": "ELEVENLABS_API_KEY",
         "puter": "PUTER_AUTH_TOKEN",
+        "assemblyai": "ASSEMBLYAI_API_KEY",
     }.get(provider_name(), "OPENAI_API_KEY")
 
 
@@ -1158,7 +1549,13 @@ def generate_subtitles(video_id: int, include_lyrics: bool = True) -> dict:
                 )
                 continue
             try:
-                translated = translator.translate(segments, target)
+                # A provider that translates a whole transcript needs the
+                # audio; one that translates cue by cue does not.
+                translated = translator.translate_from_audio(
+                    audio_path, source_language, target, segments
+                )
+                if not translated:
+                    translated = translator.translate(segments, target)
             except TranscriptionError as exc:
                 # The source-language track is already saved, so a translation
                 # that runs out of credit or is rejected must not throw the

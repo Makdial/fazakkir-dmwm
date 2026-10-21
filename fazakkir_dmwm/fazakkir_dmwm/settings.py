@@ -390,6 +390,12 @@ PUTER_STT_MODEL = os.environ.get("PUTER_STT_MODEL", "gemini-3.5-transcribe")
 # means pass SUBTITLE_SOURCE_LANGUAGE through.
 PUTER_LANGUAGE_CODE = os.environ.get("PUTER_LANGUAGE_CODE", "")
 
+# --- AssemblyAI provider -----------------------------------------------------
+# AssemblyAI transcribes an uploaded file and can also translate the
+# transcript. One key covers both, and the free tier includes a few hours of
+# transcription every month.
+ASSEMBLYAI_API_KEY = os.environ.get("ASSEMBLYAI_API_KEY", "")
+
 # How long a background MP3 / subtitle job may stay "processing" before it is
 # assumed abandoned and marked retryable. Free hosts such as Render kill the web
 # process while a conversion is still running, so without this a video could sit

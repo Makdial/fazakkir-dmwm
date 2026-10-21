@@ -2789,6 +2789,167 @@ class PuterCaptionTests(TestCase):
         self.assertEqual(transcription.captions_from_puter_result(None), [])
 
 
+class AssemblyAIProviderSelectionTests(TestCase):
+    """``SUBTITLE_PROVIDER=assemblyai`` is wired into the same switches."""
+
+    def test_assemblyai_is_selected_by_the_setting(self):
+        with override_settings(SUBTITLE_PROVIDER="assemblyai", ASSEMBLYAI_API_KEY="k"):
+            self.assertIsInstance(
+                transcription.get_provider(), transcription.AssemblyAIProvider
+            )
+
+    def test_assemblyai_needs_a_key_to_be_configured(self):
+        with override_settings(SUBTITLE_PROVIDER="assemblyai", ASSEMBLYAI_API_KEY=""):
+            self.assertFalse(transcription.is_configured())
+        with override_settings(SUBTITLE_PROVIDER="assemblyai", ASSEMBLYAI_API_KEY="k"):
+            self.assertTrue(transcription.is_configured())
+
+    def test_the_hint_names_the_assemblyai_key(self):
+        with override_settings(SUBTITLE_PROVIDER="assemblyai"):
+            self.assertEqual(transcription.configuration_hint(), "ASSEMBLYAI_API_KEY")
+
+    def test_assemblyai_can_be_the_translation_provider(self):
+        with override_settings(
+            SUBTITLE_PROVIDER="elevenlabs",
+            SUBTITLE_TRANSLATION_PROVIDER="assemblyai",
+            ELEVENLABS_API_KEY="k",
+            ASSEMBLYAI_API_KEY="a",
+        ):
+            provider = transcription.get_provider()
+            translator = transcription.get_translation_provider(provider)
+            self.assertIsInstance(translator, transcription.AssemblyAIProvider)
+            self.assertTrue(transcription.translation_configured())
+
+
+class AssemblyAIParsingTests(TestCase):
+    """The answer from AssemblyAI becomes the usual caption lines."""
+
+    def test_word_timings_become_caption_lines(self):
+        transcript = {
+            "words": [
+                {"text": "Salam", "start": 0, "end": 400},
+                {"text": "alay", "start": 500, "end": 900},
+            ]
+        }
+        segments = transcription.captions_from_assemblyai(transcript)
+        self.assertEqual(len(segments), 1)
+        self.assertEqual(segments[0].text, "Salam alay")
+        self.assertAlmostEqual(segments[0].start, 0.0)
+        self.assertAlmostEqual(segments[0].end, 0.9)
+
+    def test_utterances_are_used_when_there_are_no_words(self):
+        transcript = {
+            "utterances": [{"text": "Salam alay", "start": 1000, "end": 3000}]
+        }
+        segments = transcription.captions_from_assemblyai(transcript)
+        self.assertEqual(len(segments), 1)
+        self.assertAlmostEqual(segments[0].start, 1.0)
+
+    def test_sentences_are_split_on_the_ends_of_a_sentence(self):
+        sentences = transcription.split_sentences(
+            "First one. Second one! Third? Fourth"
+        )
+        self.assertEqual(
+            sentences, ["First one.", "Second one!", "Third?", "Fourth"]
+        )
+
+    def test_words_become_sentences_with_their_timings(self):
+        transcript = {
+            "words": [
+                {"text": "Salam", "start": 0, "end": 400},
+                {"text": "alay.", "start": 500, "end": 900},
+                {"text": "Hamd", "start": 1500, "end": 1900},
+                {"text": "lilah.", "start": 2000, "end": 2400},
+            ]
+        }
+        sentences = transcription.assemblyai_sentences(transcript)
+        self.assertEqual(len(sentences), 2)
+        self.assertEqual(sentences[0][2], "Salam alay.")
+        self.assertAlmostEqual(sentences[0][0], 0.0)
+        self.assertAlmostEqual(sentences[1][1], 2.4)
+
+    def test_a_translated_sentence_is_spread_over_the_cues_it_covers(self):
+        cues = [
+            transcription.Segment(0.0, 2.0, "one"),
+            transcription.Segment(2.0, 4.0, "two"),
+            transcription.Segment(4.0, 6.0, "three"),
+        ]
+        sentences = [(0.0, 4.0, "Une phrase traduite en francais."), (4.0, 6.0, "Autre.")]
+
+        spread = transcription.spread_translation(cues, sentences)
+
+        self.assertEqual(len(spread), 3)
+        # The first two cues share the first translated sentence.
+        self.assertTrue(spread[0].text)
+        self.assertTrue(spread[1].text)
+        self.assertNotEqual(spread[0].text, spread[1].text)
+        self.assertEqual(spread[2].text, "Autre.")
+
+    def test_cues_without_a_translation_keep_their_own_text(self):
+        cues = [transcription.Segment(0.0, 1.0, "one")]
+        spread = transcription.spread_translation(cues, [])
+        self.assertEqual(spread[0].text, "one")
+
+
+class AssemblyAIHttpLayerTests(TestCase):
+    """The upload, submit and poll calls that talk to AssemblyAI."""
+
+    class _Response:
+        def __init__(self, status_code=200, payload=None, text=""):
+            self.status_code = status_code
+            self._payload = payload
+            self.text = text
+
+        def json(self):
+            if self._payload is None:
+                raise ValueError("no json body")
+            return self._payload
+
+    def _audio_file(self, data=b"fake-mp3-bytes"):
+        directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, directory, ignore_errors=True)
+        path = Path(directory) / "audio.mp3"
+        path.write_bytes(data)
+        return str(path)
+
+    def _provider(self):
+        with override_settings(ASSEMBLYAI_API_KEY="key"):
+            return transcription.AssemblyAIProvider()
+
+    def test_the_file_is_uploaded_first(self):
+        provider = self._provider()
+        with mock.patch(
+            "httpx.post", return_value=self._Response(200, {"upload_url": "https://x/y"})
+        ) as post:
+            url = provider._upload(self._audio_file())
+
+        self.assertEqual(url, "https://x/y")
+        self.assertTrue(post.call_args.args[0].endswith("/upload"))
+        self.assertEqual(post.call_args.kwargs["headers"], {"authorization": "key"})
+
+    def test_the_translation_is_asked_for(self):
+        provider = self._provider()
+        with mock.patch(
+            "httpx.post", return_value=self._Response(200, {"id": "abc"})
+        ) as post:
+            transcript_id = provider._submit("https://x/y", ["fr", "en"])
+
+        self.assertEqual(transcript_id, "abc")
+        payload = post.call_args.kwargs["json"]
+        translation = payload["speech_understanding"]["request"]["translation"]
+        self.assertEqual(translation["target_languages"], ["fr", "en"])
+
+    def test_a_failing_request_is_reported(self):
+        provider = self._provider()
+        with mock.patch(
+            "httpx.post",
+            return_value=self._Response(402, {"error": "not enough credits"}),
+        ):
+            with self.assertRaises(transcription.TranscriptionError) as caught:
+                provider._upload(self._audio_file())
+        self.assertIn("not enough credits", str(caught.exception))
+
+
 class ElevenLabsHttpLayerTests(TestCase):
     """The multipart wrapper that talks to Scribe."""
 
