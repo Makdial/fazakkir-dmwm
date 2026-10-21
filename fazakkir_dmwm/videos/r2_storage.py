@@ -300,6 +300,17 @@ def _sniff_image(data: bytes) -> tuple[str, str]:
     return "image/jpeg", ".jpg"
 
 
+def is_image(data: bytes) -> bool:
+    """True when the bytes really start like a picture a browser can show.
+
+    Used to reject a renamed file before it reaches the bucket, where it would
+    only become a broken picture on the site.
+    """
+    if data.startswith((b"\x89PNG\r\n\x1a\n", b"\xff\xd8\xff", b"GIF87a", b"GIF89a")):
+        return True
+    return data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+
+
 def upload_thumbnail(file_data, file_name: str, folder: str = "thumbnails") -> dict:
     data = _decode_image_payload(file_data)
     content_type, extension = _sniff_image(data)

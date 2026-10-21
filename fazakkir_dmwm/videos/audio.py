@@ -120,6 +120,60 @@ def extract_mp3_from_url(source_url: str, dest_path: str) -> bool:
     return _run_ffmpeg(_build_command(source_url, dest_path, remote=True), dest_path)
 
 
+def is_mp3(path: str) -> bool:
+    """True when the file already is an MP3, read from its first bytes.
+
+    The name cannot be trusted: a file called ".mp3" is often an M4A or a WAV
+    that someone renamed, and those must still be converted.
+    """
+    try:
+        with open(path, "rb") as handle:
+            header = handle.read(3)
+    except OSError:
+        return False
+
+    if header == b"ID3":
+        return True
+    # An MPEG audio frame starts with eleven set bits; the layer bits follow.
+    return len(header) >= 2 and header[0] == 0xFF and (header[1] & 0xE0) == 0xE0
+
+
+def prepare_mp3(uploaded_file, base_name: str = "audio") -> tuple[str, list[str]]:
+    """Return an MP3 path for any uploaded audio, plus the files to remove.
+
+    An MP3 is handed back untouched (re-encoding it would only lose quality);
+    anything else — WAV, M4A, OGG, AAC, FLAC — is converted, because the site
+    streams and offers for download only MP3. Raises
+    :class:`AudioExtractionError` when the file cannot be read as audio.
+    """
+    source_path, cleanup_source = materialize(uploaded_file)
+    removals = [cleanup_source] if cleanup_source else []
+
+    if is_mp3(source_path):
+        return source_path, removals
+
+    handle_fd, mp3_path = tempfile.mkstemp(suffix=".mp3")
+    os.close(handle_fd)
+    removals.append(mp3_path)
+    try:
+        if not extract_mp3(source_path, mp3_path):
+            raise AudioExtractionError(
+                "That file has no sound in it. Please choose an audio file."
+            )
+    except AudioExtractionError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - reported to the uploader
+        raise AudioExtractionError(
+            "That file could not be read as audio. Please choose an MP3, WAV or M4A file."
+        ) from exc
+
+    if not os.path.exists(mp3_path) or os.path.getsize(mp3_path) == 0:
+        raise AudioExtractionError(
+            "That file could not be converted to MP3. Please choose another file."
+        )
+    return mp3_path, removals
+
+
 def _parse_duration(text: str) -> float:
     match = _DURATION_RE.search(text or "")
     if not match:

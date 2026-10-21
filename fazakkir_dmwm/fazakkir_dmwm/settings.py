@@ -256,6 +256,14 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / "media"
 
+# An upload carries its cover as a base64 data URL in a normal form field, and
+# Django rejects any request whose non-file fields exceed this limit with a bare
+# 400 page before a view runs. The default (2.5 MB) was small enough that a
+# picture taken on a phone failed the whole upload. The page shrinks the picture
+# first; this leaves room for a picture that is merely large, so the upload view
+# can answer with a message the uploader understands.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
+
 # In production WhiteNoise serves the collected files (gzipped, with far-future
 # caching). The manifest adds a content hash to every filename so a deploy can
 # never serve a stale CSS or JS file to the service worker's cache.

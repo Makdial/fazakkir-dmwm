@@ -1096,3 +1096,39 @@ msgstr "Njëkk ndiaga teccit yi ci doon."
 
 msgid "An audio upload has no picture of its own, so choose one to show on the card"
 msgstr "Waaxtu mbir mi am ci seen, fecc sa yi mbir bu lay tegal ci karte"
+
+msgid "That picture could not be prepared. Please choose a smaller image."
+msgstr "Nakaaneen ndakaale bi. Tannal benn ndakaale bu ndaw."
+
+msgid "This file is too large for the server. Please choose a smaller file."
+msgstr "Fiye bi dafa yaatu lool ci serwëer bi. Tannal fiye bu ndaw."
+
+msgid "The upload was refused by the server. Please try again."
+msgstr "Serwëer bi bañ na yebbi bi. Jéemaatalaat."
+
+msgid "That thumbnail is not a picture. Please choose an image."
+msgstr "Nattukaay bii du ndakaale. Tannal benn ndakaale."
+
+msgid "That picture is too large. Please choose a smaller one."
+msgstr "Ndakaale bii dafa yaatu lool. Tannal benn bu ndaw."
+
+msgid "That picture could not be read. Please choose another one."
+msgstr "Manuñu jàng ndakaale bii. Tannal beneen."
+
+msgid "That file is not a picture the site can show. Please choose a JPEG or PNG image."
+msgstr "Fiye bii du ndakaale bu site bi mën a wone. Tannal JPEG walla PNG."
+
+msgid "The file was saved, but its picture could not be stored."
+msgstr "Fiye bi denc nañu ko, waaye manuñu denc ndakaale bi."
+
+msgid "MP3, WAV, M4A, OGG or AAC. Anything else is converted to MP3."
+msgstr "MP3, WAV, M4A, OGG walla AAC. Leneen mën nañu ko soppi ci MP3."
+
+msgid "That file has no sound in it. Please choose an audio file."
+msgstr "Amul bàyyi ndox ci fiye bii. Tannal benn fiye bu baax."
+
+msgid "That file could not be read as audio. Please choose an MP3, WAV or M4A file."
+msgstr "Manuñu jàng fiye bii ni baax. Tannal MP3, WAV walla M4A."
+
+msgid "That file could not be converted to MP3. Please choose another file."
+msgstr "Manuñu soppi fiye bii ci MP3. Tannal beneen fiye."

@@ -1,3 +1,5 @@
+import base64
+import binascii
 import logging
 import os
 import re
@@ -15,7 +17,14 @@ from django.views.decorators.http import require_GET, require_POST
 
 from core.permissions import login_required, user_can_write, write_required
 
-from .audio import AudioExtractionError, duration_for_upload, extract_mp3, materialize
+from .audio import (
+    AudioExtractionError,
+    duration_for_upload,
+    extract_mp3,
+    get_duration,
+    materialize,
+    prepare_mp3,
+)
 from .audio_tasks import clear_stale_jobs, schedule_audio_generation
 from .duration_tasks import schedule_missing_durations
 from .forms import VideoEditForm, VideoUploadForm
@@ -25,6 +34,7 @@ from .r2_storage import (
     delete_file,
     get_object,
     is_configured,
+    is_image,
     is_object_path,
     upload_audio,
     upload_thumbnail,
@@ -309,6 +319,62 @@ def video_upload_page(request):
     )
 
 
+# The cover travels as a base64 data URL inside a normal form field. A phone
+# photo is many megabytes, and Django refuses a request whose fields are too
+# large before any view runs, which used to look like an unexplained failure.
+MAX_THUMBNAIL_CHARS = 4 * 1024 * 1024
+
+
+def _validated_thumbnail(thumbnail_data: str) -> str:
+    """Check the chosen cover before a single byte is stored.
+
+    Returns the data URL unchanged, or "" when no cover was chosen. Raises
+    ``ValueError`` with a message the uploader can act on.
+    """
+    data = (thumbnail_data or "").strip()
+    if not data:
+        return ""
+    if not data.startswith("data:image"):
+        raise ValueError(_("That thumbnail is not a picture. Please choose an image."))
+    if len(data) > MAX_THUMBNAIL_CHARS:
+        raise ValueError(_("That picture is too large. Please choose a smaller one."))
+
+    encoded = data.split(",", 1)[1] if "," in data else ""
+    try:
+        raw = base64.b64decode(encoded)
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError(
+            _("That picture could not be read. Please choose another one.")
+        ) from exc
+
+    if not raw or not is_image(raw):
+        raise ValueError(
+            _("That file is not a picture the site can show. Please choose a JPEG or PNG image.")
+        )
+    return data
+
+
+def _store_thumbnail(thumbnail_data: str, base_name: str) -> tuple[str, str, str]:
+    """Store an already validated cover.
+
+    Returns ``(file_id, url, warning)``. A cover that cannot be stored must not
+    throw away the media that was just uploaded, so the failure comes back as a
+    warning the page can show instead of an error.
+    """
+    if not thumbnail_data:
+        return "", "", ""
+    try:
+        thumb = upload_thumbnail(
+            file_data=thumbnail_data, file_name=base_name + "_thumb.jpg"
+        )
+    except StorageError:
+        logger.warning(
+            "Storing the chosen thumbnail failed for %r", base_name, exc_info=True
+        )
+        return "", "", _("The file was saved, but its picture could not be stored.")
+    return thumb["path"], thumb["url"], ""
+
+
 @write_required
 @require_POST
 def video_upload(request):
@@ -323,32 +389,39 @@ def video_upload(request):
     video_file = form.cleaned_data.get("video_file")
     audio_file = form.cleaned_data.get("audio_file")
     media_type = form.cleaned_data["media_type"]
-    thumbnail_data = request.POST.get("thumbnail_data", "")
+
+    # Checked first, so a bad cover cannot reject an upload that already spent
+    # minutes on the wire.
+    try:
+        thumbnail_data = _validated_thumbnail(request.POST.get("thumbnail_data", ""))
+    except ValueError as exc:
+        return JsonResponse({"success": False, "error": str(exc)})
 
     # Audio-only upload: store the MP3 itself, with no picture behind it.
     if media_type == "audio":
-        # Measure the duration before the upload, while the file is still open.
-        duration = duration_for_upload(audio_file)
-        audio_file.seek(0)
+        base_name = Path(audio_file.name or "").stem or "audio"
         try:
-            result = upload_audio(audio_file, Path(audio_file.name).stem + ".mp3")
-        except StorageError as exc:
+            # An MP3 is kept as it is; anything else is converted, because the
+            # site only ever streams and offers MP3.
+            mp3_path, removals = prepare_mp3(audio_file, base_name)
+        except AudioExtractionError as exc:
             return JsonResponse({"success": False, "error": str(exc)})
+
+        try:
+            duration = get_duration(mp3_path)
+            with open(mp3_path, "rb") as handle:
+                result = upload_audio(handle, base_name + ".mp3")
+        except (StorageError, OSError) as exc:
+            return JsonResponse({"success": False, "error": str(exc)})
+        finally:
+            for path in removals:
+                _remove_path(path)
 
         # An audio upload has no frame to sample, so the picture is the one
         # the owner chose on the upload page (if any).
-        thumbnail_file_id = ""
-        thumbnail_url = ""
-        if thumbnail_data.startswith("data:image"):
-            try:
-                thumb = upload_thumbnail(
-                    file_data=thumbnail_data,
-                    file_name=Path(audio_file.name).stem + "_thumb.jpg",
-                )
-            except StorageError as exc:
-                return JsonResponse({"success": False, "error": str(exc)})
-            thumbnail_file_id = thumb["path"]
-            thumbnail_url = thumb["url"]
+        thumbnail_file_id, thumbnail_url, warning = _store_thumbnail(
+            thumbnail_data, base_name
+        )
 
         video = Video.objects.create(
             user=request.user,
@@ -365,11 +438,14 @@ def video_upload(request):
             duration_seconds=duration,
         )
         _notify_storage_after_upload()
-        return JsonResponse({
+        payload = {
             "success": True,
             "video_id": video.id,
             "message": _("Audio uploaded successfully"),
-        })
+        }
+        if warning:
+            payload["warning"] = warning
+        return JsonResponse(payload)
 
     # Extract the audio first: uploading the video to R2 closes the temporary
     # file Django saved the upload to, so it is gone afterwards. The duration is
@@ -382,17 +458,6 @@ def video_upload(request):
     try:
         video_file.seek(0)
         result = upload_video(file_data=video_file, file_name=video_file.name)
-
-        thumbnail_file_id = ""
-        thumbnail_url = ""
-        if thumbnail_data.startswith("data:image"):
-            base_name = video_file.name.rsplit(".", 1)[0]
-            thumb_result = upload_thumbnail(
-                file_data=thumbnail_data,
-                file_name=base_name + "_thumb.jpg",
-            )
-            thumbnail_file_id = thumb_result["path"]
-            thumbnail_url = thumb_result["url"]
     except StorageError as exc:
         # Do not leave the MP3 orphaned if the video itself could not be stored.
         if audio_file_id:
@@ -401,6 +466,11 @@ def video_upload(request):
             except StorageError:
                 pass
         return JsonResponse({"success": False, "error": str(exc)})
+
+    # Stored after the video, and never fatal: the footage is what matters.
+    thumbnail_file_id, thumbnail_url, warning = _store_thumbnail(
+        thumbnail_data, video_file.name.rsplit(".", 1)[0]
+    )
 
     video = Video.objects.create(
         user=request.user,
@@ -419,11 +489,14 @@ def video_upload(request):
 
     _notify_storage_after_upload()
 
-    return JsonResponse({
+    payload = {
         "success": True,
         "video_id": video.id,
         "message": _("Video uploaded successfully"),
-    })
+    }
+    if warning:
+        payload["warning"] = warning
+    return JsonResponse(payload)
 
 
 def _notify_storage_after_upload() -> None:

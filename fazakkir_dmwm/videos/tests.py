@@ -4,6 +4,7 @@ from io import StringIO
 from html.parser import HTMLParser
 import base64
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -22,6 +23,7 @@ from accounts.models import Profile
 
 from . import audio_tasks
 from . import transcription
+from . import audio
 from .audio import AudioExtractionError
 from .audio_tasks import generate_audio, schedule_audio_generation
 from .models import Comment, Playlist, PlaylistItem, SubtitleTrack, Video
@@ -3634,8 +3636,9 @@ class AudioOnlyUploadTests(TestCase):
         payload = {k: v for k, v in payload.items() if v is not None}
         return self.client.post(reverse("videos:upload_submit"), payload)
 
+    @mock.patch("videos.views.get_duration", return_value=0.0)
     @mock.patch("videos.views.upload_audio")
-    def test_audio_upload_creates_an_audio_only_record(self, upload_audio):
+    def test_audio_upload_creates_an_audio_only_record(self, upload_audio, duration):
         upload_audio.return_value = {
             "path": "audio/rec.mp3",
             "url": "https://example.com/rec.mp3",
@@ -3651,7 +3654,7 @@ class AudioOnlyUploadTests(TestCase):
         self.assertTrue(video.is_audio_only)
         self.assertFalse(video.has_video)
 
-    @mock.patch("videos.views.duration_for_upload", return_value=321.0)
+    @mock.patch("videos.views.get_duration", return_value=321.0)
     @mock.patch("videos.views.upload_audio")
     def test_audio_upload_records_the_length(self, upload_audio, duration):
         upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
@@ -3660,8 +3663,9 @@ class AudioOnlyUploadTests(TestCase):
         self.assertEqual(video.duration_seconds, 321.0)
         self.assertEqual(video.duration_formatted, "5:21")
 
+    @mock.patch("videos.views.get_duration", return_value=0.0)
     @mock.patch("videos.views.upload_audio")
-    def test_audio_only_has_no_video_download_link(self, upload_audio):
+    def test_audio_only_has_no_video_download_link(self, upload_audio, duration):
         upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
         self.audio_post()
         video = Video.objects.get()
@@ -3669,16 +3673,19 @@ class AudioOnlyUploadTests(TestCase):
         # The MP3 link is what people actually want.
         self.assertTrue(video.audio_download_url)
 
+    @mock.patch("videos.views.get_duration", return_value=0.0)
     @mock.patch("videos.views.upload_thumbnail")
     @mock.patch("videos.views.upload_audio")
-    def test_an_audio_upload_can_carry_a_thumbnail(self, upload_audio, upload_thumbnail):
+    def test_an_audio_upload_can_carry_a_thumbnail(
+        self, upload_audio, upload_thumbnail, duration
+    ):
         upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
         upload_thumbnail.return_value = {
             "path": "thumbnails/rec_thumb.jpg",
             "url": "https://example.com/rec_thumb.jpg",
         }
 
-        response = self.audio_post(thumbnail_data="data:image/jpeg;base64,AAAA")
+        response = self.audio_post(thumbnail_data=self.jpeg_data_url())
 
         self.assertTrue(response.json()["success"])
         video = Video.objects.get()
@@ -3686,9 +3693,12 @@ class AudioOnlyUploadTests(TestCase):
         self.assertEqual(video.thumbnail_url, "https://example.com/rec_thumb.jpg")
         self.assertTrue(video.display_thumbnail_url)
 
+    @mock.patch("videos.views.get_duration", return_value=0.0)
     @mock.patch("videos.views.upload_thumbnail")
     @mock.patch("videos.views.upload_audio")
-    def test_an_audio_upload_without_a_thumbnail_still_works(self, upload_audio, upload_thumbnail):
+    def test_an_audio_upload_without_a_thumbnail_still_works(
+        self, upload_audio, upload_thumbnail, duration
+    ):
         upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
         response = self.audio_post()
         self.assertTrue(response.json()["success"])
@@ -3703,6 +3713,85 @@ class AudioOnlyUploadTests(TestCase):
         self.assertIn("customThumbnailGroup", body)
         self.assertIn("An audio upload has no picture of its own", body)
 
+    @mock.patch("videos.views.upload_audio")
+    def test_a_picture_that_is_not_an_image_is_refused_before_uploading(
+        self, upload_audio
+    ):
+        response = self.audio_post(thumbnail_data="data:image/jpeg;base64,AAAA")
+        self.assertFalse(response.json()["success"])
+        self.assertIn("not a picture", response.json()["error"])
+        upload_audio.assert_not_called()
+        self.assertFalse(Video.objects.exists())
+
+    @mock.patch("videos.views.upload_audio")
+    def test_an_oversized_picture_is_refused_with_a_readable_message(
+        self, upload_audio
+    ):
+        # Bigger than the view accepts, but still under the request limit, so
+        # the uploader is told what to do instead of getting a bare 400 page.
+        response = self.audio_post(
+            thumbnail_data="data:image/jpeg;base64," + "A" * (4 * 1024 * 1024 + 10)
+        )
+        self.assertFalse(response.json()["success"])
+        self.assertIn("too large", response.json()["error"])
+        upload_audio.assert_not_called()
+
+    @mock.patch("videos.views.get_duration", return_value=0.0)
+    @mock.patch("videos.views.upload_audio")
+    def test_a_picture_that_cannot_be_stored_keeps_the_audio(
+        self, upload_audio, duration
+    ):
+        upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
+        with mock.patch(
+            "videos.views.upload_thumbnail", side_effect=r2_storage.StorageError("boom")
+        ):
+            response = self.audio_post(thumbnail_data=self.jpeg_data_url())
+
+        body = response.json()
+        self.assertTrue(body["success"])
+        self.assertIn("picture could not be stored", body["warning"])
+        # The recording is not thrown away because its cover failed.
+        self.assertEqual(Video.objects.get().audio_file_id, "audio/rec.mp3")
+
+    @mock.patch("videos.views.get_duration", return_value=0.0)
+    @mock.patch("videos.views.prepare_mp3")
+    @mock.patch("videos.views.upload_audio")
+    def test_a_renamed_audio_file_is_converted_before_upload(
+        self, upload_audio, prepare_mp3, duration
+    ):
+        # A WAV dressed as an MP3 must still be stored as a real MP3.
+        converted = os.path.join(tempfile.gettempdir(), "converted.mp3")
+        with open(converted, "wb") as handle:
+            handle.write(b"ID3\x03\x00converted")
+        prepare_mp3.return_value = (converted, [])
+        upload_audio.return_value = {"path": "audio/rec.mp3", "url": ""}
+
+        response = self.audio_post(
+            audio_file=SimpleUploadedFile(
+                "recitation.wav", b"RIFF....WAVEfmt ", content_type="audio/x-wav"
+            )
+        )
+
+        self.assertTrue(response.json()["success"])
+        prepare_mp3.assert_called_once()
+        self.assertEqual(upload_audio.call_args.args[1], "recitation.mp3")
+        os.remove(converted)
+
+    @mock.patch("videos.views.prepare_mp3")
+    def test_an_unreadable_audio_file_gets_a_readable_message(self, prepare_mp3):
+        prepare_mp3.side_effect = AudioExtractionError(
+            "That file could not be read as audio."
+        )
+        response = self.audio_post()
+        self.assertFalse(response.json()["success"])
+        self.assertIn("could not be read", response.json()["error"])
+        self.assertFalse(Video.objects.exists())
+
+    def jpeg_data_url(self) -> str:
+        """A tiny but genuinely valid JPEG header, as the browser would send."""
+        return "data:image/jpeg;base64," + base64.b64encode(
+            b"\xff\xd8\xff\xe0" + b"\x00" * 32
+        ).decode()
 
     def test_audio_upload_without_a_file_is_rejected(self):
         response = self.audio_post(audio_file=None)
@@ -3748,6 +3837,71 @@ class AudioOnlyUploadTests(TestCase):
         self.assertContains(response, 'name="media_type"')
         self.assertContains(response, 'name="audio_file"')
         self.assertContains(response, 'name="video_file"')
+
+class AudioPreparationTests(TestCase):
+    """Any uploaded audio becomes a real MP3 before it is stored.
+
+    The name a file arrives with is not evidence of what it contains: a WAV or
+    an M4A renamed to ".mp3" would otherwise be stored as a broken track.
+    """
+
+    def make_wav(self, seconds: float = 1.0) -> str:
+        import struct
+        import wave
+
+        path = os.path.join(tempfile.gettempdir(), "probe-upload.wav")
+        rate = 8000
+        frames = int(rate * seconds)
+        with wave.open(path, "wb") as handle:
+            handle.setnchannels(1)
+            handle.setsampwidth(2)
+            handle.setframerate(rate)
+            handle.writeframes(
+                b"".join(struct.pack("<h", 0) for _ in range(frames))
+            )
+        return path
+
+    def test_an_mp3_is_recognised_by_its_bytes(self):
+        path = os.path.join(tempfile.gettempdir(), "probe-id3.mp3")
+        with open(path, "wb") as handle:
+            handle.write(b"ID3\x03\x00fake")
+        self.assertTrue(audio.is_mp3(path))
+        os.remove(path)
+
+    def test_a_frame_aligned_mp3_is_recognised(self):
+        path = os.path.join(tempfile.gettempdir(), "probe-frame.mp3")
+        with open(path, "wb") as handle:
+            handle.write(b"\xff\xfb\x90\x64" + b"\x00" * 400)
+        self.assertTrue(audio.is_mp3(path))
+        os.remove(path)
+
+    def test_a_wav_named_mp3_is_not_treated_as_mp3(self):
+        path = self.make_wav()
+        renamed = os.path.join(tempfile.gettempdir(), "probe-renamed.mp3")
+        shutil.copyfile(path, renamed)
+        self.assertFalse(audio.is_mp3(renamed))
+        os.remove(path)
+        os.remove(renamed)
+
+    def test_a_wav_is_converted_to_a_real_mp3(self):
+        path = self.make_wav()
+        with open(path, "rb") as handle:
+            upload = SimpleUploadedFile("probe.wav", handle.read(), content_type="audio/x-wav")
+
+        mp3_path, removals = audio.prepare_mp3(upload, "probe")
+        try:
+            self.assertTrue(mp3_path.endswith(".mp3"))
+            self.assertTrue(audio.is_mp3(mp3_path))
+            self.assertGreater(os.path.getsize(mp3_path), 0)
+            # About a second of sound was converted.
+            self.assertGreater(audio.get_duration(mp3_path), 0.5)
+        finally:
+            for item in removals:
+                if item and os.path.exists(item):
+                    os.remove(item)
+            if os.path.exists(path):
+                os.remove(path)
+
 
 class ThumbnailTypeTests(TestCase):
     """A picture is stored under the name it really has.

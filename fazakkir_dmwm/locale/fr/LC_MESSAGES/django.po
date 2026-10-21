@@ -1099,3 +1099,39 @@ msgstr "Une génération de sous-titres est déjà en cours."
 
 msgid "An audio upload has no picture of its own, so choose one to show on the card"
 msgstr "Un audio n'a pas d'image, choisissez-en une à montrer sur la carte"
+
+msgid "That picture could not be prepared. Please choose a smaller image."
+msgstr "Cette image n'a pas pu être préparée. Choisissez une image plus petite."
+
+msgid "This file is too large for the server. Please choose a smaller file."
+msgstr "Ce fichier est trop volumineux pour le serveur. Choisissez un fichier plus petit."
+
+msgid "The upload was refused by the server. Please try again."
+msgstr "Le serveur a refusé l'envoi. Réessayez."
+
+msgid "That thumbnail is not a picture. Please choose an image."
+msgstr "Cette vignette n'est pas une image. Choisissez une image."
+
+msgid "That picture is too large. Please choose a smaller one."
+msgstr "Cette image est trop grande. Choisissez-en une plus petite."
+
+msgid "That picture could not be read. Please choose another one."
+msgstr "Cette image n'a pas pu être lue. Choisissez-en une autre."
+
+msgid "That file is not a picture the site can show. Please choose a JPEG or PNG image."
+msgstr "Ce fichier n'est pas une image affichable. Choisissez un JPEG ou un PNG."
+
+msgid "The file was saved, but its picture could not be stored."
+msgstr "Le fichier a été enregistré, mais son image n'a pas pu être stockée."
+
+msgid "MP3, WAV, M4A, OGG or AAC. Anything else is converted to MP3."
+msgstr "MP3, WAV, M4A, OGG ou AAC. Tout le reste est converti en MP3."
+
+msgid "That file has no sound in it. Please choose an audio file."
+msgstr "Ce fichier ne contient aucun son. Choisissez un fichier audio."
+
+msgid "That file could not be read as audio. Please choose an MP3, WAV or M4A file."
+msgstr "Ce fichier n'a pas pu être lu comme audio. Choisissez un MP3, WAV ou M4A."
+
+msgid "That file could not be converted to MP3. Please choose another file."
+msgstr "Ce fichier n'a pas pu être converti en MP3. Choisissez un autre fichier."

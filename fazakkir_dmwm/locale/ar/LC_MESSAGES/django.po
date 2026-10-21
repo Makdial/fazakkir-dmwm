@@ -1120,3 +1120,39 @@ msgstr "هناك بالفعل عملية إنشاء ترجمات قيد التق
 
 msgid "An audio upload has no picture of its own, so choose one to show on the card"
 msgstr "لا للصوت صورة خاصة به، اختر صورة تظهر على البطاقة"
+
+msgid "That picture could not be prepared. Please choose a smaller image."
+msgstr "تعذر تجهيز هذه الصورة. اختر صورة أصغر."
+
+msgid "This file is too large for the server. Please choose a smaller file."
+msgstr "هذا الملف أكبر من أن يستقبله الخادم. اختر ملفا أصغر."
+
+msgid "The upload was refused by the server. Please try again."
+msgstr "رفض الخادم عملية الرفع. حاول مرة أخرى."
+
+msgid "That thumbnail is not a picture. Please choose an image."
+msgstr "هذه الصورة المصغرة ليست صورة. اختر صورة."
+
+msgid "That picture is too large. Please choose a smaller one."
+msgstr "هذه الصورة كبيرة جدا. اختر صورة أصغر."
+
+msgid "That picture could not be read. Please choose another one."
+msgstr "تعذر قراءة هذه الصورة. اختر صورة أخرى."
+
+msgid "That file is not a picture the site can show. Please choose a JPEG or PNG image."
+msgstr "هذا الملف ليس صورة يمكن عرضها. اختر صورة JPEG أو PNG."
+
+msgid "The file was saved, but its picture could not be stored."
+msgstr "تم حفظ الملف، لكن تعذر تخزين صورته."
+
+msgid "MP3, WAV, M4A, OGG or AAC. Anything else is converted to MP3."
+msgstr "MP3 أو WAV أو M4A أو OGG أو AAC. ما عدا ذلك يحول إلى MP3."
+
+msgid "That file has no sound in it. Please choose an audio file."
+msgstr "لا يحتوي هذا الملف على صوت. اختر ملفا صوتيا."
+
+msgid "That file could not be read as audio. Please choose an MP3, WAV or M4A file."
+msgstr "تعذر قراءة هذا الملف كصوت. اختر ملف MP3 أو WAV أو M4A."
+
+msgid "That file could not be converted to MP3. Please choose another file."
+msgstr "تعذر تحويل هذا الملف إلى MP3. اختر ملفا آخر."

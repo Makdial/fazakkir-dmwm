@@ -83,7 +83,7 @@
                     <span id="audio-label">{% trans "Click to select an MP3 file" %}</span>
                 </label>
                 <input type="file" name="audio_file" id="id_audio_file" accept="audio/*" style="display:none;"/>
-                <span class="help-text">{% trans "MP3 only. This becomes the track friends can stream and download." %}</span>
+                <span class="help-text">{% trans "MP3, WAV, M4A, OGG or AAC. Anything else is converted to MP3." %}</span>
             </div>
 
             <div class="form-group" id="customThumbnailGroup">
@@ -218,13 +218,54 @@ document.querySelectorAll('input[name="media_type"]').forEach(input => {
 });
 showUploadType();
 
-$("customThumbnail").onchange = e => {
+// Shrink a chosen picture before sending it. A full-size phone photo is many
+// megabytes, and the whole upload used to be refused because of it.
+function shrinkImage(file, maxSize) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = () => {
+            const img = new Image();
+            img.onerror = reject;
+            img.onload = () => {
+                const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+                const canvas = document.createElement("canvas");
+                canvas.width = Math.max(1, Math.round(img.width * scale));
+                canvas.height = Math.max(1, Math.round(img.height * scale));
+                canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL("image/jpeg", 0.85));
+            };
+            img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+const PICTURE_TOO_LARGE = "{% trans 'That picture could not be prepared. Please choose a smaller image.' %}";
+
+$("customThumbnail").onchange = async e => {
     const file = e.target.files[0];
     if (!file) return;
     customThumbnailChosen = true;
-    const reader = new FileReader();
-    reader.onload = ev => setThumbnail(ev.target.result);
-    reader.readAsDataURL(file);
+    try {
+        setThumbnail(await shrinkImage(file, 1280));
+    } catch (error) {
+        // Fall back to the untouched picture only while it is small enough to
+        // travel inside a form field.
+        if (file.size <= 1024 * 1024) {
+            const reader = new FileReader();
+            reader.onload = ev => setThumbnail(ev.target.result);
+            reader.readAsDataURL(file);
+        } else {
+            customThumbnailChosen = false;
+            $("customThumbnail").value = "";
+            $("thumbnailData").value = "";
+            $("thumbPreview").classList.remove("visible");
+            $("thumb-label").style.display = "";
+            $("errorContainer").innerHTML =
+                `<ul class="error-list"><li>${PICTURE_TOO_LARGE}</li></ul>`;
+        }
+    }
 };
 
 $("uploadForm").onsubmit = async e => {
@@ -245,15 +286,37 @@ $("uploadForm").onsubmit = async e => {
             method: "POST",
             body: new FormData(e.target)
         });
-        const data = await res.json();
+
+        // A refused request answers with a page, not JSON; reading it as text
+        // first keeps the browser from reporting a parse error instead of the
+        // real problem.
+        const text = await res.text();
+        let data = null;
+        try { data = JSON.parse(text); } catch (error) { data = null; }
         window.onbeforeunload = null;
 
-        if (data.success) {
-            $("uploadStatus").textContent = "{% trans 'Upload complete!' %}";
-            setTimeout(() => location.href = '{% url "videos:list" %}', 500);
-        } else {
+        if (data && data.success) {
+            if (data.warning) {
+                $("uploadOverlay").classList.remove("active");
+                $("errorContainer").innerHTML =
+                    `<ul class="error-list"><li>${data.warning}</li></ul>`;
+                $("uploadStatus").textContent = "{% trans 'Upload complete!' %}";
+                $("uploadOverlay").classList.add("active");
+            } else {
+                $("uploadStatus").textContent = "{% trans 'Upload complete!' %}";
+            }
+            setTimeout(() => location.href = '{% url "videos:list" %}', data.warning ? 2500 : 500);
+            return;
+        }
+
+        if (data) {
             throw new Error(data.error || data.errors || "{% trans 'Upload failed' %}");
         }
+        throw new Error(
+            res.status === 413
+                ? "{% trans 'This file is too large for the server. Please choose a smaller file.' %}"
+                : "{% trans 'The upload was refused by the server. Please try again.' %}"
+        );
     } catch (err) {
         window.onbeforeunload = null;
         $("uploadOverlay").classList.remove("active");
