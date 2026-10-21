@@ -389,6 +389,8 @@ PUTER_STT_MODEL = os.environ.get("PUTER_STT_MODEL", "gemini-3.5-transcribe")
 # Force one language for the transcription, or "auto" to let it detect. Empty
 # means pass SUBTITLE_SOURCE_LANGUAGE through.
 PUTER_LANGUAGE_CODE = os.environ.get("PUTER_LANGUAGE_CODE", "")
+# The model Puter translates the caption lines with.
+PUTER_TRANSLATE_MODEL = os.environ.get("PUTER_TRANSLATE_MODEL", "gpt-5.6-luna")
 
 # --- AssemblyAI provider -----------------------------------------------------
 # AssemblyAI transcribes an uploaded file and can also translate the

@@ -2673,9 +2673,10 @@ class PuterProviderSelectionTests(TestCase):
     def test_puter_cannot_translate_text(self):
         with override_settings(SUBTITLE_PROVIDER="puter", PUTER_AUTH_TOKEN="t"):
             provider = transcription.get_provider()
-            self.assertFalse(provider.supports_translation)
-            self.assertIsNone(transcription.get_translation_provider(provider))
-
+            self.assertTrue(provider.supports_translation)
+            self.assertIs(
+                transcription.get_translation_provider(provider), provider
+            )
 
 class PuterHttpLayerTests(TestCase):
     """The driver call that talks to Puter's AI gateway."""
@@ -2948,6 +2949,68 @@ class AssemblyAIHttpLayerTests(TestCase):
             with self.assertRaises(transcription.TranscriptionError) as caught:
                 provider._upload(self._audio_file())
         self.assertIn("not enough credits", str(caught.exception))
+
+
+class PuterTranslationTests(TestCase):
+    """Puter translates the caption lines through its chat driver."""
+
+    def _provider(self):
+        with override_settings(PUTER_AUTH_TOKEN="tok", PUTER_TRANSLATE_MODEL="m"):
+            return transcription.PuterProvider()
+
+    def test_the_chat_call_carries_the_token_and_the_prompt(self):
+        provider = self._provider()
+        with mock.patch(
+            "videos.transcription._puter_chat_request",
+            return_value={"message": {"content": "0: un\n1: deux"}},
+        ) as call:
+            result = provider._translate_batch(["un", "deux"], "fr", "m")
+
+        self.assertEqual(result, ["un", "deux"])
+        args = call.call_args.args[1]
+        self.assertEqual(args["model"], "m")
+        self.assertIn("Translate", args["messages"][0]["content"])
+        self.assertIn("0: un", args["messages"][0]["content"])
+
+    def test_the_numbering_echoed_back_is_removed(self):
+        provider = self._provider()
+        with mock.patch(
+            "videos.transcription._puter_chat_request",
+            return_value={"message": {"content": "0: un\n1: deux"}},
+        ):
+            result = provider._translate_batch(["un", "deux"], "fr", "m")
+        self.assertEqual(result, ["un", "deux"])
+
+    def test_a_wrong_number_of_lines_is_reported(self):
+        provider = self._provider()
+        with mock.patch(
+            "videos.transcription._puter_chat_request",
+            return_value={"message": {"content": "un"}},
+        ):
+            with self.assertRaises(transcription.TranscriptionError):
+                provider._translate_batch(["un", "deux"], "fr", "m")
+
+    def test_the_cues_keep_their_timings(self):
+        provider = self._provider()
+        segments = [
+            transcription.Segment(0.0, 1.5, "un"),
+            transcription.Segment(2.0, 3.5, "deux"),
+        ]
+        with mock.patch(
+            "videos.transcription._puter_chat_request",
+            return_value={"message": {"content": "un\ndeux"}},
+        ):
+            translated = provider.translate(segments, "fr")
+
+        self.assertEqual(len(translated), 2)
+        self.assertAlmostEqual(translated[0].start, 0.0)
+        self.assertAlmostEqual(translated[1].end, 3.5)
+
+    def test_a_content_part_answer_is_read(self):
+        text = transcription._puter_message_text(
+            {"message": {"content": [{"type": "text", "text": "bonjour"}]}}
+        )
+        self.assertEqual(text, "bonjour")
 
 
 class ElevenLabsHttpLayerTests(TestCase):

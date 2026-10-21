@@ -1201,6 +1201,16 @@ PUTER_HTTP_TIMEOUT = 300.0
 # keeping the pieces short keeps each request body small.
 PUTER_CHUNK_SECONDS = 300
 
+# The chat driver is a different interface on the same endpoint; it is what
+# translates the caption lines.
+PUTER_CHAT_INTERFACE = "puter-chat-completion"
+PUTER_CHAT_DRIVER = "ai-chat"
+
+
+def puter_translate_model() -> str:
+    """The model Puter should translate with."""
+    return (getattr(settings, "PUTER_TRANSLATE_MODEL", "") or "gpt-5.6-luna").strip()
+
 
 def puter_stt_provider() -> str:
     """Which Puter back end transcribes: ``gemini``, ``openai`` or ``xai``."""
@@ -1343,6 +1353,74 @@ def _puter_transcribe_request(token: str, path: str, args: dict) -> dict:
     return payload
 
 
+def _puter_chat_request(token: str, args: dict) -> dict:
+    """Send one chat request to Puter's driver endpoint and return the answer."""
+    try:
+        import httpx
+    except ImportError as exc:  # pragma: no cover - depends on environment
+        raise TranscriptionError(
+            "The 'httpx' package is not installed. Run: pip install httpx"
+        ) from exc
+
+    body = {
+        "interface": PUTER_CHAT_INTERFACE,
+        "driver": PUTER_CHAT_DRIVER,
+        "method": "complete",
+        "args": args,
+        "test_mode": False,
+        "auth_token": token,
+    }
+
+    try:
+        response = httpx.post(
+            PUTER_DRIVER_URL,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "text/plain;actually=json",
+            },
+            content=json.dumps(body).encode("utf-8"),
+            timeout=PUTER_HTTP_TIMEOUT,
+        )
+    except httpx.HTTPError as exc:
+        raise TranscriptionError(f"Could not reach Puter: {exc}") from exc
+
+    if response.status_code >= 400:
+        raise TranscriptionError(_puter_error(response))
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise TranscriptionError("Puter returned an unexpected response.") from exc
+
+    if not isinstance(payload, dict):
+        return {}
+    if payload.get("error"):
+        raise TranscriptionError(_puter_error(response))
+    inner = payload.get("result")
+    if isinstance(inner, dict):
+        return inner
+    return payload
+
+
+def _puter_message_text(payload: dict) -> str:
+    """Pull the text out of a Puter chat answer."""
+    message = payload.get("message")
+    if isinstance(message, dict):
+        content = message.get("content")
+    else:
+        content = payload.get("content")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict):
+                parts.append(str(item.get("text") or ""))
+            else:
+                parts.append(str(item))
+        return "".join(parts)
+    return str(content or "")
+
+
 class PuterProvider(SubtitleProvider):
     """Puter's AI gateway for speech-to-text.
 
@@ -1355,7 +1433,7 @@ class PuterProvider(SubtitleProvider):
 
     name = "puter"
     chunk_seconds = PUTER_CHUNK_SECONDS
-    supports_translation = False
+    supports_translation = True
 
     def __init__(self):
         token = (getattr(settings, "PUTER_AUTH_TOKEN", "") or "").strip()
@@ -1378,10 +1456,61 @@ class PuterProvider(SubtitleProvider):
         return captions_from_puter_result(result)
 
     def translate(self, segments: list[Segment], target_language: str) -> list[Segment]:
-        raise TranscriptionError(
-            "Puter does not provide text translation, so only the "
-            "source-language track can be generated."
+        """Translate the caption lines through Puter's chat driver."""
+        model = puter_translate_model()
+        translated: list[Segment] = []
+
+        for start in range(0, len(segments), TRANSLATE_BATCH):
+            batch = segments[start : start + TRANSLATE_BATCH]
+            texts = self._translate_batch(
+                [segment.text for segment in batch], target_language, model
+            )
+            for segment, text in zip(batch, texts):
+                if text:
+                    translated.append(Segment(segment.start, segment.end, text))
+
+        if len(translated) != len(segments):
+            raise TranscriptionError(
+                "The translation returned a different number of lines than expected."
+            )
+        return translated
+
+    def _translate_batch(
+        self, texts: list[str], target_language: str, model: str
+    ) -> list[str]:
+        numbered = "\n".join(
+            f"{index}: {text}" for index, text in enumerate(texts)
         )
+        prompt = (
+            "Translate the following subtitle lines into "
+            f"{target_language}. Keep the numbering exactly as it is and return "
+            "only the translated lines, one per line, with no numbering, no extra "
+            "commentary and no empty lines. Preserve the meaning, punctuation and "
+            "line breaks within each numbered line.\n\n" + numbered
+        )
+        payload = _puter_chat_request(
+            self._token,
+            {
+                "messages": [{"role": "user", "content": prompt}],
+                "model": model,
+                "temperature": 0,
+            },
+        )
+        content = _puter_message_text(payload)
+
+        lines = [line.strip() for line in content.splitlines() if line.strip()]
+        cleaned: list[str] = []
+        for index, line in enumerate(lines):
+            prefix = f"{index}:"
+            if line.startswith(prefix):
+                line = line[len(prefix) :].strip()
+            cleaned.append(line)
+
+        if len(cleaned) != len(texts):
+            raise TranscriptionError(
+                f"Expected {len(texts)} translated lines but got {len(cleaned)}."
+            )
+        return cleaned
 
 
 def provider_name() -> str:
@@ -1442,6 +1571,8 @@ def get_translation_provider(
         return GoogleProvider()
     if name == "assemblyai":
         return AssemblyAIProvider()
+    if name == "puter":
+        return PuterProvider()
     raise TranscriptionError(f"Unknown translation provider: {name!r}")
 
 
@@ -1455,6 +1586,8 @@ def translation_configured() -> bool:
             return bool(getattr(settings, "GOOGLE_API_KEY", ""))
         if name == "assemblyai":
             return bool(getattr(settings, "ASSEMBLYAI_API_KEY", ""))
+        if name == "puter":
+            return bool(getattr(settings, "PUTER_AUTH_TOKEN", ""))
         return False
     # Without an explicit choice the transcription provider does the work.
     return provider_name() in ("openai", "google")
