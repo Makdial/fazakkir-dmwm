@@ -201,6 +201,51 @@ class SettingsAndEmailTests(DashboardBaseTests):
         send.assert_called_once()
 
 
+class SubtitleSweepDashboardTests(DashboardBaseTests):
+    """The "Generate subtitles for all" control on the dashboard."""
+
+    def test_a_reader_cannot_start_a_run(self):
+        self.client.login(username="reader", password="pw12345678")
+        response = self.client.post(reverse("dashboard:subtitle_generate"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_an_administrator_starts_a_run(self):
+        self.client.login(username="root", password="pw12345678")
+        with mock.patch("dashboard.views.start_subtitle_sweep", return_value=True):
+            response = self.client.post(reverse("dashboard:subtitle_generate"))
+        self.assertTrue(response.json()["success"])
+        self.assertTrue(response.json()["started"])
+
+    def test_a_run_that_is_already_going_says_so(self):
+        self.client.login(username="root", password="pw12345678")
+        with mock.patch("dashboard.views.start_subtitle_sweep", return_value=False):
+            response = self.client.post(reverse("dashboard:subtitle_generate"))
+        self.assertFalse(response.json()["started"])
+
+    def test_the_status_reports_the_progress(self):
+        self.client.login(username="root", password="pw12345678")
+        with mock.patch(
+            "dashboard.views.subtitle_sweep_status",
+            return_value={
+                "running": True,
+                "total": 12,
+                "done": 4,
+                "succeeded": 3,
+                "failed": 1,
+            },
+        ):
+            data = self.client.get(reverse("dashboard:subtitle_status")).json()
+        self.assertTrue(data["running"])
+        self.assertEqual(data["total"], 12)
+        self.assertEqual(data["done"], 4)
+
+    def test_the_start_needs_a_post(self):
+        self.client.login(username="root", password="pw12345678")
+        self.assertEqual(
+            self.client.get(reverse("dashboard:subtitle_generate")).status_code, 405
+        )
+
+
 class AudioDashboardTests(DashboardBaseTests):
     """The "Generate missing MP3s" control on the dashboard videos tab."""
 

@@ -50,6 +50,26 @@
     </div>
 </div>
 
+<div class="audio-admin">
+    <div class="audio-admin-info">
+        <span class="dash-hint">{% trans "Captions are made with the speech-to-text service." %}</span>
+    </div>
+    {% if can_write %}
+    <button type="button" class="btn-small" id="generateSubtitlesBtn"
+            data-generate-url="{% url 'dashboard:subtitle_generate' %}"
+            data-status-url="{% url 'dashboard:subtitle_status' %}">
+        {% trans "Generate subtitles for all" %}
+    </button>
+    {% endif %}
+</div>
+
+<div class="audio-progress" id="subtitleProgress" hidden>
+    <span class="audio-progress-text" id="subtitleProgressText"></span>
+    <div class="progress">
+        <div class="progress-fill" id="subtitleProgressBar" style="width: 0"></div>
+    </div>
+</div>
+
 <form method="get" class="dash-search">
     <input type="search" name="q" value="{{ query }}" class="form-input"
            placeholder="{% trans 'Search by title or uploader' %}">
@@ -161,6 +181,41 @@ if (generateAudioBtn) {
             .then(r => r.json())
             .then(() => pollAudio())
             .catch(() => { generateAudioBtn.disabled = false; });
+    });
+}
+
+// --- Bulk caption generation ------------------------------------------------
+const generateSubtitlesBtn = document.getElementById("generateSubtitlesBtn");
+if (generateSubtitlesBtn) {
+    const progress = document.getElementById("subtitleProgress");
+    const progressText = document.getElementById("subtitleProgressText");
+    const progressBar = document.getElementById("subtitleProgressBar");
+
+    const pollSubtitles = () => {
+        fetch(generateSubtitlesBtn.dataset.statusUrl)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.running) { location.reload(); return; }
+                const pct = data.total ? Math.round((data.done / data.total) * 100) : 0;
+                progressBar.style.width = pct + "%";
+                progressText.textContent =
+                    `{% trans "Generating subtitles…" %} ${data.done}/${data.total}`;
+                setTimeout(pollSubtitles, 3000);
+            })
+            .catch(() => setTimeout(pollSubtitles, 5000));
+    };
+
+    generateSubtitlesBtn.addEventListener("click", () => {
+        generateSubtitlesBtn.disabled = true;
+        progress.hidden = false;
+        progressText.textContent = "{% trans 'Starting…' %}";
+        fetch(generateSubtitlesBtn.dataset.generateUrl, {
+            method: "POST",
+            headers: { "X-CSRFToken": dashCsrf },
+        })
+            .then(r => r.json())
+            .then(() => pollSubtitles())
+            .catch(() => { generateSubtitlesBtn.disabled = false; });
     });
 }
 </script>

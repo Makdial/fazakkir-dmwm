@@ -15,7 +15,7 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import render
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext, gettext as _
 from django.views.decorators.http import require_POST
 
 from core.permissions import read_required, write_required
@@ -26,6 +26,10 @@ from videos.audio_tasks import (
     start_audio_sweep,
 )
 from videos.models import Comment, Video
+from videos.transcription import (
+    audio_sweep_status as subtitle_sweep_status,
+    start_subtitle_sweep,
+)
 
 from .models import StorageMonitor
 from .notifications import send_test_email
@@ -325,6 +329,37 @@ def audio_generate(request):
             "message": _("Generating missing MP3s in the background.")
             if started
             else _("An MP3 generation run is already in progress."),
+        }
+    )
+
+
+@write_required
+@require_POST
+def subtitle_generate(request):
+    """Start generating the captions of every video, in the background."""
+    started = start_subtitle_sweep()
+    return JsonResponse(
+        {
+            "success": True,
+            "started": started,
+            "message": gettext("Generating subtitles in the background.")
+            if started
+            else gettext("A subtitle run is already in progress."),
+        }
+    )
+
+
+@read_required
+def subtitle_status(request):
+    """Report the progress of the bulk caption run."""
+    state = subtitle_sweep_status()
+    return JsonResponse(
+        {
+            "running": state["running"],
+            "total": state["total"],
+            "done": state["done"],
+            "succeeded": state["succeeded"],
+            "failed": state["failed"],
         }
     )
 

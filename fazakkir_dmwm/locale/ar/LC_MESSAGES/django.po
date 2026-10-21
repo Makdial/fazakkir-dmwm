@@ -1105,3 +1105,15 @@ msgstr "هذا الفيديو"
 
 msgid "Cover photo"
 msgstr "صورة الغلاف"
+
+msgid "Captions are made with the speech-to-text service."
+msgstr "يتم إنتاج الترجمات من خدمة تحويل الكلام إلى نص."
+
+msgid "Generate subtitles for all"
+msgstr "إنشاء ترجمات لكل الفيديوهات"
+
+msgid "Generating subtitles…"
+msgstr "جارٍ إنشاء الترجمات…"
+
+msgid "A subtitle run is already in progress."
+msgstr "هناك بالفعل عملية إنشاء ترجمات قيد التقدم."

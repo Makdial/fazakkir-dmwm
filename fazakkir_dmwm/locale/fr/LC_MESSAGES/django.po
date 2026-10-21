@@ -1084,3 +1084,15 @@ msgstr "cette vidéo"
 
 msgid "Cover photo"
 msgstr "Photo de couverture"
+
+msgid "Captions are made with the speech-to-text service."
+msgstr "Les sous-titres sont produits par le service de transcription vocale."
+
+msgid "Generate subtitles for all"
+msgstr "Générer les sous-titres de toutes les vidéos"
+
+msgid "Generating subtitles…"
+msgstr "Génération des sous-titres…"
+
+msgid "A subtitle run is already in progress."
+msgstr "Une génération de sous-titres est déjà en cours."

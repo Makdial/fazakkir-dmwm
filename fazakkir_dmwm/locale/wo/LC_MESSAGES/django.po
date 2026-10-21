@@ -1081,3 +1081,15 @@ msgstr "vidiyo bii"
 
 msgid "Cover photo"
 msgstr "Nataal kubers bi"
+
+msgid "Captions are made with the speech-to-text service."
+msgstr "Li nekkuti yi teccit ci seen birim"
+
+msgid "Generate subtitles for all"
+msgstr "Sos nekkuti yi jamu wene bi"
+
+msgid "Generating subtitles…"
+msgstr "Ndongo nekkuti yi…"
+
+msgid "A subtitle run is already in progress."
+msgstr "Njëkk ndiaga teccit yi ci doon."
