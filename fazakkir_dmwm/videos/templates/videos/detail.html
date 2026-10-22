@@ -1243,7 +1243,23 @@ applySubtitle(currentSubtitle)
     el.addEventListener("seeked", captionTick)
     el.addEventListener("ratechange", captionTick)
     el.addEventListener("loadedmetadata", captionTick)
+    el.addEventListener("play", captionTick)
 })
+
+// Some browsers/platforms are unreliable about `timeupdate`, so a lightweight
+// animation-frame loop keeps captions in step as a backstop.
+function startCaptionLoop() {
+    if (startCaptionLoop._running) return
+    startCaptionLoop._running = true
+    function tick() {
+        try {
+            paintCaption()
+        } catch (e) {}
+        requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+}
+startCaptionLoop()
 
 // Going in or out of the iPhone's native video fullscreen changes which
 // surface draws the captions, so the track mode is recomputed each time.
