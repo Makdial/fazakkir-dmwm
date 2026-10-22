@@ -2296,6 +2296,31 @@ class TranslateFromTheBestTrackTests(TestCase):
     def setUp(self):
         self.user = make_user("owner")
 
+    def test_notices_text_that_is_still_not_latin(self):
+        # What the API really returns for Ajami: mostly Arabic, with a line or
+        # two transliterated into Latin along the way.
+        arabic = [
+            transcription.Segment(0.0, 1.0, "\u0642\u064f\u0646\u0652\u0643\u0652 \u0628\u064e\u063a\u0652\u0628\u0650\u064a"),
+            transcription.Segment(1.0, 2.0, "\u0628\u0650\u0645\u064e\u062a\u064e\u0648\u064e\u0651\u062e\u0652"),
+            transcription.Segment(2.0, 3.0, "BIMTAWKH"),
+            transcription.Segment(3.0, 4.0, "\u0645\u064f\u0648\u0652\u064a\u0652 \u062c\u064e\u0646\u0652\u063a\u0652 \u062e\u064e\u0644\u064e\u062a\u0652"),
+            transcription.Segment(4.0, 5.0, "\u0623\u064e\u0643\u0652\u0628\u064f\u0643\u064f \u0643\u064f\u0645\u0652\u0628\u0652\u0631\u064e\u0646\u0652\u0633\u0650\u064a."),
+        ]
+        self.assertTrue(transcription._looks_untranslated(arabic))
+
+        english = [
+            transcription.Segment(0.0, 1.0, "What is the meaning of this statement?"),
+            transcription.Segment(1.0, 2.0, "For what"),
+            transcription.Segment(2.0, 3.0, "This teaches you to think."),
+        ]
+        self.assertFalse(transcription._looks_untranslated(english))
+
+    def test_empty_translation_counts_as_untranslated(self):
+        self.assertTrue(transcription._looks_untranslated([]))
+        self.assertTrue(
+            transcription._looks_untranslated([transcription.Segment(0.0, 1.0, "  ")])
+        )
+
     def _video(self):
         video = make_video(self.user, audio_file_id="audio/a.mp3")
         SubtitleTrack.objects.create(
@@ -2327,6 +2352,8 @@ class TranslateFromTheBestTrackTests(TestCase):
         tracks = {t.language_code: t for t in video.subtitle_tracks.all()}
         origins = transcription._translation_origins(tracks, ["en"], "wo")
         self.assertEqual([t.language_code for t in origins], ["fr", "wo"])
+        self.assertLess(transcription._latin_share(tracks["wo"].content), 0.5)
+        self.assertGreater(transcription._latin_share(tracks["fr"].content), 0.5)
 
     def test_falls_through_a_translator_that_returns_the_text_unchanged(self):
         video = self._video()
