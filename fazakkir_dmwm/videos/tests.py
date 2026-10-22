@@ -2297,14 +2297,14 @@ class TranslateFromTheBestTrackTests(TestCase):
         self.user = make_user("owner")
 
     def test_notices_text_that_is_still_not_latin(self):
-        # What the API really returns for Ajami: mostly Arabic, with a line or
-        # two transliterated into Latin along the way.
+        # What the API really returns for Ajami: mostly Latin transliteration,
+        # with the words it could not spell out left in Arabic.
         arabic = [
             transcription.Segment(0.0, 1.0, "\u0642\u064f\u0646\u0652\u0643\u0652 \u0628\u064e\u063a\u0652\u0628\u0650\u064a"),
-            transcription.Segment(1.0, 2.0, "\u0628\u0650\u0645\u064e\u062a\u064e\u0648\u064e\u0651\u062e\u0652"),
-            transcription.Segment(2.0, 3.0, "BIMTAWKH"),
-            transcription.Segment(3.0, 4.0, "\u0645\u064f\u0648\u0652\u064a\u0652 \u062c\u064e\u0646\u0652\u063a\u0652 \u062e\u064e\u0644\u064e\u062a\u0652"),
-            transcription.Segment(4.0, 5.0, "\u0623\u064e\u0643\u0652\u0628\u064f\u0643\u064f \u0643\u064f\u0645\u0652\u0628\u0652\u0631\u064e\u0646\u0652\u0633\u0650\u064a."),
+            transcription.Segment(1.0, 2.0, "BIMTAWKH"),
+            transcription.Segment(2.0, 3.0, "\u0645\u064f\u0648\u0652\u064a\u0652 \u062c\u064e\u0646\u0652\u063a\u0652 \u062e\u064e\u0644\u064e\u062a\u0652"),
+            transcription.Segment(3.0, 4.0, "\u0623\u064e\u0643\u0652\u0628\u064f\u0643\u064f \u0643\u064f\u0645\u0652\u0628\u0652\u0631\u064e\u0646\u0652\u0633\u0650\u064a."),
+            transcription.Segment(4.0, 5.0, "\u0646\u064e\u062d\u0652 \u062f\u064e\u0641\u064e\u0628\u064e\u0651\u0631\u0650\u064a \u0643\u064f\u062a\u064f\u0648\u0652 \u062f\u064e\u0633\u064e\u0628\u064e\u0628\u064f\u0651\u0644\u0652"),
         ]
         self.assertTrue(transcription._looks_untranslated(arabic))
 
@@ -2315,6 +2315,17 @@ class TranslateFromTheBestTrackTests(TestCase):
         ]
         self.assertFalse(transcription._looks_untranslated(english))
 
+    def test_a_mixed_track_still_counts_as_untranslated(self):
+        # The trap this guards against: video 3's Ajami track is 86% Latin by
+        # letter, so a share-based test calls it translated and the Arabic the
+        # API left behind is published as English.
+        tracks = {t.language_code: t for t in self._video().subtitle_tracks.all()}
+        content = tracks["wo"].content
+        latin = sum(1 for ch in content if ch.isalpha() and ord(ch) < 0x0250)
+        arabic = transcription.count_arabic(content)
+        self.assertGreater(latin, arabic)
+        self.assertTrue(transcription._looks_untranslated([transcription.Segment(0, 1, content)]))
+
     def test_empty_translation_counts_as_untranslated(self):
         self.assertTrue(transcription._looks_untranslated([]))
         self.assertTrue(
@@ -2323,14 +2334,22 @@ class TranslateFromTheBestTrackTests(TestCase):
 
     def _video(self):
         video = make_video(self.user, audio_file_id="audio/a.mp3")
+        # Modelled on video 3's real track: mostly Latin transliteration with
+        # Arabic only on some lines, which is why the script *share* cannot tell
+        # it apart from Latin Wolof.
         SubtitleTrack.objects.create(
             video=video,
             language_code="wo",
             label="Wolof",
             content=transcription.build_vtt(
                 [
-                    transcription.Segment(0.0, 1.0, "\u0642\u064f\u0646\u0652\u0643\u0652"),
-                    transcription.Segment(1.0, 2.0, "\u0628\u0650\u0645\u064e\u062a\u064e\u0648\u064e\u0651\u062e\u0652"),
+                    transcription.Segment(0.0, 1.0, "\u0642\u064f\u0646\u0652\u0643\u0652 \u0628\u064e\u063a\u0652\u0628\u0650\u064a"),
+                    transcription.Segment(1.0, 2.0, "BIMTAWKH"),
+                    transcription.Segment(2.0, 3.0, "\u0645\u064f\u0648\u0652\u064a\u0652 \u062c\u064e\u0646\u0652\u063a\u0652"),
+                    transcription.Segment(3.0, 4.0, "Nangadef, maa ngi fi rekk"),
+                    transcription.Segment(4.0, 5.0, "Damay jang wolof bu baax"),
+                    transcription.Segment(5.0, 6.0, "\u0623\u064e\u0643\u0652\u0628\u064f\u0643\u064f \u0643\u064f\u0645\u0652\u0628\u0652\u0631\u064e\u0646\u0652\u0633\u0650\u064a."),
+                    transcription.Segment(6.0, 7.0, "Amoul nday, amoul bay"),
                 ]
             ),
         )
@@ -2347,13 +2366,16 @@ class TranslateFromTheBestTrackTests(TestCase):
         )
         return video
 
-    def test_sorts_latin_script_tracks_first(self):
+    def test_sorts_readable_tracks_first(self):
         video = self._video()
         tracks = {t.language_code: t for t in video.subtitle_tracks.all()}
         origins = transcription._translation_origins(tracks, ["en"], "wo")
         self.assertEqual([t.language_code for t in origins], ["fr", "wo"])
-        self.assertLess(transcription._latin_share(tracks["wo"].content), 0.5)
-        self.assertGreater(transcription._latin_share(tracks["fr"].content), 0.5)
+        self.assertGreaterEqual(
+            transcription.count_arabic(tracks["wo"].content),
+            transcription.MIN_ARABIC_LETTERS,
+        )
+        self.assertEqual(transcription.count_arabic(tracks["fr"].content), 0)
 
     def test_falls_through_a_translator_that_returns_the_text_unchanged(self):
         video = self._video()

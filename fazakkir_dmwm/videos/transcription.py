@@ -65,16 +65,18 @@ TRANSLATE_BATCH = 40
 MIN_COVERAGE_SECONDS = 120
 MIN_COVERAGE_RATIO = 0.05
 
-# Wolof is written in both Latin and Arabic script (Ajami). Cloud Translation
-# reads Latin Wolof and translates it, but hands Ajami back as it found it, so
-# text that is still Arabic script after translating is text it could not read.
+# Wolof is written in both Latin script and Ajami (Arabic script). Cloud
+# Translation reads the first and hands the second straight back, so any Arabic
+# still present after translating is Arabic it did not translate.
 ARABIC_RANGE = (0x0600, 0x06FF)
-LATIN_SAMPLE_LIMIT = 100000
+ARABIC_SUPPLEMENT_RANGE = (0x0750, 0x077F)
 
-# Below this share of Latin letters a track is written in another script and is
-# not worth offering to the translator. Real Latin Wolof is ~100% Latin while
-# video 3's Ajami track is ~11%, so the line sits well clear of both.
-MIN_LATIN_SHARE = 0.5
+# An Ajami track is mixed: the transcriber spells most words in Latin and falls
+# back to Arabic for the rest, so a share-based test cannot tell the two tracks
+# apart (video 3's Ajami track is 86% Latin by letter). The presence of Arabic
+# can: a real English or French caption track has none at all, so Arabic that
+# survives a translation means that text was handed back untranslated.
+MIN_ARABIC_LETTERS = 20
 
 
 class TranscriptionError(Exception):
@@ -1887,12 +1889,12 @@ def translate_existing_tracks(video_id: int, include_lyrics: bool = True) -> dic
                 warnings.append(f"{target} from {origin.language_code}: {exc}")
                 continue
             if _looks_untranslated(attempt):
-                # The translator handed the text back in a script it did not
-                # understand (Ajami Wolof, for example). Saving that would offer
-                # an English track full of Arabic, so try the next track.
+                # Arabic came back where English was asked for, so the
+                # translator could not read this track. Saving it would offer an
+                # English track full of Arabic, so try the next one instead.
                 logger.warning(
-                    "Translating video %s from %s into %s returned unreadable "
-                    "text; trying another track.",
+                    "Translating video %s from %s into %s came back untranslated; "
+                    "trying another track.",
                     video_id,
                     origin.language_code,
                     target,
@@ -1921,13 +1923,14 @@ def translate_existing_tracks(video_id: int, include_lyrics: bool = True) -> dic
     return {"languages": created, "warnings": warnings}
 
 
-def _latin_share(content: str) -> float:
-    """How much of ``content`` is Latin letters, ignoring timings and markup."""
-    letters = [ch for ch in content[:LATIN_SAMPLE_LIMIT] if ch.isalpha()]
-    if not letters:
-        return 0.0
-    latin = sum(1 for ch in letters if ord(ch) < 0x0250)
-    return latin / len(letters)
+def count_arabic(content: str) -> int:
+    """How many Arabic codepoints ``content`` holds (letters and diacritics)."""
+    return sum(
+        1
+        for ch in content
+        if ARABIC_RANGE[0] <= ord(ch) <= ARABIC_RANGE[1]
+        or ARABIC_SUPPLEMENT_RANGE[0] <= ord(ch) <= ARABIC_SUPPLEMENT_RANGE[1]
+    )
 
 
 def _translation_origins(
@@ -1936,10 +1939,8 @@ def _translation_origins(
     """The tracks to translate from, best first.
 
     A track in the configured source language is the natural choice, but Wolof
-    is also written in Arabic script and a translation API cannot read that.
-    Latin-script tracks are therefore tried first, so a video whose source track
-    is Ajami is translated from its French or English track instead of producing
-    an untranslated copy.
+    is also written in Arabic script (Ajami) and a translation API cannot read
+    that, so a track with Arabic in it is tried last.
     """
     candidates = [
         track
@@ -1952,11 +1953,10 @@ def _translation_origins(
         candidates = [lyrics] if lyrics is not None else []
 
     def rank(track):
-        # An unreadable script is worse than another language, so script comes
-        # first and the source language only breaks the tie between two readable
-        # tracks.
+        # A track the translator cannot read is worse than one in another
+        # language, so the script is checked before the language.
         return (
-            0 if _latin_share(track.content) >= MIN_LATIN_SHARE else 1,
+            0 if count_arabic(track.content) < MIN_ARABIC_LETTERS else 1,
             0 if track.language_code == source_language else 1,
         )
 
@@ -1964,16 +1964,16 @@ def _translation_origins(
 
 
 def _looks_untranslated(translated: list[Segment]) -> bool:
-    """True when a translation is still written in a script we cannot read.
+    """True when a translation still holds text the translator cannot read.
 
-    Cloud Translation answers with the text it was given, unchanged, when it
-    cannot identify the language. Saving that would offer an "English" track
-    full of Arabic, so it is treated as a failure and another track is tried.
+    Cloud Translation answers with the text it was given when it cannot identify
+    the language. Saving that would offer an "English" track full of Arabic, so
+    it is treated as a failure and another track is tried.
     """
     text = " ".join(segment.text for segment in translated)
     if not text.strip():
         return True
-    return _latin_share(text) < MIN_LATIN_SHARE
+    return count_arabic(text) >= MIN_ARABIC_LETTERS
 
 
 # --- Background scheduling --------------------------------------------------
