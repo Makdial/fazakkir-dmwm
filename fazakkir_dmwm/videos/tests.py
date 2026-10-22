@@ -2369,13 +2369,22 @@ class TranslateFromTheBestTrackTests(TestCase):
     def test_sorts_readable_tracks_first(self):
         video = self._video()
         tracks = {t.language_code: t for t in video.subtitle_tracks.all()}
-        origins = transcription._translation_origins(tracks, ["en"], "wo")
+        origins = transcription.translation_origins(tracks, "en", "wo")
         self.assertEqual([t.language_code for t in origins], ["fr", "wo"])
         self.assertGreaterEqual(
             transcription.count_arabic(tracks["wo"].content),
             transcription.MIN_ARABIC_LETTERS,
         )
         self.assertEqual(transcription.count_arabic(tracks["fr"].content), 0)
+
+    def test_another_target_language_is_a_valid_source(self):
+        # Video 3 exactly: French exists, English does not, and the Wolof track
+        # is Ajami. The English track has to come from the French one.
+        video = self._video()
+        tracks = {t.language_code: t for t in video.subtitle_tracks.all()}
+        origins = transcription.translation_origins(tracks, "en", "wo")
+        self.assertIn("fr", [t.language_code for t in origins])
+        self.assertEqual(origins[0].language_code, "fr")
 
     def test_falls_through_a_translator_that_returns_the_text_unchanged(self):
         video = self._video()

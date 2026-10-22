@@ -1851,8 +1851,8 @@ def translate_existing_tracks(video_id: int, include_lyrics: bool = True) -> dic
         )
 
     tracks = {track.language_code: track for track in video.subtitle_tracks.all()}
-    origins = _translation_origins(tracks, targets, source_language)
-    if not origins:
+    usable = [code for code in tracks if code and code != "lyrics"]
+    if not usable and "lyrics" not in tracks:
         raise TranscriptionError(
             "This video has no transcript to translate yet. Generate the "
             "captions first."
@@ -1867,7 +1867,7 @@ def translate_existing_tracks(video_id: int, include_lyrics: bool = True) -> dic
             continue
 
         translated: list[Segment] = []
-        for origin in origins:
+        for origin in translation_origins(tracks, target, source_language):
             if target == origin.language_code:
                 continue
             cues = parse_vtt(origin.content)
@@ -1913,12 +1913,14 @@ def translate_existing_tracks(video_id: int, include_lyrics: bool = True) -> dic
         created.append(target)
 
     if include_lyrics and not _has_lyrics(video):
-        best = origins[0]
-        cues = parse_vtt(best.content)
-        if cues:
-            _save_lyrics(
-                video, [Segment(start, end, text) for start, end, text in cues]
-            )
+        best = translation_origins(tracks, "", source_language)
+        for candidate in best:
+            cues = parse_vtt(candidate.content)
+            if cues:
+                _save_lyrics(
+                    video, [Segment(start, end, text) for start, end, text in cues]
+                )
+                break
 
     return {"languages": created, "warnings": warnings}
 
@@ -1933,19 +1935,21 @@ def count_arabic(content: str) -> int:
     )
 
 
-def _translation_origins(
-    tracks: dict, targets: list[str], source_language: str
+def translation_origins(
+    tracks: dict, target: str, source_language: str
 ) -> list:
-    """The tracks to translate from, best first.
+    """The tracks to translate ``target`` from, best first.
 
     A track in the configured source language is the natural choice, but Wolof
     is also written in Arabic script (Ajami) and a translation API cannot read
-    that, so a track with Arabic in it is tried last.
+    that, so a track with Arabic in it is tried last. Another target-language
+    track is a good source too: an English track can be translated from the
+    French one, which is what happens when the source track is Ajami.
     """
     candidates = [
         track
         for code, track in tracks.items()
-        if code and code != "lyrics" and code not in targets
+        if code and code != "lyrics" and code != target
     ]
     if not candidates:
         # Nothing but the lyrics track: it holds the same transcript.
