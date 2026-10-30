@@ -56,6 +56,18 @@ services:
         value: fazakkir
       - key: R2_PUBLIC_BASE_URL
         sync: false
+      # Separate Cloudflare R2 bucket for Shorts (falls back to the main R2
+      # settings above when these are left blank).
+      - key: R2_SHORTS_ACCOUNT_ID
+        sync: false
+      - key: R2_SHORTS_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SHORTS_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_SHORTS_BUCKET
+        value: fazakkir-shorts
+      - key: R2_SHORTS_PUBLIC_BASE_URL
+        sync: false
       # Free a background conversion that a restart interrupted.
       - key: STORAGE_QUOTA_BYTES
         value: "10737418240"
