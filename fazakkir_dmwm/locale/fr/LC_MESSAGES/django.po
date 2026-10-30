@@ -1195,3 +1195,18 @@ msgstr ""
 
 msgid "Video views"
 msgstr ""
+
+msgid "No shorts yet."
+msgstr ""
+
+msgid "Short vertical videos."
+msgstr ""
+
+msgid "Shorts"
+msgstr ""
+
+msgid "Storage is not configured."
+msgstr ""
+
+msgid "Upload short"
+msgstr ""

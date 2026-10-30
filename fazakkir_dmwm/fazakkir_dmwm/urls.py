@@ -32,8 +32,8 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('manage/', include('dashboard.urls')),
     path('', include('videos.urls')),
+    path('shorts/', include('shorts.urls')),
 ]
-
 # Serve the locally generated demo media while recording the walkthrough
 # videos. In production the media is served by Cloudflare R2, not Django.
 if settings.DEBUG:
