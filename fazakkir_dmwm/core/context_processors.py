@@ -10,7 +10,7 @@ from __future__ import annotations
 def access(request):
     user = getattr(request, "user", None)
     if not user or not user.is_authenticated:
-        return {"can_read": False, "can_write": False}
+        return {"can_read": False, "can_write": False, "is_guest": False}
 
     from core.permissions import get_profile
 
@@ -18,4 +18,5 @@ def access(request):
     return {
         "can_read": profile.can_read,
         "can_write": profile.can_write,
+        "is_guest": profile.is_guest,
     }

@@ -268,21 +268,23 @@ superuser.
 | Action                | Who                    | Where                       |
 | --------------------- | ---------------------- | --------------------------- |
 | Browse / watch videos | everyone               | `/`                         |
-| Comment               | signed-in users        | video page                  |
-| Playlists             | signed-in users        | `/playlists/`               |
+| Comment               | everyone               | video page                  |
+| Playlists             | everyone               | `/playlists/`               |
 | Upload a video        | read & write staff     | `/upload/`                  |
 | Delete a video        | read & write staff     | video page                  |
 | Add subtitles/lyrics  | read & write staff     | video page                  |
 | Dashboard & storage   | read-only / read&write | `/manage/`                  |
 | Download video / MP3  | everyone               | video page & video cards    |
-| Offline listening     | signed-in users        | `/offline/`                 |
+| Offline listening     | everyone               | `/offline/`                 |
 | Manage users          | read-only / read&write | `/accounts/manage/users/`   |
 | Django admin          | read & write staff     | `/admin/`                   |
-| Register / sign in    | everyone               | `/accounts/...`             |
+| Register / sign in    | administrators         | `/accounts/...`             |
 
-The **Upload**, **Playlists**, **Dashboard** and **Users** links only appear in
-the navigation bar for the accounts that can use them. Videos, playlists (marked
-public) and comments are visible to everyone, whether signed in or not.
+Visitors no longer need an account: each browser session is given an automatic
+guest identity, so comments, likes and playlists work immediately. The
+**Upload**, **Dashboard** and **Users** links only appear in the navigation bar
+for the accounts that can use them. Videos, playlists (marked public) and
+comments are visible to everyone, whether signed in or not.
 
 ### Playlists
 

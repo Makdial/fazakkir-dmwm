@@ -101,7 +101,7 @@ def home(request):
 
     stats = {
         "videos": Video.objects.count(),
-        "users": User.objects.count(),
+        "users": User.objects.exclude(profile__is_guest=True).count(),
         "comments": Comment.objects.count(),
         "objects": report.object_count,
     }
@@ -242,7 +242,9 @@ def comment_manage(request):
     comments = Comment.objects.select_related("user", "video").order_by("-created_at")
     if query:
         comments = comments.filter(
-            Q(body__icontains=query) | Q(user__username__icontains=query)
+            Q(body__icontains=query)
+            | Q(user__username__icontains=query)
+            | Q(user__first_name__icontains=query)
         )
 
     return render(

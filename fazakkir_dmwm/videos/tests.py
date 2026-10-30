@@ -63,10 +63,10 @@ class PlaylistTests(TestCase):
         self.video = make_video(self.user)
         self.client.login(username="alice", password="pw12345678")
 
-    def test_list_requires_login(self):
+    def test_list_available_to_guests(self):
         self.client.logout()
         response = self.client.get(reverse("videos:playlists"))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
 
     def test_list_renders(self):
         response = self.client.get(reverse("videos:playlists"))
@@ -294,11 +294,12 @@ class CommentTests(TestCase):
         self.other = make_user("dave")
         self.video = make_video(self.author)
 
-    def test_comment_requires_login(self):
+    def test_guest_can_comment(self):
         response = self.client.post(
             reverse("videos:comment_add", args=[self.video.id]), {"body": "Hi"}
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
 
     def test_add_comment(self):
         self.client.login(username="carol", password="pw12345678")
@@ -359,12 +360,12 @@ class DetailPageTests(TestCase):
         self.assertIn('id="savePanel"', content)
 
     @mock.patch("videos.views.schedule_audio_generation")
-    def test_detail_anonymous_hides_comment_form(self, _schedule):
+    def test_detail_guest_can_comment_and_save(self, _schedule):
         response = self.client.get(reverse("videos:detail", args=[self.video.id]))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertIn("to add a comment", content)
-        self.assertNotIn('id="savePanel"', content)
+        self.assertIn('id="commentBody"', content)
+        self.assertIn('id="savePanel"', content)
 
 
 class VideoDeletionTests(TestCase):
@@ -431,11 +432,10 @@ class VideoEditTests(TestCase):
         response = self.client.get(reverse("videos:edit", args=[self.video.id]))
         self.assertEqual(response.status_code, 403)
 
-    def test_anonymous_is_sent_to_login(self):
+    def test_guest_cannot_reach_the_edit_page(self):
         self.client.logout()
         response = self.client.get(reverse("videos:edit", args=[self.video.id]))
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response["Location"])
+        self.assertEqual(response.status_code, 403)
 
     def test_title_and_description_are_saved(self):
         response = self.client.post(
@@ -1986,11 +1986,11 @@ class SubtitleEndpointsTests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
-    def test_anonymous_is_redirected(self):
+    def test_guest_is_forbidden(self):
         response = self.client.get(
             reverse("videos:subtitles_generate", args=[self.video.id])
         )
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
     @mock.patch("videos.views.subtitles_configured", return_value=False)
     @override_settings(SUBTITLE_PROVIDER="openai")

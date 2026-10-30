@@ -90,13 +90,14 @@
                 {% if can_write %}
                     <li><a href="{% url 'videos:upload' %}" class="nav-link btn-upload">{% trans "Upload" %}</a></li>
                 {% endif %}
-                {% if user.is_authenticated %}
-                    <li><a href="{% url 'videos:playlists' %}" class="nav-link">{% trans "Playlists" %}</a></li>
-                    <li><a href="{% url 'videos:offline' %}" class="nav-link">{% trans "Offline" %}</a></li>
-                    {% if can_read %}
-                        <li><a href="{% url 'dashboard:home' %}" class="nav-link">{% trans "Dashboard" %}</a></li>
-                        <li><a href="{% url 'accounts:manage_users' %}" class="nav-link">{% trans "Users" %}</a></li>
-                    {% endif %}
+                {% comment %}Every visitor gets a guest account automatically, so these are available without signing in.{% endcomment %}
+                <li><a href="{% url 'videos:playlists' %}" class="nav-link">{% trans "Playlists" %}</a></li>
+                <li><a href="{% url 'videos:offline' %}" class="nav-link">{% trans "Offline" %}</a></li>
+                {% if can_read %}
+                    <li><a href="{% url 'dashboard:home' %}" class="nav-link">{% trans "Dashboard" %}</a></li>
+                    <li><a href="{% url 'accounts:manage_users' %}" class="nav-link">{% trans "Users" %}</a></li>
+                {% endif %}
+                {% if user.is_authenticated and not is_guest %}
                     <li><span class="nav-username" title="{{ user.username }}"
                               aria-label="{{ user.username }}">{{ user.username|slice:":1" }}</span></li>
                     <li>
@@ -105,9 +106,6 @@
                             <button type="submit" class="nav-link btn-outline logout-btn">{% trans "Logout" %}</button>
                         </form>
                     </li>
-                {% else %}
-                    <li><a href="{% url 'accounts:login' %}" class="nav-link">{% trans "Sign In" %}</a></li>
-                    <li><a href="{% url 'accounts:register' %}" class="nav-link btn-primary">{% trans "Sign Up" %}</a></li>
                 {% endif %}
             </ul>
         </div>

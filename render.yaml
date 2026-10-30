@@ -15,7 +15,7 @@ services:
     plan: free
     region: oregon
     branch: master
-    buildCommand: pip install -r requirements.txt && python fazakkir_dmwm/manage.py collectstatic --noinput && python fazakkir_dmwm/manage.py compiletranslations
+    buildCommand: pip install -r requirements.txt && python fazakkir_dmwm/manage.py migrate --noinput && python fazakkir_dmwm/manage.py collectstatic --noinput && python fazakkir_dmwm/manage.py compiletranslations
     startCommand: gunicorn fazakkir_dmwm.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
     healthCheckPath: /manifest.webmanifest
     autoDeploy: true

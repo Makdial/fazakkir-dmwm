@@ -19,11 +19,9 @@ from django.utils.translation import gettext as _
 
 def get_profile(user):
     """Return ``user.profile``, creating it if it is somehow missing."""
-    profile = getattr(user, "profile", None)
-    if profile is None:
-        from accounts.models import Profile
+    from accounts.models import Profile
 
-        profile = Profile.objects.get_or_create(user=user)[0]
+    profile, _created = Profile.objects.get_or_create(user=user)
     return profile
 
 

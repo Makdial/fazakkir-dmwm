@@ -356,25 +356,19 @@
                     {% trans "Comments" %} <span class="comments-count" id="commentsCount">{{ comment_count }}</span>
                 </h2>
 
-                {% if user.is_authenticated %}
                 <form class="comment-form" onsubmit="return postComment(event)">
                     <textarea id="commentBody" class="form-input" rows="2" maxlength="2000"
                               placeholder="{% trans 'Add a comment…' %}" required></textarea>
                     <button type="submit" class="btn btn-primary btn-comment">{% trans "Comment" %}</button>
                 </form>
-                {% else %}
-                <p class="comment-signin">
-                    <a href="{% url 'accounts:login' %}">{% trans "Sign in" %}</a> {% trans "to add a comment." %}
-                </p>
-                {% endif %}
 
                 <div class="comment-list" id="commentList">
                     {% for comment in comments %}
                     <div class="comment" data-comment="{{ comment.id }}">
-                        <span class="comment-avatar">{{ comment.user.username|slice:":1"|upper }}</span>
+                        <span class="comment-avatar">{{ comment.user.first_name|default:comment.user.username|slice:":1"|upper }}</span>
                         <div class="comment-body">
                             <div class="comment-head">
-                                <span class="comment-author">{{ comment.user.username }}</span>
+                                <span class="comment-author">{{ comment.user.first_name|default:comment.user.username }}</span>
                                 <span class="comment-date">{{ comment.created_at|date:"M d, Y H:i" }}</span>
                             </div>
                             <p class="comment-text">{{ comment.body }}</p>
@@ -1249,6 +1243,9 @@ applySubtitle(currentSubtitle)
 // Some browsers/platforms are unreliable about `timeupdate`, so a lightweight
 // animation-frame loop keeps captions in step as a backstop.
 function startCaptionLoop() {
+    // The JS smoke harness has no requestAnimationFrame. Captions still update
+    // from the playback events bound above, so skip the backstop loop there.
+    if (typeof requestAnimationFrame !== "function") return
     if (startCaptionLoop._running) return
     startCaptionLoop._running = true
     function tick() {
@@ -1444,11 +1441,6 @@ if (autoSubPanel) {
 }
 
 function vote(videoId, voteType) {
-    {% if not user.is_authenticated %}
-    window.location.href = '{% url "accounts:login" %}'
-    return
-    {% endif %}
-
     fetch(`/${videoId}/vote/`, {
         method: "POST",
         headers: {

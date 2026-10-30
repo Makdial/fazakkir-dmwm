@@ -53,7 +53,8 @@ def _target_guard(request, target: User):
 @read_required
 def manage_users(request):
     users = (
-        User.objects.annotate(video_total=Count("videos", distinct=True))
+        User.objects.exclude(profile__is_guest=True)
+        .annotate(video_total=Count("videos", distinct=True))
         .order_by("-is_superuser", "username")
     )
     rows = []

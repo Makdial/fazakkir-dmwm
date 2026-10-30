@@ -41,7 +41,7 @@
         <tbody>
             {% for comment in comments %}
             <tr data-comment="{{ comment.id }}">
-                <td>{{ comment.user.username }}</td>
+                <td>{{ comment.user.first_name|default:comment.user.username }}</td>
                 <td class="comment-body">{{ comment.body|truncatechars:160 }}</td>
                 <td><a href="{% url 'videos:detail' comment.video.id %}">{{ comment.video.title }}</a></td>
                 <td>{{ comment.created_at|date:"SHORT_DATETIME_FORMAT" }}</td>

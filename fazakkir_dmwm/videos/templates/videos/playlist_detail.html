@@ -23,7 +23,7 @@
     <div class="playlist-header-info">
         <h1>{{ playlist.title }}</h1>
         <p class="video-meta">
-            {{ playlist.user.username }} ·
+            {{ playlist.user.first_name|default:playlist.user.username }} ·
             {% blocktrans count counter=items|length %}{{ counter }} video{% plural %}{{ counter }} videos{% endblocktrans %}
             · {% if playlist.is_public %}{% trans "Public" %}{% else %}{% trans "Private" %}{% endif %}
         </p>

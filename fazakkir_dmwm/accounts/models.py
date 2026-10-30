@@ -35,6 +35,12 @@ class Profile(models.Model):
         choices=Access.choices,
         default=Access.MEMBER,
     )
+    # Visitors no longer have to create an account to comment, keep playlists
+    # or like videos. Each browser session is given an automatic account marked
+    # here, so the rest of the site keeps working exactly as it did for a
+    # signed-in member. These accounts are hidden from the user management page
+    # and from the dashboard's user count.
+    is_guest = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

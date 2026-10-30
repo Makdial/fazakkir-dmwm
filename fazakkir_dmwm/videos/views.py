@@ -902,13 +902,14 @@ def comment_add(request, video_id):
 
     comment = Comment.objects.create(video=video, user=request.user, body=body[:2000])
 
+    display_name = comment.user.first_name or comment.user.username
     return JsonResponse(
         {
             "success": True,
             "comment": {
                 "id": comment.id,
-                "user": comment.user.username,
-                "initial": comment.user.username[:1].upper(),
+                "user": display_name,
+                "initial": display_name[:1].upper(),
                 "body": comment.body,
                 "created": comment.created_at.strftime("%b %d, %Y %H:%M"),
                 "can_delete": True,
