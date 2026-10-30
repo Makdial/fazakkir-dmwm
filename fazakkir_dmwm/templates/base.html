@@ -106,6 +106,8 @@
                             <button type="submit" class="nav-link btn-outline logout-btn">{% trans "Logout" %}</button>
                         </form>
                     </li>
+                {% elif is_guest %}
+                    <li><a href="{% url 'accounts:login' %}" class="nav-link btn-outline">{% trans "Sign in" %}</a></li>
                 {% endif %}
             </ul>
         </div>
