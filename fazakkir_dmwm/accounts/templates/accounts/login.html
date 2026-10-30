@@ -14,6 +14,10 @@
         <p>{% trans "Sign in to continue with Fazakkir" %}</p>
     </div>
 
+    <div class="auth-notice" style="margin:0 0 16px;padding:10px 12px;border-radius:8px;background:rgba(255,0,0,0.08);border:1px solid rgba(255,0,0,0.25);color:inherit;font-size:14px;">
+        {% trans "This sign-in is for administrators only. Regular visitors are given an automatic guest account and do not need to sign in." %}
+    </div>
+
     <form method="post" class="auth-form">
         {% csrf_token %}
 

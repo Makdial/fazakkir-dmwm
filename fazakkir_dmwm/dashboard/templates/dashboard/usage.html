@@ -81,6 +81,25 @@
 <div class="empty-state"><p>{% trans "No audio plays recorded for this day." %}</p></div>
 {% endif %}
 
+<h2 class="dash-section-title">{% trans "Visitors by country" %}</h2>
+{% if countries %}
+<div class="manage-table-wrap">
+    <table class="manage-table">
+        <thead><tr><th>{% trans "Country" %}</th><th>{% trans "Requests" %}</th></tr></thead>
+        <tbody>
+        {% for row in countries %}
+        <tr>
+            <td>{{ row.country }}</td>
+            <td>{{ row.count }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state"><p>{% trans "No location data recorded for this day." %}</p></div>
+{% endif %}
+
 <h2 class="dash-section-title">{% trans "Last 14 days" %}</h2>
 <div class="manage-table-wrap">
     <table class="manage-table">

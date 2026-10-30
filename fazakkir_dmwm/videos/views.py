@@ -72,10 +72,15 @@ def video_detail(request, video_id):
     try:
         from dashboard.models import ActivityLog
 
+        from dashboard.geo import get_client_ip, resolve_country
+
+        ip = get_client_ip(request)
         ActivityLog.objects.create(
             user=request.user if request.user.is_authenticated else None,
             video=video,
             kind=ActivityLog.KIND_VIEW,
+            ip_address=ip,
+            country=resolve_country(ip),
         )
     except Exception:
         logger.debug("Could not record view activity", exc_info=True)
@@ -258,10 +263,15 @@ def audio_stream(request, video_id):
         try:
             from dashboard.models import ActivityLog
 
+            from dashboard.geo import get_client_ip, resolve_country
+
+            ip = get_client_ip(request)
             ActivityLog.objects.create(
                 user=request.user if request.user.is_authenticated else None,
                 video=video,
                 kind=ActivityLog.KIND_AUDIO,
+                ip_address=ip,
+                country=resolve_country(ip),
             )
         except Exception:
             logger.debug("Could not record audio activity", exc_info=True)

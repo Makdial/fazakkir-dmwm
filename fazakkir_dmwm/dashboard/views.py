@@ -456,6 +456,17 @@ def usage(request):
         .order_by("-count")[:10]
     )
 
+    # Where visitors come from (by country), best-effort from their IP.
+    country_rows = (
+        day_logs.values("country")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+    countries = []
+    for row in country_rows:
+        name = (row["country"] or "").strip() or "Unknown"
+        countries.append({"country": name, "count": row["count"]})
+
     series = []
     for i in range(13, -1, -1):
         d = today - datetime.timedelta(days=i)
@@ -486,6 +497,7 @@ def usage(request):
             "total_audio": day_logs.filter(kind=ActivityLog.KIND_AUDIO).count(),
             "top_views": top_views,
             "top_audio": top_audio,
+            "countries": countries,
             "series": series,
         },
     )

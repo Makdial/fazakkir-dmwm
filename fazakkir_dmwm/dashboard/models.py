@@ -118,6 +118,8 @@ class ActivityLog(models.Model):
         related_name="activity_logs",
     )
     kind = models.CharField(max_length=10, choices=KIND_CHOICES, db_index=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True, db_index=True)
+    country = models.CharField(max_length=64, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
