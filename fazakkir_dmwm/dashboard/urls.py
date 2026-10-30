@@ -14,6 +14,7 @@ urlpatterns = [
     path("videos/subtitles/generate/", views.subtitle_generate, name="subtitle_generate"),
     path("videos/subtitles/status/", views.subtitle_status, name="subtitle_status"),
     path("comments/", views.comment_manage, name="comments"),
+path("usage/", views.usage, name="usage"),
     path("storage/cleanup/", views.cleanup, name="cleanup"),
     path("storage/settings/", views.settings_update, name="settings"),
     path("storage/test-email/", views.test_email, name="test_email"),

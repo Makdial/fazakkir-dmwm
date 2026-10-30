@@ -6,6 +6,7 @@ has one obvious place to look.
 """
 from __future__ import annotations
 
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -85,3 +86,45 @@ class StorageMonitor(models.Model):
         }
         monitor, _created = cls.objects.get_or_create(pk=1, defaults=defaults)
         return monitor
+
+
+class ActivityLog(models.Model):
+    """A single usage event: a page view or an audio play.
+
+    Rows are append-only and aggregated in the dashboard's usage view, so the
+    administrator can see how many (guest or registered) users touched the app
+    on a given day and which recordings they played.
+    """
+
+    KIND_VIEW = "view"
+    KIND_AUDIO = "audio"
+    KIND_CHOICES = [
+        (KIND_VIEW, _("View")),
+        (KIND_AUDIO, _("Audio")),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="activity_logs",
+    )
+    video = models.ForeignKey(
+        "videos.Video",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="activity_logs",
+    )
+    kind = models.CharField(max_length=10, choices=KIND_CHOICES, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["created_at", "kind"]),
+        ]
+
+    def __str__(self):
+        return f"{self.kind} {self.video_id} by {self.user_id} at {self.created_at}"

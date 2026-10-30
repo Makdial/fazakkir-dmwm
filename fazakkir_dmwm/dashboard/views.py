@@ -7,8 +7,11 @@ reflected in the database and in Cloudflare R2.
 """
 from __future__ import annotations
 
+import datetime
 import json
 import logging
+
+from django.utils import timezone
 
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -32,7 +35,7 @@ from videos.transcription import (
     start_subtitle_sweep,
 )
 
-from .models import StorageMonitor
+from .models import ActivityLog, StorageMonitor
 from .notifications import send_test_email
 from .storage import build_report, check_and_notify, format_bytes
 
@@ -416,4 +419,73 @@ def audio_status(request):
             "succeeded": state["succeeded"],
             "failed": state["failed"],
         }
+    )
+
+
+@read_required
+def usage(request):
+    """Daily usage: active users (guest vs registered) and top played videos."""
+    today = timezone.localdate()
+    date_str = (request.GET.get("date") or "").strip()
+    try:
+        selected = datetime.date.fromisoformat(date_str) if date_str else today
+    except ValueError:
+        selected = today
+
+    day_start = timezone.make_aware(datetime.datetime.combine(selected, datetime.time.min))
+    day_end = day_start + datetime.timedelta(days=1)
+    day_logs = ActivityLog.objects.filter(created_at__gte=day_start, created_at__lt=day_end)
+
+    user_ids = [uid for uid in day_logs.values_list("user_id", flat=True).distinct() if uid is not None]
+    from accounts.models import Profile
+
+    guest_user_ids = set(Profile.objects.filter(is_guest=True).values_list("user_id", flat=True))
+    active_guests = sum(1 for uid in user_ids if uid in guest_user_ids)
+    active_registered = sum(1 for uid in user_ids if uid not in guest_user_ids)
+
+    top_views = list(
+        day_logs.filter(kind=ActivityLog.KIND_VIEW)
+        .values("video__id", "video__title")
+        .annotate(count=Count("id"))
+        .order_by("-count")[:10]
+    )
+    top_audio = list(
+        day_logs.filter(kind=ActivityLog.KIND_AUDIO)
+        .values("video__id", "video__title")
+        .annotate(count=Count("id"))
+        .order_by("-count")[:10]
+    )
+
+    series = []
+    for i in range(13, -1, -1):
+        d = today - datetime.timedelta(days=i)
+        ds = timezone.make_aware(datetime.datetime.combine(d, datetime.time.min))
+        de = ds + datetime.timedelta(days=1)
+        logs = ActivityLog.objects.filter(created_at__gte=ds, created_at__lt=de)
+        uids = set(uid for uid in logs.values_list("user_id", flat=True) if uid is not None)
+        series.append(
+            {
+                "date": d,
+                "users": len(uids),
+                "views": logs.filter(kind=ActivityLog.KIND_VIEW).count(),
+                "audio": logs.filter(kind=ActivityLog.KIND_AUDIO).count(),
+            }
+        )
+
+    return render(
+        request,
+        "dashboard/usage.html",
+        {
+            "active_tab": "usage",
+            "selected": selected,
+            "today": today,
+            "active_users": len(user_ids),
+            "active_guests": active_guests,
+            "active_registered": active_registered,
+            "total_views": day_logs.filter(kind=ActivityLog.KIND_VIEW).count(),
+            "total_audio": day_logs.filter(kind=ActivityLog.KIND_AUDIO).count(),
+            "top_views": top_views,
+            "top_audio": top_audio,
+            "series": series,
+        },
     )

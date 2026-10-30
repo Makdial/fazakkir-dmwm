@@ -68,6 +68,18 @@ def video_detail(request, video_id):
     video.views += 1
     video.save(update_fields=["views"])
 
+    # Record a view for the daily usage dashboard.
+    try:
+        from dashboard.models import ActivityLog
+
+        ActivityLog.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            video=video,
+            kind=ActivityLog.KIND_VIEW,
+        )
+    except Exception:
+        logger.debug("Could not record view activity", exc_info=True)
+
     # Play counts as "please give me the audio": if this video has no MP3 yet,
     # generate one in the background so the Listen / Download MP3 options show
     # up without the administrator having to do anything.
@@ -241,6 +253,18 @@ def audio_stream(request, video_id):
         raise Http404("This video has no audio track.")
 
     range_header = request.headers.get("Range")
+    # Record one audio play per initial request (skip range/seek follow-ups).
+    if not range_header or range_header.strip().lower() in ("bytes=0-", "bytes=0-0"):
+        try:
+            from dashboard.models import ActivityLog
+
+            ActivityLog.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                video=video,
+                kind=ActivityLog.KIND_AUDIO,
+            )
+        except Exception:
+            logger.debug("Could not record audio activity", exc_info=True)
     try:
         obj = get_object(range_header=range_header, path=video.audio_file_id)
     except StorageError:

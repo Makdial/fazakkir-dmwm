@@ -1141,3 +1141,54 @@ msgstr "Mungi dox"
 
 msgid "lyrics"
 msgstr "baat yi"
+
+msgid "Active users"
+msgstr ""
+
+msgid "Audio plays"
+msgstr ""
+
+msgid "Daily usage"
+msgstr ""
+
+msgid "Date"
+msgstr ""
+
+msgid "Guests"
+msgstr ""
+
+msgid "How many users (guests and registered) use the app each day, and which recordings they play."
+msgstr ""
+
+msgid "Last 14 days"
+msgstr ""
+
+msgid "No audio plays recorded for this day."
+msgstr ""
+
+msgid "No views recorded for this day."
+msgstr ""
+
+msgid "Plays"
+msgstr ""
+
+msgid "Registered"
+msgstr ""
+
+msgid "Show"
+msgstr ""
+
+msgid "Today"
+msgstr ""
+
+msgid "Top played audio"
+msgstr ""
+
+msgid "Top viewed videos"
+msgstr ""
+
+msgid "Usage"
+msgstr ""
+
+msgid "Video views"
+msgstr ""
