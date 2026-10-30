@@ -41,3 +41,28 @@ class Short(models.Model):
                     r2_storage.delete_file(path)
                 except r2_storage.StorageError:
                     pass
+
+
+class ShortLike(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="short_likes")
+    short = models.ForeignKey(Short, on_delete=models.CASCADE, related_name="user_likes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "short")
+
+    def __str__(self):
+        return f"{self.user} likes {self.short}"
+
+
+class ShortComment(models.Model):
+    short = models.ForeignKey(Short, on_delete=models.CASCADE, related_name="comments")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="short_comments")
+    body = models.TextField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user}: {self.body[:40]}"

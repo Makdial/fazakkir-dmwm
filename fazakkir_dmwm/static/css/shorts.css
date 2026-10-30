@@ -1,0 +1,245 @@
+/* YouTube-Shorts-style vertical feed */
+body.shorts-immersive .navbar { display: none; }
+body.shorts-immersive .main-content { padding: 0; margin: 0; max-width: none; }
+body.shorts-immersive { overflow: hidden; }
+
+.shorts-topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%);
+    color: #fff;
+    pointer-events: none;
+}
+.shorts-topbar > * { pointer-events: auto; }
+.shorts-topbar .shorts-logo {
+    display: flex; align-items: center; gap: 6px;
+    font-weight: 700; font-size: 20px; color: #fff; text-decoration: none;
+}
+.shorts-topbar .shorts-logo .play { color: #ff0000; }
+.shorts-topbar-actions { display: flex; gap: 12px; align-items: center; }
+.shorts-topbar-actions a, .shorts-topbar-actions button {
+    color: #fff; background: rgba(255,255,255,0.12); border: none;
+    width: 36px; height: 36px; border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center; cursor: pointer; font-size: 16px;
+    text-decoration: none;
+}
+.shorts-topbar-actions a:hover, .shorts-topbar-actions button:hover { background: rgba(255,255,255,0.22); }
+
+.shorts-feed {
+    height: 100dvh;
+    width: 100%;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    background: #000;
+    /* hide scrollbar */
+    scrollbar-width: none;
+}
+.shorts-feed::-webkit-scrollbar { display: none; }
+
+.short-slide {
+    height: 100dvh;
+    width: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+}
+
+.short-video-wrap {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    max-width: 420px; /* phone-ish column on desktop */
+    margin: 0 auto;
+    background: #000;
+}
+
+.short-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+}
+
+.short-overlay-top {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 70px 16px 16px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%);
+    color: #fff;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.short-overlay-bottom {
+    position: absolute;
+    left: 0; right: 72px; bottom: 24px;
+    padding: 0 16px;
+    color: #fff;
+    z-index: 5;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+.short-channel {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+}
+.short-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #ff0000; color: #fff; display: inline-flex;
+    align-items: center; justify-content: center; font-weight: 700;
+    flex-shrink: 0;
+}
+.short-channel-name { font-weight: 600; font-size: 15px; }
+.short-subscribe {
+    margin-left: 8px;
+    background: #fff; color: #000; border: none; border-radius: 18px;
+    padding: 6px 14px; font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.short-subscribe:hover { background: #e5e5e5; }
+.short-title {
+    font-size: 15px; font-weight: 500; margin: 0 0 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.short-desc {
+    font-size: 13px; opacity: 0.85; margin: 0 0 6px;
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.short-sound {
+    font-size: 13px; display: flex; align-items: center; gap: 6px;
+}
+.short-sound .disc { display: inline-block; animation: spin 4s linear infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.short-actions {
+    position: absolute;
+    right: 8px; bottom: 80px;
+    display: flex; flex-direction: column; gap: 18px; align-items: center;
+    z-index: 6;
+}
+.short-action {
+    background: transparent; border: none; color: #fff; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 12px; padding: 0;
+}
+.short-action .icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+.short-action:hover .icon { background: rgba(255,255,255,0.22); transform: scale(1.05); }
+.short-action.liked .icon { color: #ff4d4d; }
+.short-action .label { font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+.short-action .sound-disc {
+    width: 40px; height: 40px; border-radius: 8px;
+    overflow: hidden; border: 2px solid #fff; background: #222;
+    animation: spin 6s linear infinite;
+}
+
+.short-mute-btn {
+    position: absolute;
+    top: 70px; right: 12px;
+    z-index: 6;
+    background: rgba(0,0,0,0.4); border: none; color: #fff;
+    width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+
+.short-progress {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3px; background: rgba(255,255,255,0.2); z-index: 6;
+}
+.short-progress-bar {
+    height: 100%; width: 0%; background: #fff;
+}
+
+.shorts-empty {
+    height: 100dvh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: #fff; text-align: center;
+    padding: 24px;
+}
+.shorts-empty .empty-icon { font-size: 64px; margin-bottom: 16px; }
+
+/* comments drawer */
+.short-comments-drawer {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    max-height: 70vh;
+    background: #1a1a1a; color: #fff;
+    border-top-left-radius: 16px; border-top-right-radius: 16px;
+    z-index: 100;
+    transform: translateY(100%);
+    transition: transform 0.25s ease;
+    display: flex; flex-direction: column;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.5);
+}
+.short-comments-drawer.open { transform: translateY(0); }
+.short-comments-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid #333; font-weight: 600;
+}
+.short-comments-list {
+    flex: 1; overflow-y: auto; padding: 12px 16px;
+}
+.short-comment {
+    display: flex; gap: 10px; margin-bottom: 14px;
+}
+.short-comment .avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: #444;
+    display: flex; align-items: center; justify-content: center; font-weight: 700;
+    flex-shrink: 0;
+}
+.short-comment .body { font-size: 14px; }
+.short-comment .meta { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+.short-comment .del { background: none; border: none; color: #aaa; cursor: pointer; font-size: 12px; }
+.short-comments-form {
+    display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #333;
+}
+.short-comments-form input {
+    flex: 1; background: #2a2a2a; border: 1px solid #444; color: #fff;
+    border-radius: 20px; padding: 8px 14px; outline: none;
+}
+.short-comments-form button {
+    background: #ff0000; color: #fff; border: none; border-radius: 20px;
+    padding: 8px 16px; cursor: pointer; font-weight: 600;
+}
+.short-comments-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.short-comments-backdrop.open { opacity: 1; pointer-events: auto; }
+
+/* light theme overrides */
+[data-theme="light"] .shorts-feed { background: #f2f2f2; }
+[data-theme="light"] .short-slide { background: #000; }
+[data-theme="light"] .short-comments-drawer { background: #fff; color: #000; }
+[data-theme="light"] .short-comments-header { border-color: #eee; }
+[data-theme="light"] .short-comments-form input { background: #f2f2f2; color: #000; border-color: #ddd; }
+[data-theme="light"] .short-comment .avatar { background: #eee; color: #000; }
+
+/* detail page single player */
+.short-detail-page { height: 100dvh; background: #000; position: relative; }
+.short-detail-page .short-video-wrap { max-width: 420px; height: 100dvh; margin: 0 auto; }
+
+/* upload page */
+.shorts-upload { max-width: 600px; margin: 40px auto; padding: 24px; }
+.shorts-upload h1 { margin-bottom: 16px; }
+
+/* responsive: on wide screens show a bit more */
+@media (min-width: 1024px) {
+    .short-video-wrap { max-width: 460px; }
+}

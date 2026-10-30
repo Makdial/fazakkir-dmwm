@@ -39,7 +39,7 @@
 
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
     <nav class="navbar">
         <a href="/" class="navbar-brand">
             <span class="brand-icon">▶</span>

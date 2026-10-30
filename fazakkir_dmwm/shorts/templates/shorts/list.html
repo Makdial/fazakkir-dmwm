@@ -1,27 +1,106 @@
 {% extends 'base.html' %}
 {% load static i18n %}
 {% block title %}{% trans "Shorts" %} - Fazakkir{% endblock %}
+{% block body_class %}shorts-immersive{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/videos.css' %}">
+<link rel="stylesheet" href="{% static 'css/shorts.css' %}">
 {% endblock %}
 {% block content %}
-<div class="section-header">
-    <h1>{% trans "Shorts" %}</h1>
-    <p class="section-subtitle">{% trans "Short vertical videos." %}</p>
-</div>
-{% if can_write %}
-<p><a href="{% url 'shorts:upload' %}" class="btn btn-primary">{% trans "Upload short" %}</a></p>
-{% endif %}
-<div class="shorts-grid">
-    {% for short in shorts %}
-    <a class="short-card" href="{% url 'shorts:detail' short.id %}">
-        {% if short.display_thumbnail_url %}
-        <img src="{{ short.display_thumbnail_url }}" alt="{{ short.title }}" loading="lazy">
+<div class="shorts-topbar">
+    <a href="/" class="shorts-logo"><span class="play">▶</span> Fazakkir <span style="font-size:14px;opacity:.8;margin-left:4px;">Shorts</span></a>
+    <div class="shorts-topbar-actions">
+        {% if can_write %}
+        <a href="{% url 'shorts:upload' %}" title="{% trans 'Upload short' %}">⬆</a>
         {% endif %}
-        <span class="short-title">{{ short.title }}</span>
-    </a>
+        <a href="/" title="{% trans 'Home' %}">🏠</a>
+    </div>
+</div>
+
+<div class="shorts-feed" id="shortsFeed">
+    {% for short in shorts %}
+    <section class="short-slide" data-short-id="{{ short.id }}" data-view-url="{% url 'shorts:view' short.id %}">
+        <div class="short-video-wrap">
+            <video class="short-video" src="{{ short.playback_url }}" loop playsinline preload="metadata" muted></video>
+
+            <button class="short-mute-btn" title="{% trans 'Mute/Unmute' %}">🔇</button>
+
+            <div class="short-progress"><div class="short-progress-bar"></div></div>
+
+            <div class="short-overlay-bottom">
+                <div class="short-channel">
+                    <span class="short-avatar">{{ short.user.username|slice:":1"|upper }}</span>
+                    <span class="short-channel-name">{{ short.user.username }}</span>
+                    {% if can_write %}
+                    <button class="short-subscribe" disabled style="opacity:.7;cursor:default;">{% trans "Follow" %}</button>
+                    {% endif %}
+                </div>
+                <h2 class="short-title">{{ short.title }}</h2>
+                {% if short.description %}
+                <p class="short-desc">{{ short.description }}</p>
+                {% endif %}
+                <div class="short-sound">
+                    <span class="disc">💿</span>
+                    <span>original sound - {{ short.user.username }}</span>
+                </div>
+            </div>
+
+            <div class="short-actions">
+                <button class="short-action like-btn {% if short.id in liked_ids %}liked{% endif %}"
+                        data-like-url="{% url 'shorts:like' short.id %}">
+                    <span class="icon">❤</span>
+                    <span class="label like-count">{{ short.likes }}</span>
+                </button>
+                <button class="short-action comment-btn"
+                        data-short-id="{{ short.id }}"
+                        data-comment-add-url="{% url 'shorts:comment_add' short.id %}"
+                        data-comments-list-url="{% url 'shorts:comments_list' short.id %}">
+                    <span class="icon">💬</span>
+                    <span class="label">{% trans "Comment" %}</span>
+                </button>
+                <button class="short-action share-btn"
+                        data-share-url="{{ request.scheme }}://{{ request.get_host }}{% url 'shorts:detail' short.id %}"
+                        data-share-title="{{ short.title }}">
+                    <span class="icon">↗</span>
+                    <span class="label">{% trans "Share" %}</span>
+                </button>
+                {% if can_write %}
+                <button class="short-action delete-short-btn"
+                        data-delete-url="{% url 'shorts:delete' short.id %}">
+                    <span class="icon">🗑</span>
+                    <span class="label">{% trans "Delete" %}</span>
+                </button>
+                {% endif %}
+                <div class="sound-disc" title="{% trans 'Sound' %}">🎵</div>
+            </div>
+        </div>
+    </section>
     {% empty %}
-    <p>{% trans "No shorts yet." %}</p>
+    <div class="shorts-empty">
+        <div class="empty-icon">🎬</div>
+        <h2>{% trans "No Shorts Yet" %}</h2>
+        <p>{% trans "Short vertical videos will appear here." %}</p>
+        {% if can_write %}
+        <p style="margin-top:16px;"><a href="{% url 'shorts:upload' %}" class="btn btn-primary">{% trans "Upload short" %}</a></p>
+        {% endif %}
+    </div>
     {% endfor %}
 </div>
+
+<!-- comments drawer -->
+<div class="short-comments-backdrop" id="shortCommentsBackdrop"></div>
+<div class="short-comments-drawer" id="shortCommentsDrawer">
+    <div class="short-comments-header">
+        <span>{% trans "Comments" %}</span>
+        <button id="shortCommentsClose" style="background:none;border:none;color:inherit;font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div class="short-comments-list" id="shortCommentsList"></div>
+    <form class="short-comments-form" id="shortCommentsForm">
+        {% csrf_token %}
+        <input type="text" name="body" placeholder="{% trans 'Add a comment...' %}" autocomplete="off">
+        <button type="submit">{% trans "Post" %}</button>
+    </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/shorts.js' %}"></script>
 {% endblock %}
