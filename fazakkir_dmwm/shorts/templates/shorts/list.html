@@ -28,7 +28,7 @@
 
             <div class="short-overlay-bottom">
                 <div class="short-channel">
-                    <span class="short-avatar">{{ short.user.username|slice:":1"|upper }}</span>
+                    <span class="video-card-avatar short-avatar">{{ short.user.username|slice:":1"|upper }}</span>
                     <span class="short-channel-name">{{ short.user.username }}</span>
                     {% if can_write %}
                     <button class="short-subscribe" disabled style="opacity:.7;cursor:default;">{% trans "Follow" %}</button>
@@ -38,6 +38,11 @@
                 {% if short.description %}
                 <p class="short-desc">{{ short.description }}</p>
                 {% endif %}
+                <p class="short-meta">
+                    <span class="short-meta-uploader">{{ short.user.username }}</span>
+                    · {% blocktrans count counter=short.views %}{{ counter }} view{% plural %}{{ counter }} views{% endblocktrans %}
+                    · {{ short.created_at|date:"Y" }}
+                </p>
                 <div class="short-sound">
                     <span class="disc">💿</span>
                     <span>original sound - {{ short.user.username }}</span>
