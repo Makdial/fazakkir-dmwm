@@ -1231,3 +1231,63 @@ msgstr ""
 
 msgid "Upload short"
 msgstr ""
+
+msgid "Add a comment..."
+msgstr ""
+
+msgid "Back to Shorts"
+msgstr ""
+
+msgid "Back to feed"
+msgstr ""
+
+msgid "Continent"
+msgstr ""
+
+msgid "Country"
+msgstr ""
+
+msgid "Follow"
+msgstr ""
+
+msgid "Home"
+msgstr ""
+
+msgid "Mute/Unmute"
+msgstr ""
+
+msgid "No Shorts Yet"
+msgstr ""
+
+msgid "No comments yet."
+msgstr ""
+
+msgid "No location data recorded for this day."
+msgstr ""
+
+msgid "Post"
+msgstr ""
+
+msgid "Requests"
+msgstr ""
+
+msgid "Short vertical videos will appear here."
+msgstr ""
+
+msgid "Sound"
+msgstr ""
+
+msgid "This sign-in is for administrators only. Regular visitors are given an automatic guest account and do not need to sign in."
+msgstr ""
+
+msgid "Visitors by continent"
+msgstr ""
+
+msgid "Visitors by country"
+msgstr ""
+
+msgid "Where audio is played"
+msgstr ""
+
+msgid "Where videos are watched"
+msgstr ""
