@@ -16,7 +16,7 @@ from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
-CACHE_PREFIX = "fazakkir:geo:country:"
+CACHE_PREFIX = "fazakkir:geo:location:"
 CACHE_TTL = 60 * 60 * 24  # 24 hours
 
 
@@ -43,23 +43,43 @@ def _is_private(ip: str) -> bool:
     return addr.is_private or addr.is_loopback or addr.is_reserved or addr.is_multicast
 
 
-def resolve_country(ip: str | None) -> str:
-    """Resolve an IP to a country name, cached. Returns 'Unknown' on failure."""
+def resolve_location(ip: str | None) -> tuple[str, str]:
+    """Resolve an IP to (country, continent), cached. Returns 'Unknown' on failure."""
     if not ip:
-        return "Unknown"
+        return ("Unknown", "Unknown")
     if _is_private(ip):
-        return "Local"
+        return ("Local", "Local")
     cache_key = CACHE_PREFIX + ip
     cached = cache.get(cache_key)
     if cached is not None:
-        return cached
+        # Backwards-compatible with a previously cached bare country string.
+        if isinstance(cached, tuple):
+            return cached
+        return (str(cached), "Unknown")
     country = "Unknown"
+    continent = "Unknown"
     try:
-        with urlopen(f"http://ip-api.com/json/{ip}?fields=country", timeout=2) as response:
+        with urlopen(
+            f"http://ip-api.com/json/{ip}?fields=country,continent", timeout=2
+        ) as response:
             data = json.loads(response.read().decode("utf-8"))
-        if isinstance(data, dict) and data.get("country"):
-            country = str(data["country"])
+        if isinstance(data, dict):
+            if data.get("country"):
+                country = str(data["country"])
+            if data.get("continent"):
+                continent = str(data["continent"])
     except (URLError, OSError, ValueError, TimeoutError):
-        logger.debug("Country lookup failed for %s", ip, exc_info=True)
-    cache.set(cache_key, country, CACHE_TTL)
-    return country
+        logger.debug("Location lookup failed for %s", ip, exc_info=True)
+    result = (country, continent)
+    cache.set(cache_key, result, CACHE_TTL)
+    return result
+
+
+def resolve_country(ip: str | None) -> str:
+    """Resolve an IP to a country name, cached. Returns 'Unknown' on failure."""
+    return resolve_location(ip)[0]
+
+
+def resolve_continent(ip: str | None) -> str:
+    """Resolve an IP to a continent name, cached. Returns 'Unknown' on failure."""
+    return resolve_location(ip)[1]

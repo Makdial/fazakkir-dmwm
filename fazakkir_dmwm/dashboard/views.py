@@ -456,16 +456,27 @@ def usage(request):
         .order_by("-count")[:10]
     )
 
-    # Where visitors come from (by country), best-effort from their IP.
+    # Where visitors come from (by country and continent), best-effort from their IP.
     country_rows = (
-        day_logs.values("country")
+        day_logs.values("country", "continent")
         .annotate(count=Count("id"))
         .order_by("-count")
     )
     countries = []
     for row in country_rows:
         name = (row["country"] or "").strip() or "Unknown"
-        countries.append({"country": name, "count": row["count"]})
+        cont = (row["continent"] or "").strip() or "Unknown"
+        countries.append({"country": name, "continent": cont, "count": row["count"]})
+
+    continent_rows = (
+        day_logs.values("continent")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+    continents = []
+    for row in continent_rows:
+        name = (row["continent"] or "").strip() or "Unknown"
+        continents.append({"continent": name, "count": row["count"]})
 
     series = []
     for i in range(13, -1, -1):
@@ -498,6 +509,7 @@ def usage(request):
             "top_views": top_views,
             "top_audio": top_audio,
             "countries": countries,
+            "continents": continents,
             "series": series,
         },
     )
