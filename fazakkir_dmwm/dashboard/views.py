@@ -456,6 +456,41 @@ def usage(request):
         .order_by("-count")[:10]
     )
 
+    # Where each recording is watched/played, broken down by visitor location.
+    video_locations = []
+    for row in (
+        day_logs.filter(kind=ActivityLog.KIND_VIEW, video__isnull=False)
+        .values("video__id", "video__title", "country", "continent")
+        .annotate(count=Count("id"))
+        .order_by("-count")[:10]
+    ):
+        video_locations.append(
+            {
+                "video__id": row["video__id"],
+                "video__title": row["video__title"],
+                "country": (row["country"] or "").strip() or "Unknown",
+                "continent": (row["continent"] or "").strip() or "Unknown",
+                "count": row["count"],
+            }
+        )
+
+    audio_locations = []
+    for row in (
+        day_logs.filter(kind=ActivityLog.KIND_AUDIO, video__isnull=False)
+        .values("video__id", "video__title", "country", "continent")
+        .annotate(count=Count("id"))
+        .order_by("-count")[:10]
+    ):
+        audio_locations.append(
+            {
+                "video__id": row["video__id"],
+                "video__title": row["video__title"],
+                "country": (row["country"] or "").strip() or "Unknown",
+                "continent": (row["continent"] or "").strip() or "Unknown",
+                "count": row["count"],
+            }
+        )
+
     # Where visitors come from (by country and continent), best-effort from their IP.
     country_rows = (
         day_logs.values("country", "continent")
@@ -508,6 +543,8 @@ def usage(request):
             "total_audio": day_logs.filter(kind=ActivityLog.KIND_AUDIO).count(),
             "top_views": top_views,
             "top_audio": top_audio,
+            "video_locations": video_locations,
+            "audio_locations": audio_locations,
             "countries": countries,
             "continents": continents,
             "series": series,

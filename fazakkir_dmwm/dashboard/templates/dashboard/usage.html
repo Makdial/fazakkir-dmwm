@@ -81,6 +81,48 @@
 <div class="empty-state"><p>{% trans "No audio plays recorded for this day." %}</p></div>
 {% endif %}
 
+<h2 class="dash-section-title">{% trans "Where videos are watched" %}</h2>
+{% if video_locations %}
+<div class="manage-table-wrap">
+    <table class="manage-table">
+        <thead><tr><th>{% trans "Video" %}</th><th>{% trans "Country" %}</th><th>{% trans "Continent" %}</th><th>{% trans "Views" %}</th></tr></thead>
+        <tbody>
+        {% for row in video_locations %}
+        <tr>
+            <td><a href="{% url 'videos:detail' row.video__id %}">{{ row.video__title }}</a></td>
+            <td>{{ row.country }}</td>
+            <td>{{ row.continent }}</td>
+            <td>{{ row.count }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state"><p>{% trans "No location data recorded for this day." %}</p></div>
+{% endif %}
+
+<h2 class="dash-section-title">{% trans "Where audio is played" %}</h2>
+{% if audio_locations %}
+<div class="manage-table-wrap">
+    <table class="manage-table">
+        <thead><tr><th>{% trans "Audio" %}</th><th>{% trans "Country" %}</th><th>{% trans "Continent" %}</th><th>{% trans "Plays" %}</th></tr></thead>
+        <tbody>
+        {% for row in audio_locations %}
+        <tr>
+            <td><a href="{% url 'videos:detail' row.video__id %}">{{ row.video__title }}</a></td>
+            <td>{{ row.country }}</td>
+            <td>{{ row.continent }}</td>
+            <td>{{ row.count }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state"><p>{% trans "No location data recorded for this day." %}</p></div>
+{% endif %}
+
 <h2 class="dash-section-title">{% trans "Visitors by continent" %}</h2>
 {% if continents %}
 <div class="manage-table-wrap">
