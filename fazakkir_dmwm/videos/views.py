@@ -1063,7 +1063,11 @@ def _store_playlist_cover(playlist, cover_data):
 
 @login_required
 def playlist_detail(request, playlist_id):
-    playlist = Playlist.objects.filter(id=playlist_id).first()
+    playlist = (
+        Playlist.objects.filter(id=playlist_id)
+        .prefetch_related("items__video__user")
+        .first()
+    )
     if playlist is None:
         return render(request, "videos/playlist_not_found.html", status=404)
 
@@ -1071,7 +1075,7 @@ def playlist_detail(request, playlist_id):
     if not playlist.is_public and not is_owner and not _can_moderate(request.user):
         return render(request, "videos/playlist_not_found.html", status=403)
 
-    items = playlist.items.select_related("video", "video__user")
+    items = playlist.items.all()
     return render(
         request,
         "videos/playlist_detail.html",

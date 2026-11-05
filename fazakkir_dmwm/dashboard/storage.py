@@ -22,7 +22,7 @@ from django.db import connection
 from django.utils import timezone
 
 from videos import r2_storage
-from videos.models import Video
+from videos.models import Playlist, Video
 
 from .models import StorageMonitor
 
@@ -132,12 +132,15 @@ def video_size_rows(sizes: dict[str, int]) -> list[dict]:
 
 
 def orphaned_objects(sizes: dict[str, int]) -> list[dict]:
-    """Objects created by this app that no video row points at any more."""
+    """Objects created by this app that no video or playlist row points at any more."""
     referenced = set()
     for video in Video.objects.all():
         for path in (video.file_id, video.thumbnail_file_id, video.audio_file_id):
             if path:
                 referenced.add(path)
+    for path in Playlist.objects.values_list("cover_file_id", flat=True):
+        if path:
+            referenced.add(path)
 
     orphans = [
         {"key": key, "size": size}

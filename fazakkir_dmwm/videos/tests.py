@@ -287,6 +287,39 @@ class PlaylistTests(TestCase):
         self.assertEqual(playlist.cover_url, "https://cdn/v.jpg")
         self.assertTrue(playlist.contains(self.video))
 
+    def test_cover_stored_in_a_private_bucket_is_shown(self):
+        Playlist.objects.create(
+            user=self.user, title="Covered", cover_file_id="playlist-covers/c.jpg"
+        )
+        with mock.patch.dict(os.environ, {"R2_PUBLIC_BASE_URL": ""}), mock.patch(
+            "videos.r2_storage.generate_presigned_url",
+            return_value="https://r2.example/playlist-covers/c.jpg?sig=1",
+        ):
+            body = self.client.get(reverse("videos:playlists")).content.decode()
+        self.assertIn("https://r2.example/playlist-covers/c.jpg?sig=1", body)
+        self.assertIn("has-cover", body)
+
+    def test_playlist_without_a_cover_uses_the_first_video_with_a_picture(self):
+        picture = make_video(
+            self.user, title="Picture", thumbnail_file_id="thumbnails/b.jpg"
+        )
+        playlist = Playlist.objects.create(user=self.user, title="Auto cover")
+        PlaylistItem.objects.create(playlist=playlist, video=self.video)
+        PlaylistItem.objects.create(playlist=playlist, video=picture)
+
+        with mock.patch.dict(os.environ, {"R2_PUBLIC_BASE_URL": ""}), mock.patch(
+            "videos.r2_storage.generate_presigned_url",
+            side_effect=lambda path, **kwargs: f"https://r2.example/{path}",
+        ):
+            body = self.client.get(reverse("videos:playlists")).content.decode()
+            detail = self.client.get(
+                reverse("videos:playlist_detail", args=[playlist.id])
+            ).content.decode()
+
+        self.assertIn('src="https://r2.example/thumbnails/b.jpg"', body)
+        self.assertIn("has-cover", body)
+        self.assertIn("playlist-header-cover has-cover", detail)
+
 
 class CommentTests(TestCase):
     def setUp(self):

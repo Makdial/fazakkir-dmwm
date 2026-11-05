@@ -264,8 +264,19 @@ class Playlist(models.Model):
 
     @property
     def display_cover_url(self):
-        """Public or presigned cover URL, or an empty string."""
-        return r2_storage.resolve_url(self.cover_file_id, self.cover_url)
+        """The picture to show for the playlist, or an empty string.
+
+        The owner's own cover wins. Without one, the first video in the list
+        that has a picture stands in for it, the way YouTube does.
+        """
+        chosen = r2_storage.resolve_url(self.cover_file_id, self.cover_url)
+        if chosen:
+            return chosen
+        for item in self.items.all():
+            thumbnail = item.video.display_thumbnail_url
+            if thumbnail:
+                return thumbnail
+        return ""
 
     def contains(self, video) -> bool:
         return self.items.filter(video=video).exists()

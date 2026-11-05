@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from accounts.models import Profile
-from videos.models import Video
+from videos.models import Playlist, Video
 
 from . import storage
 from .models import StorageMonitor
@@ -162,6 +162,22 @@ class CleanupTests(DashboardBaseTests):
         self.assertTrue(response.json()["success"])
         self.assertEqual(response.json()["removed"], 1)
         delete.assert_called_once_with("audio/orphan.mp3")
+
+    def test_cleanup_keeps_playlist_covers_that_are_in_use(self):
+        Playlist.objects.create(
+            user=self.admin, title="Covered", cover_file_id="playlist-covers/keep.jpg"
+        )
+        self.bucket = bucket(
+            total=1009,
+            sizes={"playlist-covers/keep.jpg": 10, "playlist-covers/orphan.jpg": 999},
+        )
+
+        self.client.login(username="root", password="pw12345678")
+        with mock.patch("videos.r2_storage.delete_file") as delete:
+            response = self.client.post(reverse("dashboard:cleanup"))
+
+        self.assertEqual(response.json()["removed"], 1)
+        delete.assert_called_once_with("playlist-covers/orphan.jpg")
 
 
 class AlertTests(DashboardBaseTests):
