@@ -1294,3 +1294,12 @@ msgstr ""
 
 msgid "Admin Sign In"
 msgstr ""
+
+msgid "Download"
+msgstr "تنزيل"
+
+msgid "This short has no sound."
+msgstr "لا يحتوي هذا المقطع على صوت."
+
+msgid "The sound could not be prepared. Please try again."
+msgstr "تعذّر تجهيز الصوت. يرجى المحاولة مرة أخرى."

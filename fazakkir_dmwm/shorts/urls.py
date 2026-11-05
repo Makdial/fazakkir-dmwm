@@ -12,6 +12,7 @@ urlpatterns = [
     path("<int:short_id>/delete/", views.short_delete, name="delete"),
     path("<int:short_id>/like/", views.short_like, name="like"),
     path("<int:short_id>/view/", views.short_view, name="view"),
+    path("<int:short_id>/audio/", views.short_audio, name="audio"),
     path("<int:short_id>/comments/", views.short_comments_list, name="comments_list"),
     path("<int:short_id>/comments/add/", views.short_comment_add, name="comment_add"),
     path("comments/<int:comment_id>/delete/", views.short_comment_delete, name="comment_delete"),

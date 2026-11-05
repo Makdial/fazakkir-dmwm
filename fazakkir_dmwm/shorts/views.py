@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST, require_GET
 from core.permissions import write_required
 
 from . import r2_storage
+from .audio import ensure_sound, store_sound_from_upload
 from .models import Short, ShortLike, ShortComment
 
 
@@ -64,6 +65,7 @@ def short_upload(request):
         file_id=result["path"],
         video_url=result["url"],
     )
+    store_sound_from_upload(short, upload)
     return JsonResponse({"success": True, "short_id": short.id, "message": _("Short uploaded")})
 
 
@@ -101,6 +103,36 @@ def short_view(request, short_id):
     short.views += 1
     short.save(update_fields=["views"])
     return JsonResponse({"success": True, "views": short.views})
+
+
+@require_POST
+def short_audio(request, short_id):
+    """Make sure the Short has its MP3, then return where to play and download it."""
+    short = get_object_or_404(Short, id=short_id)
+    status = ensure_sound(short)
+    if status == "none":
+        return JsonResponse(
+            {"success": False, "error": _("This short has no sound.")}, status=404
+        )
+    if status != "ready":
+        return JsonResponse(
+            {"success": False, "error": _("The sound could not be prepared. Please try again.")},
+            status=502,
+        )
+    short.refresh_from_db()
+    playback_url = short.audio_playback_url
+    if not playback_url:
+        return JsonResponse(
+            {"success": False, "error": _("The sound could not be prepared. Please try again.")},
+            status=502,
+        )
+    return JsonResponse(
+        {
+            "success": True,
+            "url": playback_url,
+            "download_url": short.audio_download_url,
+        }
+    )
 
 
 @require_POST

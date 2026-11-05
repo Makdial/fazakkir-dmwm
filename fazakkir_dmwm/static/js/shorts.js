@@ -18,24 +18,133 @@
   var slides = feed ? Array.prototype.slice.call(feed.querySelectorAll(".short-slide")) : [];
   var viewed = new Set();
 
+  // Playback. Sound is on unless the visitor mutes it, and that choice carries
+  // from one Short to the next. The sound sign switches every Short to its MP3
+  // alone (no picture) until it is tapped again.
+  var soundOn = true;
+  var listenOnly = false;
+  var active = null;  // the media element playing right now
+  var inView = null;  // the Short's wrapper that is on screen
+
+  function wrapOf(media) { return media.closest(".short-video-wrap"); }
+  function videoIn(wrap) { return wrap.querySelector(".short-video"); }
+  function audioIn(wrap) { return wrap.querySelector(".short-audio"); }
+  function hasSoundSource(wrap) {
+    var audio = audioIn(wrap);
+    return !!(audio && audio.getAttribute("src"));
+  }
+
+  // What a Short plays: its MP3 in sound-only mode, otherwise its picture.
+  function mediaFor(wrap) {
+    var audio = audioIn(wrap);
+    return listenOnly && audio ? audio : videoIn(wrap);
+  }
+
+  function setListenOnly(on) {
+    listenOnly = on;
+    document.querySelectorAll(".sound-toggle").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(on));
+    });
+  }
+
+  function showMuteState(media) {
+    var btn = wrapOf(media).querySelector(".short-mute-btn");
+    if (btn) btn.textContent = media.muted ? "🔇" : "🔊";
+  }
+
+  function setBusy(el, busy) {
+    if (el) el.classList.toggle("busy", busy);
+  }
+
+  // Make a Short's MP3 if it has none yet. The server answers with the address
+  // to play from and the address to download from.
+  function prepareSound(wrap) {
+    return fetch(wrap.getAttribute("data-audio-prepare-url"), {
+      method: "POST",
+      headers: { "X-CSRFToken": CSRF },
+    })
+      .then(function (r) { return r.json(); })
+      .catch(function () { return { success: false }; })
+      .then(function (d) {
+        if (!d.success || !d.url) {
+          throw new Error(d.error || "The sound could not be prepared. Please try again.");
+        }
+        var audio = audioIn(wrap);
+        if (audio) audio.setAttribute("src", d.url);
+        wrap.setAttribute("data-audio-download", d.download_url);
+        return d;
+      });
+  }
+
+  // Browsers only let a page start a video with sound after the visitor has
+  // tapped the page. When that is refused, the media starts muted instead and
+  // the speaker button turns the sound on.
+  function playMedia(media) {
+    active = media;
+    media.muted = !soundOn;
+    showMuteState(media);
+    var playPromise = media.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(function (err) {
+        if (err && err.name === "NotAllowedError" && active === media) {
+          media.muted = true;
+          showMuteState(media);
+          media.play().catch(function () {});
+        }
+      });
+    }
+  }
+
+  function startMedia(wrap, media) {
+    var other = media === audioIn(wrap) ? videoIn(wrap) : audioIn(wrap);
+    if (other) other.pause();
+    wrap.classList.toggle("listen-only", media !== videoIn(wrap));
+    playMedia(media);
+  }
+
+  // Start a Short in view. An older Short makes its MP3 first, and only plays
+  // it if it is still the one on screen when that is done.
+  function playWrap(wrap) {
+    inView = wrap;
+    var media = mediaFor(wrap);
+    if (media !== videoIn(wrap) && !hasSoundSource(wrap)) {
+      var toggle = wrap.querySelector(".sound-toggle");
+      setBusy(toggle, true);
+      prepareSound(wrap).then(function () {
+        setBusy(toggle, false);
+        if (inView === wrap) playWrap(wrap);
+      }, function (err) {
+        setBusy(toggle, false);
+        alert(err.message);
+        setListenOnly(false);
+        if (inView === wrap) startMedia(wrap, videoIn(wrap));
+      });
+      return;
+    }
+    startMedia(wrap, media);
+  }
+
+  function stopWrap(wrap) {
+    var video = videoIn(wrap);
+    var audio = audioIn(wrap);
+    if (video) video.pause();
+    if (audio) audio.pause();
+    wrap.classList.remove("listen-only");
+    if (active && wrapOf(active) === wrap) active = null;
+  }
+
   // IntersectionObserver for autoplay + view tracking
   var io = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
       var slide = entry.target;
-      var video = slide.querySelector(".short-video");
-      if (!video) return;
+      var wrap = slide.querySelector(".short-video-wrap");
+      if (!wrap) return;
       if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
         // pause others
         slides.forEach(function (s) {
-          if (s !== slide) {
-            var v = s.querySelector(".short-video");
-            if (v) { v.pause(); }
-          }
+          if (s !== slide) stopWrap(s.querySelector(".short-video-wrap"));
         });
-        var playPromise = video.play();
-        if (playPromise && typeof playPromise.catch === "function") {
-          playPromise.catch(function () { /* autoplay blocked; user can tap */ });
-        }
+        playWrap(wrap);
         // view tracking once
         var id = slide.getAttribute("data-short-id");
         if (id && !viewed.has(id)) {
@@ -46,41 +155,74 @@
           }
         }
       } else {
-        video.pause();
+        if (inView === wrap) inView = null;
+        stopWrap(wrap);
       }
     });
   }, { threshold: [0.6] });
 
   slides.forEach(function (s) { io.observe(s); });
 
-  // progress bar update
-  slides.forEach(function (slide) {
-    var video = slide.querySelector(".short-video");
-    var bar = slide.querySelector(".short-progress-bar");
-    if (!video || !bar) return;
-    video.addEventListener("timeupdate", function () {
-      if (video.duration) {
-        bar.style.width = (video.currentTime / video.duration * 100) + "%";
-      }
+  // progress bar update: follows whichever element the Short is playing
+  document.querySelectorAll(".short-video-wrap").forEach(function (wrap) {
+    var bar = wrap.querySelector(".short-progress-bar");
+    if (!bar) return;
+    [videoIn(wrap), audioIn(wrap)].forEach(function (media) {
+      if (!media) return;
+      media.addEventListener("timeupdate", function () {
+        if (media === mediaFor(wrap) && media.duration) {
+          bar.style.width = (media.currentTime / media.duration * 100) + "%";
+        }
+      });
     });
   });
 
-  // tap to play/pause
-  slides.forEach(function (slide) {
-    var video = slide.querySelector(".short-video");
-    if (!video) return;
-    video.addEventListener("click", function () {
-      if (video.paused) video.play(); else video.pause();
+  // tap the picture (or the sound card) to play or pause
+  document.querySelectorAll(".short-video-wrap").forEach(function (wrap) {
+    [videoIn(wrap), wrap.querySelector(".short-audio-card")].forEach(function (target) {
+      if (!target) return;
+      target.addEventListener("click", function () {
+        var media = mediaFor(wrap);
+        if (media.paused) playWrap(wrap); else media.pause();
+      });
     });
   });
 
-  // mute toggles
+  // mute toggles: the detail page has no .short-slide, so find the media through its wrapper
   document.querySelectorAll(".short-mute-btn").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var slide = btn.closest(".short-slide");
-      var video = slide.querySelector(".short-video");
-      video.muted = !video.muted;
-      btn.textContent = video.muted ? "🔇" : "🔊";
+      var media = mediaFor(btn.closest(".short-video-wrap"));
+      media.muted = !media.muted;
+      soundOn = !media.muted;
+      showMuteState(media);
+    });
+  });
+
+  // sound sign: play only the MP3, or the picture again when tapped once more
+  document.querySelectorAll(".sound-toggle").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      setListenOnly(!listenOnly);
+      if (inView) playWrap(inView);
+    });
+  });
+
+  // download the MP3, making it first when this Short has none yet
+  document.querySelectorAll(".download-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var wrap = btn.closest(".short-video-wrap");
+      var direct = wrap.getAttribute("data-audio-download");
+      if (direct) {
+        window.location.href = direct;
+        return;
+      }
+      setBusy(btn, true);
+      prepareSound(wrap).then(function (d) {
+        setBusy(btn, false);
+        window.location.href = d.download_url;
+      }, function (err) {
+        setBusy(btn, false);
+        alert(err.message);
+      });
     });
   });
 
@@ -273,9 +415,9 @@
     }
   });
 
-  // initial play first
-  if (slides.length) {
-    var v = slides[0].querySelector(".short-video");
-    if (v) { v.play().catch(function () {}); }
-  }
+  // start the first Short: the top of the feed, or the one on a detail page
+  var firstWrap = slides.length
+    ? slides[0].querySelector(".short-video-wrap")
+    : document.querySelector(".short-detail-page .short-video-wrap");
+  if (firstWrap) playWrap(firstWrap);
 })();

@@ -19,10 +19,17 @@
 <div class="shorts-feed" id="shortsFeed">
     {% for short in shorts %}
     <section class="short-slide" data-short-id="{{ short.id }}" data-view-url="{% url 'shorts:view' short.id %}">
-        <div class="short-video-wrap">
-            <video class="short-video" src="{{ short.playback_url }}" loop playsinline preload="metadata" muted></video>
+        <div class="short-video-wrap" data-audio-prepare-url="{% url 'shorts:audio' short.id %}" data-audio-download="{{ short.audio_download_url }}">
+            <video class="short-video" src="{{ short.playback_url }}" loop playsinline preload="metadata"></video>
+            {% if short.audio_status != "none" %}
+            <audio class="short-audio" loop preload="none"{% if short.audio_playback_url %} src="{{ short.audio_playback_url }}"{% endif %}></audio>
+            {% endif %}
+            <div class="short-audio-card">
+                <span class="sound-disc">🎵</span>
+                <p class="short-audio-title">{{ short.title }}</p>
+            </div>
 
-            <button class="short-mute-btn" title="{% trans 'Mute/Unmute' %}">🔇</button>
+            <button class="short-mute-btn" title="{% trans 'Mute/Unmute' %}">🔊</button>
 
             <div class="short-progress"><div class="short-progress-bar"></div></div>
 
@@ -68,6 +75,12 @@
                     <span class="icon">↗</span>
                     <span class="label">{% trans "Share" %}</span>
                 </button>
+                {% if short.audio_status != "none" %}
+                <button type="button" class="short-action download-btn" title="{% trans 'Download MP3' %}">
+                    <span class="icon">⬇</span>
+                    <span class="label">{% trans "Download" %}</span>
+                </button>
+                {% endif %}
                 {% if can_write %}
                 <button class="short-action delete-short-btn"
                         data-delete-url="{% url 'shorts:delete' short.id %}">
@@ -75,7 +88,11 @@
                     <span class="label">{% trans "Delete" %}</span>
                 </button>
                 {% endif %}
+                {% if short.audio_status != "none" %}
+                <button type="button" class="sound-disc sound-toggle" title="{% trans 'Listen (MP3)' %}" aria-pressed="false">🎵</button>
+                {% else %}
                 <div class="sound-disc" title="{% trans 'Sound' %}">🎵</div>
+                {% endif %}
             </div>
         </div>
     </section>

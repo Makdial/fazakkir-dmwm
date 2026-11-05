@@ -1273,3 +1273,12 @@ msgstr ""
 
 msgid "Admin Sign In"
 msgstr ""
+
+msgid "Download"
+msgstr "Télécharger"
+
+msgid "This short has no sound."
+msgstr "Ce short n'a pas de son."
+
+msgid "The sound could not be prepared. Please try again."
+msgstr "Impossible de préparer le son. Veuillez réessayer."

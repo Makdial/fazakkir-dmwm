@@ -1270,3 +1270,12 @@ msgstr ""
 
 msgid "Admin Sign In"
 msgstr ""
+
+msgid "Download"
+msgstr "Yees"
+
+msgid "This short has no sound."
+msgstr "Short bi amul son."
+
+msgid "The sound could not be prepared. Please try again."
+msgstr ""

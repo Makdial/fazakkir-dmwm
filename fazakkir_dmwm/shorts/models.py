@@ -15,6 +15,21 @@ class Short(models.Model):
     thumbnail_file_id = models.CharField(max_length=200, blank=True, default="")
     thumbnail_url = models.URLField(max_length=500, blank=True)
 
+    # An MP3 copy of the sound, so the sound disc can play it on its own and it
+    # can be downloaded. See ``shorts.audio`` for how each status is reached.
+    AUDIO_STATUS_CHOICES = [
+        ("", _("Not generated")),
+        ("ready", _("Ready")),
+        ("none", _("No audio track")),
+        ("failed", _("Failed")),
+    ]
+    audio_file_id = models.CharField(max_length=200, blank=True, default="")
+    audio_url = models.URLField(max_length=500, blank=True, default="")
+    audio_status = models.CharField(
+        max_length=12, choices=AUDIO_STATUS_CHOICES, blank=True, default=""
+    )
+    audio_checked_at = models.DateTimeField(null=True, blank=True)
+
     views = models.PositiveIntegerField(default=0)
     likes = models.PositiveIntegerField(default=0)
 
@@ -34,8 +49,22 @@ class Short(models.Model):
     def display_thumbnail_url(self):
         return r2_storage.resolve_url(self.thumbnail_file_id, self.thumbnail_url)
 
+    @property
+    def audio_playback_url(self):
+        """A URL the browser can play the MP3 from, or an empty string."""
+        return r2_storage.resolve_url(self.audio_file_id, self.audio_url)
+
+    @property
+    def audio_download_url(self):
+        """A URL that downloads the MP3, or an empty string when there is none."""
+        if not self.audio_file_id:
+            return ""
+        return r2_storage.download_url(
+            self.audio_file_id, f"{self.title}.mp3", self.audio_url
+        )
+
     def delete_stored_files(self):
-        for path in (self.file_id, self.thumbnail_file_id):
+        for path in (self.file_id, self.thumbnail_file_id, self.audio_file_id):
             if path:
                 try:
                     r2_storage.delete_file(path)
