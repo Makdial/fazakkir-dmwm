@@ -160,3 +160,125 @@ def user_delete(request, user_id):
     return JsonResponse(
         {"success": True, "message": _("User deleted"), "username": username}
     )
+
+
+
+# --- Manual creation of administrator accounts ------------------------------
+
+def _render_add_admin(request):
+    return render(
+        request,
+        "accounts/add_admin.html",
+        {"access_choices": Profile.Access.choices},
+    )
+
+
+@write_required
+def add_admin(request):
+    """Let an administrator create another administrator account by hand."""
+    if request.method == "GET":
+        return _render_add_admin(request)
+    if request.method != "POST":
+        return JsonResponse(
+            {"success": False, "error": _("Method not allowed.")}, status=405
+        )
+
+    if "application/json" in (request.content_type or ""):
+        try:
+            import json as _json
+
+            post = _json.loads(request.body or "{}")
+            if not isinstance(post, dict):
+                post = {}
+        except (ValueError, TypeError):
+            post = {}
+    else:
+        post = request.POST
+
+    username = (post.get("username") or post.get("name") or "").strip()
+    email = (post.get("email") or "").strip()
+    password1 = (
+        post.get("password1")
+        or post.get("password_1")
+        or post.get("password")
+        or ""
+    )
+    password2 = (
+        post.get("password2")
+        or post.get("password_2")
+        or post.get("password_confirm")
+        or password1
+    )
+    raw_level = post.get("access_level")
+    if raw_level is None or str(raw_level).strip() == "":
+        level = Profile.Access.WRITE
+    else:
+        level = str(raw_level).strip()
+        if level not in Profile.Access.values:
+            return JsonResponse(
+                {"success": False, "error": _("Invalid access level.")}, status=400
+            )
+
+    make_superuser = (
+        post.get("is_superuser") in ("1", "true", "True", "on", "yes")
+        and request.user.is_superuser
+    )
+
+    if not username:
+        return JsonResponse(
+            {"success": False, "error": _("Username is required.")}, status=400
+        )
+    if User.objects.filter(username=username).exists():
+        return JsonResponse(
+            {"success": False, "error": _("A user with that username already exists.")},
+            status=400,
+        )
+    if not password1:
+        return JsonResponse(
+            {"success": False, "error": _("Password is required.")}, status=400
+        )
+    if password1 != password2:
+        return JsonResponse(
+            {"success": False, "error": _("The two passwords did not match.")},
+            status=400,
+        )
+
+    try:
+        from django.contrib.auth.password_validation import validate_password
+
+        validate_password(password1)
+    except Exception as exc:
+        return JsonResponse(
+            {"success": False, "error": str(exc) or _("Invalid password.")},
+            status=400,
+        )
+
+    user = User.objects.create_user(username=username, email=email, password=password1)
+    profile = _profile_for(user)
+    profile.access_level = level
+    profile.save(update_fields=["access_level"])
+
+    user.is_staff = bool(make_superuser) or level == Profile.Access.WRITE
+    if make_superuser:
+        user.is_superuser = True
+    user.save(update_fields=["is_staff", "is_superuser"])
+
+    logger.info("Administrator %r (id=%s) created by %r", username, user.id, request.user.username)
+
+    return JsonResponse(
+        {
+            "success": True,
+            "user_id": user.id,
+            "username": username,
+            "message": _("Administrator created."),
+        }
+    )
+
+
+create_admin = add_admin
+add_user = add_admin
+create_user = add_admin
+user_add = add_admin
+user_create = add_admin
+new_admin = add_admin
+new_user = add_admin

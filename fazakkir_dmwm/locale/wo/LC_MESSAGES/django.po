@@ -1354,3 +1354,18 @@ msgstr "Xool ci xëtu vidéo bi"
 
 msgid "Your queue is empty. Use the ☰+ button on any video to add it."
 msgstr "Tolluwaay bi amul dara. Jëfandikoo bouton ☰+ bi ci vidéo bu nekk ngir yokk ko."
+
+msgid "Add admin"
+msgstr "Add admin"
+
+msgid "Add administrator"
+msgstr "Add administrator"
+
+msgid "Administrator created."
+msgstr "Administrator created."
+
+msgid "Confirm password"
+msgstr "Confirm password"
+
+msgid "Create a new administrator account manually."
+msgstr "Create a new administrator account manually."

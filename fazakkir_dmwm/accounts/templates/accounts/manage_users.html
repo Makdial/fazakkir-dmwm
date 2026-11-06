@@ -16,6 +16,28 @@
     </p>
 </div>
 
+{% if can_write %}
+<div class="add-admin-section" style="margin-bottom:1.5rem;padding:1rem;border:1px solid var(--border,#333);border-radius:8px;">
+    <h2>{% trans "Add administrator" %}</h2>
+    <p class="section-subtitle">{% trans "Create a new administrator account manually." %}</p>
+    <form id="add-admin-form" method="post" action="{% url 'accounts:add_admin' %}">
+        {% csrf_token %}
+        <div style="display:grid;gap:.5rem;max-width:420px;">
+            <input type="text" name="username" class="form-input" placeholder="{% trans 'Username' %}" required>
+            <input type="email" name="email" class="form-input" placeholder="{% trans 'Email' %}">
+            <input type="password" name="password1" class="form-input" placeholder="{% trans 'Password' %}" required>
+            <input type="password" name="password2" class="form-input" placeholder="{% trans 'Confirm password' %}" required>
+            <select name="access_level" class="form-input">
+                {% for value, label in access_choices %}
+                <option value="{{ value }}" {% if value == "write" %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn-primary">{% trans "Add admin" %}</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+
 <div class="manage-table-wrap">
     <table class="manage-table">
         <thead>

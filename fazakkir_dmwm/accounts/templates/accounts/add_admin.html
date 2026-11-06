@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Add administrator" %} - Fazakkir{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/social.css' %}">
+<link rel="stylesheet" href="{% static 'css/manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="section-header">
+    <h1>{% trans "Add administrator" %}</h1>
+    <p class="section-subtitle">{% trans "Create a new administrator account manually." %}</p>
+</div>
+
+<div class="manage-table-wrap" style="padding:1rem;">
+    <form id="add-admin-form" method="post" action="{% url 'accounts:add_admin' %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_username">{% trans "Username" %}</label>
+            <input type="text" name="username" id="id_username" class="form-input" required>
+        </div>
+        <div class="form-group">
+            <label for="id_email">{% trans "Email" %}</label>
+            <input type="email" name="email" id="id_email" class="form-input">
+        </div>
+        <div class="form-group">
+            <label for="id_password1">{% trans "Password" %}</label>
+            <input type="password" name="password1" id="id_password1" class="form-input" required>
+        </div>
+        <div class="form-group">
+            <label for="id_password2">{% trans "Confirm password" %}</label>
+            <input type="password" name="password2" id="id_password2" class="form-input" required>
+        </div>
+        <div class="form-group">
+            <label for="id_access_level">{% trans "Access" %}</label>
+            <select name="access_level" id="id_access_level" class="form-input">
+                {% for value, label in access_choices %}
+                <option value="{{ value }}" {% if value == "write" %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn-primary">{% trans "Add admin" %}</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrf = '{{ csrf_token }}';
+const form = document.getElementById('add-admin-form');
+if (form) {
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const body = new FormData(form);
+        fetch(form.action, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf },
+            body: body,
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || '{% trans "Administrator created." %}');
+                    location.reload();
+                } else {
+                    alert(data.error || '{% trans "Failed." %}');
+                }
+            })
+            .catch(() => alert('{% trans "Failed." %}'));
+    });
+}
+</script>
+{% endblock %}

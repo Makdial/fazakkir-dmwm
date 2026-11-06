@@ -36,6 +36,7 @@ from videos.transcription import (
 )
 
 from .models import ActivityLog, StorageMonitor
+from accounts.models import Profile
 from .notifications import send_test_email
 from .storage import build_report, check_and_notify, format_bytes
 
@@ -119,8 +120,8 @@ def home(request):
             "top_videos": report.videos[:8],
             "media_used_display": format_bytes(report.media_used),
             "media_quota_display": format_bytes(report.media_quota),
+            "access_choices": Profile.Access.choices,
             "media_free_display": format_bytes(report.media_free),
-            "db_size_display": format_bytes(report.db_size),
             "db_quota_display": format_bytes(report.db_quota),
             "db_free_display": format_bytes(report.db_free),
             "orphan_display": format_bytes(report.orphan_bytes),
@@ -550,3 +551,26 @@ def usage(request):
             "series": series,
         },
     )
+
+
+
+# --- User / administrator management (delegated to accounts) ----------------
+
+@read_required
+def users(request):
+    from accounts import views as account_views
+
+    return account_views.manage_users(request)
+
+
+@write_required
+def add_admin(request):
+    from accounts import views as account_views
+
+    return account_views.add_admin(request)
+
+
+admins = add_admin
+create_admin = add_admin
+manage_users = users
+manage_admins = add_admin

@@ -17,6 +17,26 @@
 
 {% include 'dashboard/_tabs.html' %}
 
+{% if can_write %}
+<div class="dash-panel">
+    <h2>{% trans "Add administrator" %}</h2>
+    <p class="section-subtitle">{% trans "Create a new administrator account manually." %}</p>
+    <form id="dash-add-admin-form" method="post" action="{% url 'accounts:add_admin' %}" style="display:grid;gap:.5rem;max-width:420px;">
+        {% csrf_token %}
+        <input type="text" name="username" class="form-input" placeholder="{% trans 'Username' %}" required>
+        <input type="email" name="email" class="form-input" placeholder="{% trans 'Email' %}">
+        <input type="password" name="password1" class="form-input" placeholder="{% trans 'Password' %}" required>
+        <input type="password" name="password2" class="form-input" placeholder="{% trans 'Confirm password' %}" required>
+        <select name="access_level" class="form-input">
+            {% for value, label in access_choices %}{# may be undefined #}
+            <option value="{{ value }}" {% if value == "write" %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn-primary">{% trans "Add admin" %}</button>
+    </form>
+</div>
+{% endif %}
+
 <div class="stat-grid">
     <div class="stat-card">
         <span class="stat-value">{{ stats.videos }}</span>
@@ -252,6 +272,29 @@ const testEmailBtn = document.getElementById("testEmailBtn");
 if (testEmailBtn) {
     testEmailBtn.addEventListener("click", function () {
         postJson(TEST_EMAIL_URL, null, (data) => alert(data.message || "{% trans 'Sent.' %}"));
+    });
+}
+
+const addAdminForm = document.getElementById("dash-add-admin-form");
+if (addAdminForm) {
+    addAdminForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        const body = new FormData(addAdminForm);
+        fetch(addAdminForm.action, {
+            method: "POST",
+            headers: { "X-CSRFToken": dashCsrf },
+            body: body,
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || "{% trans 'Administrator created.' %}");
+                    addAdminForm.reset();
+                } else {
+                    alert(data.error || "{% trans 'Failed.' %}");
+                }
+            })
+            .catch(() => alert("{% trans 'Failed.' %}"));
     });
 }
 

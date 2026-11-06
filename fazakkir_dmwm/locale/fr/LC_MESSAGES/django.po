@@ -1357,3 +1357,18 @@ msgstr "Regarder sur la page de la vidéo"
 
 msgid "Your queue is empty. Use the ☰+ button on any video to add it."
 msgstr "La file d'attente est vide. Utilisez le bouton ☰+ sous une vidéo pour l'ajouter."
+
+msgid "Add admin"
+msgstr "Add admin"
+
+msgid "Add administrator"
+msgstr "Add administrator"
+
+msgid "Administrator created."
+msgstr "Administrator created."
+
+msgid "Confirm password"
+msgstr "Confirm password"
+
+msgid "Create a new administrator account manually."
+msgstr "Create a new administrator account manually."
