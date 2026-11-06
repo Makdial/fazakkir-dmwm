@@ -43,6 +43,9 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
+    <div class="fz-splash" id="fzSplash" aria-hidden="true">
+        <img src="{% static 'img/al-janna.jpg' %}" alt="">
+    </div>
     <nav class="navbar">
         <a href="/" class="navbar-brand">
             <span class="brand-icon">▶</span>
@@ -149,5 +152,14 @@
     <script src="{% static 'js/queue.js' %}"></script>
     <script src="{% static 'js/player.js' %}"></script>
     {% block extra_js %}{% endblock %}
+    <script>
+        (function () {
+            var splash = document.getElementById("fzSplash");
+            if (!splash) return;
+            var hide = function () { splash.classList.add("is-hidden"); setTimeout(function () { splash.remove(); }, 450); };
+            if (document.readyState === "complete") setTimeout(hide, 900);
+            else window.addEventListener("load", function () { setTimeout(hide, 900); });
+        })();
+    </script>
 </body>
 </html>

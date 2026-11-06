@@ -130,6 +130,29 @@ def video_detail(request, video_id):
     if not video.duration_seconds:
         schedule_missing_durations(Video.objects.filter(id=video.id))
 
+    # When a video is opened from a playlist, remember which playlist it came
+    # from so the player can queue the rest of that playlist and play them in
+    # order when each video ends.
+    playlist = None
+    playlist_videos = []
+    raw_playlist = request.GET.get("playlist")
+    if raw_playlist:
+        try:
+            playlist = Playlist.objects.filter(id=int(raw_playlist)).first()
+        except (TypeError, ValueError):
+            playlist = None
+        if playlist is not None:
+            can_view = (
+                playlist.is_public
+                or (request.user.is_authenticated and playlist.user_id == request.user.id)
+                or _can_moderate(request.user)
+            )
+            if can_view:
+                playlist_videos = list(playlist.items.select_related("video__user").all())
+            else:
+                playlist = None
+                playlist_videos = []
+
     _register_play(request, video)
 
     audio_pending = not video.has_audio and video.audio_status in ("", "processing")
@@ -195,6 +218,8 @@ def video_detail(request, video_id):
             "share_video_url": share_video_url,
             "share_audio_url": share_audio_url,
             "is_audio_only": video.is_audio_only,
+            "playlist": playlist,
+            "playlist_videos": playlist_videos,
             "subtitles_configured": subtitles_configured(),
             "subtitles_pending": video.auto_subtitle_status
             in ("", "processing"),

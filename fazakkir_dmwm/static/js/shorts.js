@@ -25,6 +25,7 @@
   var listenOnly = false;
   var active = null;  // the media element playing right now
   var inView = null;  // the Short's wrapper that is on screen
+  var currentSlide = null;  // the slide currently on screen
 
   function wrapOf(media) { return media.closest(".short-video-wrap"); }
   function videoIn(wrap) { return wrap.querySelector(".short-video"); }
@@ -140,6 +141,23 @@
     if (active && wrapOf(active) === wrap) active = null;
   }
 
+  // When a Short finishes playing, move on to the next one, the way a feed
+  // should: snap the next slide into view and let the observer start it.
+  function advanceToNext() {
+    if (!slides || !slides.length) return;
+    var index = currentSlide ? slides.indexOf(currentSlide) : -1;
+    if (index < 0) {
+      slides.forEach(function (s, i) {
+        var r = s.getBoundingClientRect();
+        if (r.top >= -10 && r.top < window.innerHeight / 2) index = i;
+      });
+    }
+    if (index < 0) index = 0;
+    var next = index + 1;
+    if (next >= slides.length) return;
+    slides[next].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   // IntersectionObserver for autoplay + view tracking
   var io = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
@@ -147,6 +165,7 @@
       var wrap = slide.querySelector(".short-video-wrap");
       if (!wrap) return;
       if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+        currentSlide = slide;
         // pause others
         slides.forEach(function (s) {
           if (s !== slide) stopWrap(s.querySelector(".short-video-wrap"));
@@ -180,6 +199,17 @@
         if (media === mediaFor(wrap) && media.duration) {
           bar.style.width = (media.currentTime / media.duration * 100) + "%";
         }
+      });
+    });
+  });
+
+  // advance to the next Short when the current one finishes
+  document.querySelectorAll(".short-video-wrap").forEach(function (wrap) {
+    [videoIn(wrap), audioIn(wrap)].forEach(function (media) {
+      if (!media) return;
+      media.addEventListener("ended", function () {
+        if (media !== active) return;
+        advanceToNext();
       });
     });
   });

@@ -51,10 +51,13 @@
 {% endif %}
 
 {% if items %}
+<div class="playlist-actions">
+    <button type="button" id="playlistPlayAll" class="btn btn-primary">{% trans "Play all" %}</button>
+</div>
 <div class="playlist-items">
     {% for item in items %}
     <div class="playlist-item" data-video="{{ item.video.id }}">
-        <a class="playlist-item-link" href="{% url 'videos:detail' item.video.id %}">
+        <a class="playlist-item-link" href="{% url 'videos:detail' item.video.id %}?playlist={{ playlist.id }}">
             <div class="playlist-item-thumb">
                 {% if item.video.display_thumbnail_url %}
                     <img src="{{ item.video.display_thumbnail_url }}" alt="{{ item.video.title }}" loading="lazy">
@@ -92,6 +95,19 @@
 <script>
 const csrf = '{{ csrf_token }}';
 const playlistId = {{ playlist.id }};
+
+const playlistVideos = [
+{% for item in items %}
+    {
+        id: {{ item.video.id }},
+        title: "{{ item.video.title|escapejs }}",
+        channel: "{{ item.video.user.username|escapejs }}",
+        thumbnail_url: "{{ item.video.display_thumbnail_url|escapejs }}",
+        url: "{% url 'videos:detail' item.video.id %}?playlist={{ playlist.id }}",
+        playback_url: "{% url 'videos:playback' item.video.id %}",
+    }{% if not forloop.last %},{% endif %}
+{% endfor %}
+];
 
 // Prefer the live cookie, in case the token was rotated after this page loaded.
 function csrfHeader() {
@@ -187,5 +203,33 @@ if (coverInput) {
     });
 }
 {% endif %}
+
+// Play a playlist in order: queue the videos that follow the one that was
+// picked, so the shared player (player.js) starts the next one by itself when
+// the current video ends.
+function enqueuePlaylistFrom(index) {
+    const queue = window.FZ && window.FZ.queue;
+    if (!queue) return;
+    for (let i = playlistVideos.length - 1; i > index; i--) {
+        queue.add(playlistVideos[i], "next");
+    }
+}
+
+document.querySelectorAll(".playlist-item-link").forEach(function (link, index) {
+    link.addEventListener("click", function () {
+        enqueuePlaylistFrom(index);
+    });
+});
+
+const playAllButton = document.getElementById("playlistPlayAll");
+if (playAllButton) {
+    playAllButton.addEventListener("click", function () {
+        enqueuePlaylistFrom(0);
+        const player = window.FZ && window.FZ.player;
+        if (player && playlistVideos.length) {
+            player.playItem(playlistVideos[0]);
+        }
+    });
+}
 </script>
 {% endblock %}

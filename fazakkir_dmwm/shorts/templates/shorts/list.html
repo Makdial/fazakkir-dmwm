@@ -20,9 +20,9 @@
     {% for short in shorts %}
     <section class="short-slide" data-short-id="{{ short.id }}" data-view-url="{% url 'shorts:view' short.id %}">
         <div class="short-video-wrap" data-audio-prepare-url="{% url 'shorts:audio' short.id %}" data-audio-download="{{ short.audio_download_url }}">
-            <video class="short-video" src="{{ short.playback_url }}" loop playsinline preload="metadata"></video>
+            <video class="short-video" src="{{ short.playback_url }}" playsinline preload="metadata"></video>
             {% if short.audio_status != "none" %}
-            <audio class="short-audio" loop preload="none"{% if short.audio_playback_url %} src="{{ short.audio_playback_url }}"{% endif %}></audio>
+            <audio class="short-audio" preload="none"{% if short.audio_playback_url %} src="{{ short.audio_playback_url }}"{% endif %}></audio>
             {% endif %}
             <div class="short-audio-card">
                 <span class="sound-disc">🎵</span>

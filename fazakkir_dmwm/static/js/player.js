@@ -358,7 +358,11 @@
         // does it; elsewhere it simply plays in the mini player.
         if (docked && !(item && item.id === entry.id)) {
             pendingAutoplay = true
-            window.FZ.nav.navigate(entry.url)
+            if (window.FZ && window.FZ.nav && typeof window.FZ.nav.navigate === "function") {
+                window.FZ.nav.navigate(entry.url)
+            } else {
+                window.location.href = entry.url
+            }
             return
         }
         if (loadedId === entry.id) {
@@ -382,9 +386,14 @@
             playNow()
             return
         }
-        if (entry.url && window.FZ && window.FZ.nav) {
+        if (entry.url) {
+            if (window.FZ && window.FZ.nav && typeof window.FZ.nav.navigate === "function") {
+                pendingAutoplay = true
+                window.FZ.nav.navigate(entry.url)
+                return
+            }
             pendingAutoplay = true
-            window.FZ.nav.navigate(entry.url)
+            window.location.href = entry.url
             return
         }
         playItem(entry)

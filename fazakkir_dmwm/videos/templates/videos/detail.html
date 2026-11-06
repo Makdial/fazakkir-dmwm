@@ -360,6 +360,29 @@
     const nav = window.FZ.nav;
     const videoId = {{ video.id }};
     const csrf = '{{ csrf_token }}';
+{% if playlist_videos %}
+    const playlistVideos = [
+{% for item in playlist_videos %}
+        {
+            id: {{ item.video.id }},
+            title: "{{ item.video.title|escapejs }}",
+            channel: "{{ item.video.user.username|escapejs }}",
+            thumbnail_url: "{{ item.video.display_thumbnail_url|escapejs }}",
+            url: "{% url 'videos:detail' item.video.id %}?playlist={{ playlist.id }}",
+            playback_url: "{% url 'videos:playback' item.video.id %}",
+        }{% if not forloop.last %},{% endif %}
+{% endfor %}
+    ];
+    (function () {
+        const queue = window.FZ && window.FZ.queue;
+        if (!queue || !Array.isArray(playlistVideos)) return;
+        const index = playlistVideos.findIndex(function (v) { return v.id === videoId; });
+        const start = index >= 0 ? index : -1;
+        for (let i = playlistVideos.length - 1; i > start; i--) {
+            queue.add(playlistVideos[i], "next");
+        }
+    })();
+{% endif %}
     // The cookie always holds the current token, even if the page was rendered
     // before a background request rotated it. Fall back to the server-rendered
     // value when the cookie is not readable.
