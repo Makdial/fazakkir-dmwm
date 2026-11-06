@@ -25,6 +25,10 @@ videos; every visitor can browse and play them.
   or *read & write staff*. Only read & write staff can upload or delete videos.
 - **Playlists**: any signed-in user (administrators included) can create private
   or public playlists and save videos to them.
+- **Video queue & mini player**: line up videos with their ☰+ button (play next or
+  add to the end), reorder them, and the queue plays through by itself. The player
+  keeps going while you browse the home, search and channel pages, in a small
+  window in the corner, as on YouTube.
 - **Comments**: signed-in users can comment on videos; authors can delete their
   own comments and staff can moderate any comment.
 - **User management**: administrators can block/unblock a user, grant or revoke
@@ -270,6 +274,7 @@ superuser.
 | Browse / watch videos | everyone               | `/`                         |
 | Comment               | everyone               | video page                  |
 | Playlists             | everyone               | `/playlists/`               |
+| Video queue           | everyone               | ☰+ on videos, **Queue** menu |
 | Upload a video        | read & write staff     | `/upload/`                  |
 | Delete a video        | read & write staff     | video page                  |
 | Add subtitles/lyrics  | read & write staff     | video page                  |
@@ -291,6 +296,24 @@ comments are visible to everyone, whether signed in or not.
 Open **Playlists** to create a list, then use the **Save** button under any video
 to add it to (or remove it from) one of your playlists. Private playlists are
 only visible to their owner; public ones can be viewed by anyone.
+
+### Video queue & mini player
+
+Every video has a **☰+** button: on its thumbnail, and next to **Save** on the
+video page. **Play next** puts the video first in the queue, **Add to queue** puts
+it last. The **Queue** button in the navigation bar opens the list, where a video
+can be played from its row, moved up or down, sent to the top (play next) or the
+bottom, removed, or the whole queue cleared. When a video ends, the next one starts
+by itself.
+
+The queue is kept in the browser, so it survives a reload. The player belongs to the
+whole site: while a video plays you can go to the home page, search or a channel and
+it keeps playing in a small window in the bottom-right corner, where the buttons
+pause it, skip to the next queued video, open the queue, return to the video or
+close it. Moving between those pages happens without a page reload, which is what
+keeps the video going. The other pages (Playlists, Offline, Shorts, Upload, …) load
+as usual, so the video stops there; the window comes back paused on the next page,
+and its play button carries on from the same place.
 
 ### Comments
 
@@ -449,7 +472,9 @@ play/pause, ±10 s seek and stop. Switching between **Video** and **Listen
 (MP3)** moves those controls to whichever element is playing.
 
 > Background playback means *the player keeps running while you use other apps*.
-> It does not follow you across pages — leaving the video page stops playback.
+> It also follows you between the home, search, channel and watch pages (see
+> [Video queue & mini player](#video-queue--mini-player)). On other pages the video
+> stops when the page loads, and the mini player comes back paused.
 
 > Offline features need a *secure context* (`https://` or `http://localhost`).
 > They also only work per browser/device — saving on a phone does not download
@@ -513,7 +538,7 @@ fazakkir_dmwm/
 │   ├── r2_storage.py         # Cloudflare R2 (S3) storage client
 │   └── decorators.py         # admin_required (alias of write_required)
 ├── locale/{fr,ar,wo}/  # translations (.po source + compiled .mo), see compiletranslations
-├── static/css|js/       # styling + theme toggle, rtl.css, offline.js, social/manage/dashboard CSS
+├── static/css|js/       # styling + theme toggle, rtl.css, offline.js, social/manage/dashboard CSS, queue.css; the shared player (player.js), queue (queue.js) and in-site navigation (nav.js)
 ├── static/icons/        # app icon (used by the web app manifest)
 └── templates/base.html  # layout, navbar, theme + language toggles
 ```

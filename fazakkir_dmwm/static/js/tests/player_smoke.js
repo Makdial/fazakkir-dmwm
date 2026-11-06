@@ -1,21 +1,28 @@
 /*
- * Executes the player script from the rendered page against a minimal DOM.
+ * Executes the shared player (static/js/player.js) against a minimal DOM.
  *
  * Django's tests only ever asserted that certain strings appeared in the HTML,
  * which happily passed a script that threw on the first line. This catches the
  * class of bug where a variable is referenced but never declared.
  *
- * Usage: node static/js/tests/player_smoke.js <path-to-extracted-script.js>
+ * Usage: node static/js/tests/player_smoke.js <path-to-player.js> [payload.json]
+ *
+ * With a payload (the playback data a watch page embeds) the harness docks a
+ * page slot and loads that video, so the playback paths run as well.
  */
 "use strict";
 
 const fs = require("fs");
 const path = process.argv[2] || "C:/Users/makhf/AppData/Local/Temp/deployed.js";
+const payloadPath = process.argv[3] || "";
+const payloadText = payloadPath ? fs.readFileSync(payloadPath, "utf8") : "";
+const payload = payloadText ? JSON.parse(payloadText) : null;
 
 const REQUIRED = [
     "playerStage", "playerBar", "seekBar", "playPauseBtn", "backBtn", "fwdBtn",
     "currentTime", "duration", "muteBtn", "volumeBar", "rateSelect",
     "fullscreenBtn", "tapZone", "bigPlay", "video-player", "audio-player",
+    "playerContainer",
 ];
 
 const listeners = [];
@@ -24,6 +31,7 @@ function makeEl(id) {
         id,
         style: {},
         dataset: {},
+        parentNode: null,
         classList: {
             _s: new Set(),
             add(c) { this._s.add(c); },
@@ -46,22 +54,30 @@ function makeEl(id) {
         playCalled: false,
         addEventListener(n, f) { listeners.push([el, n, f]); },
         removeEventListener() {},
-        setAttribute(k, v) { el.attributes[k] = v; },
+        setAttribute(k, v) { el.attributes[k] = String(v); },
         getAttribute(k) { return el.attributes[k] ?? null; },
+        hasAttribute(k) { return Object.prototype.hasOwnProperty.call(el.attributes, k); },
         removeAttribute(k) { delete el.attributes[k]; },
-        appendChild(c) { el.children.push(c); },
+        appendChild(c) { el.children.push(c); c.parentNode = el; return c; },
         querySelector: () => null,
         querySelectorAll: () => [],
         closest: () => null,
         remove() {},
         focus() {},
         click() {},
+        load() {},
         play() { el.playCalled = true; el.paused = false; return Promise.resolve(); },
         pause() { el.paused = true; },
         requestFullscreen() { el.fullscreenRequested = true; return Promise.resolve(); },
         requestPictureInPicture: () => Promise.resolve(),
         textTracks: [],
     };
+    // Browsers reflect `src` into the attribute; the script relies on that.
+    Object.defineProperty(el, "src", {
+        get() { return el.attributes.src ?? ""; },
+        set(value) { el.attributes.src = String(value); },
+        configurable: true,
+    });
     return el;
 }
 
@@ -71,6 +87,9 @@ const elements = {};
  "autoSubPanel", "customThumbnail", "subtitleFile", "commentBody"].forEach((id) => {
     elements[id] = makeEl(id);
 });
+elements["fz-video-data"] = makeEl("fz-video-data");
+elements["fz-video-data"].textContent = payloadText;
+elements.slot = makeEl("slot");
 
 // Node 21+ exposes some of these as read-only getters, so plain assignment
 // throws. defineProperty works for all of them.
@@ -98,16 +117,23 @@ define("document", {
         if (!elements[id]) elements[id] = makeEl(id);
         return elements[id];
     },
-    querySelector: () => null,
+    querySelector: (selector) => (payload && selector === "[data-player-slot]" ? elements.slot : null),
     querySelectorAll: () => [],
     createElement: (tag) => makeEl("created-" + tag),
     addEventListener() {},
+    dispatchEvent() { return true; },
     body: makeEl("body"),
     documentElement: makeEl("html"),
 });
+define("CustomEvent", class {
+    constructor(type, init) {
+        this.type = type;
+        this.detail = init ? init.detail : undefined;
+    }
+});
 define("navigator", { share: null, clipboard: null, mediaSession: null });
 define("location", { href: "", reload() {} });
-define("localStorage", { getItem: () => null, setItem() {} });
+define("localStorage", { getItem: () => null, setItem() {}, removeItem() {} });
 define("MediaMetadata", function (m) { return m; });
 define("setTimeout", () => 0);
 define("clearTimeout", () => {});
@@ -148,44 +174,47 @@ for (const [id, ev] of expected) {
 
 const video = elements["video-player"];
 const audio = elements["audio-player"];
-const audioMode = /const audioOnly\s*=\s*true\b/.test(code);
-for (const [el, n, fn] of listeners) {
-    if (el.id === "tapZone" && n === "click") fn({ preventDefault() {} });
+const audioMode = Boolean(payload && payload.is_audio_only === true);
+
+if (payload) {
+    // The page docks the player and loads the video it describes, then the
+    // viewer taps the picture. The tap must start whichever element is active.
+    for (const [el, n, fn] of listeners) {
+        if (el.id === "tapZone" && n === "click") fn({ preventDefault() {} });
+    }
+    const activeStub = audioMode ? audio : video;
+    console.log("after tapping the picture:");
+    console.log("  active element      : " + (audioMode ? "audio" : "video"));
+    console.log("  video.play() called : " + (video.playCalled === true));
+    console.log("  audio.play() called : " + (audio.playCalled === true));
+    console.log("  bar visible         : " + elements["playerBar"].classList.contains("is-visible"));
+    console.log("  big play hidden     : " + elements["bigPlay"].hidden);
+    if (!activeStub.playCalled) failures += 1;
 }
-// The tap drives whichever element the page made active: an audio-only upload
-// plays the <audio> element, so the check has to follow the mode.
-const activeStub = audioMode ? audio : video;
-console.log("after tapping the picture:");
-console.log("  active element      : " + (audioMode ? "audio" : "video"));
-console.log("  video.play() called : " + (video.playCalled === true));
-console.log("  audio.play() called : " + (audio.playCalled === true));
-console.log("  bar visible         : " + elements["playerBar"].classList.contains("is-visible"));
-console.log("  big play hidden     : " + elements["bigPlay"].hidden);
-if (!activeStub.playCalled) failures += 1;
 
 // --- Fullscreen -----------------------------------------------------------
 // iPhone Safari exposes no Element.requestFullscreen, no webkitRequestFullscreen
 // prefix and no document.exitFullscreen; the only thing it will expand is the
 // <video>, through its own webkitEnterFullscreen(). The button previously called
-// playerStage.requestFullscreen() unguarded, so on iOS it threw synchronously -
-// before .catch could be attached - and the button did nothing. All three routes
-// are exercised here so that cannot regress unnoticed.
-const stage = elements["playerStage"];
+// requestFullscreen() unguarded, so on iOS it threw synchronously - before
+// .catch could be attached - and the button did nothing. All three routes are
+// exercised here so that cannot regress unnoticed.
+const container = elements["playerContainer"];
 const fullscreenClicks = listeners
     .filter(([el, n]) => el.id === "fullscreenBtn" && n === "click")
     .map(([, , fn]) => fn);
 console.log("fullscreen handler bound : " + (fullscreenClicks.length > 0));
 if (!fullscreenClicks.length) failures += 1;
 
-// 1. Desktop / Android: the stage element itself expands.
-stage.fullscreenRequested = false;
+// 1. Desktop / Android: the player's container expands.
+container.fullscreenRequested = false;
 fullscreenClicks.forEach((fn) => fn({ preventDefault() {} }));
-console.log("  desktop -> stage.requestFullscreen called    : " + (stage.fullscreenRequested === true));
-if (!stage.fullscreenRequested) failures += 1;
+console.log("  desktop -> container.requestFullscreen called : " + (container.fullscreenRequested === true));
+if (!container.fullscreenRequested) failures += 1;
 
-// 2. iPhone: the stage has neither method, so the video's own API must be used.
-delete stage.requestFullscreen;
-delete stage.webkitRequestFullscreen;
+// 2. iPhone: the container has neither method, so the video's own API is used.
+delete container.requestFullscreen;
+delete container.webkitRequestFullscreen;
 video.enteredFullscreen = false;
 video.webkitEnterFullscreen = function () { this.enteredFullscreen = true; };
 fullscreenClicks.forEach((fn) => fn({ preventDefault() {} }));
@@ -193,7 +222,7 @@ console.log("  iPhone  -> video.webkitEnterFullscreen called : " + (video.entere
 if (!video.enteredFullscreen) failures += 1;
 
 // 3. Leaving fullscreen still works wherever the API exists.
-document.fullscreenElement = stage;
+document.fullscreenElement = container;
 document.exitFullscreen = function () { document.exitCalled = true; return Promise.resolve(); };
 fullscreenClicks.forEach((fn) => fn({ preventDefault() {} }));
 console.log("  exit    -> document.exitFullscreen called     : " + (document.exitCalled === true));

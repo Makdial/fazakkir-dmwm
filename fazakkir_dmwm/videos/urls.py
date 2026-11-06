@@ -22,6 +22,7 @@ urlpatterns = [
     ),
     path("comments/<int:comment_id>/delete/", views.comment_delete, name="comment_delete"),
     path("<int:video_id>", views.video_detail, name="detail"),
+    path("<int:video_id>/playback/", views.video_playback, name="playback"),
     path("<int:video_id>/audio-stream/", views.audio_stream, name="audio_stream"),
     path("<int:video_id>/audio-status/", views.audio_status, name="audio_status"),
     path("<int:video_id>/audio-generate/", views.audio_generate, name="audio_generate"),

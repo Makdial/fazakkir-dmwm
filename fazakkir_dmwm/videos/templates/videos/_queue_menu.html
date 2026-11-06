@@ -1,0 +1,26 @@
+{% load i18n %}
+{% comment %}
+    The ☰+ menu for one video: add it to the front of the queue or to its end.
+    `variant` is "card" (on a thumbnail) or "action" (in the watch page's button row).
+{% endcomment %}
+<div class="queue-anchor queue-anchor-{{ variant }}" data-queue-anchor
+     data-queue-id="{{ video.id }}"
+     data-queue-title="{{ video.title }}"
+     data-queue-channel="{{ video.user.username }}"
+     data-queue-thumbnail="{{ video.display_thumbnail_url }}"
+     data-queue-url="{% url 'videos:detail' video.id %}"
+     data-queue-playback="{% url 'videos:playback' video.id %}">
+    <button type="button" class="queue-toggle" data-queue-toggle aria-haspopup="menu"
+            aria-expanded="false" aria-label="{% trans 'Queue options' %}"
+            title="{% trans 'Queue options' %}">
+        <span class="queue-toggle-glyph" aria-hidden="true">☰+</span>
+    </button>
+    <div class="queue-menu" data-queue-menu role="menu" hidden>
+        <button type="button" class="queue-menu-item" role="menuitem" data-queue-add="next">
+            {% trans "Play next" %}
+        </button>
+        <button type="button" class="queue-menu-item" role="menuitem" data-queue-add="last">
+            {% trans "Add to queue" %}
+        </button>
+    </div>
+</div>

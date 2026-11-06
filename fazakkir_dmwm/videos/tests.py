@@ -45,6 +45,33 @@ def make_video(user, title="Video", **kwargs):
     return Video.objects.create(user=user, title=title, **defaults)
 
 
+def player_script_text() -> str:
+    """Source of the shared player (static/js/player.js).
+
+    The player is not inlined in the watch page any more, so checks on how it
+    behaves read the file itself.
+    """
+    root = Path(__file__).resolve().parent.parent
+    return (root / "static" / "js" / "player.js").read_text(encoding="utf-8")
+
+
+def between(text: str, start: str, end: str) -> str:
+    """The text from ``start`` up to the next ``end`` that follows it."""
+    first = text.index(start)
+    return text[first:text.index(end, first)]
+
+
+def embedded_payload(body: str) -> dict:
+    """The playback data a watch page embeds for the shared player."""
+    match = re.search(
+        r'<script id="fz-video-data" type="application/json">(.*?)</script>',
+        body, re.S,
+    )
+    if not match:
+        raise AssertionError("the watch page does not embed the player's data")
+    return json.loads(match.group(1))
+
+
 class VideoPathTests(TestCase):
     def setUp(self):
         self.user = make_user("uploader")
@@ -797,39 +824,42 @@ class CustomPlayerTests(TestCase):
             self.assertIn(f'id="{element_id}"', body)
 
     def test_media_session_wiring_survives(self):
-        body = self.body()
-        self.assertIn("navigator.mediaSession", body)
-        self.assertIn("mediaSession.setActionHandler", body)
+        script = player_script_text()
+        self.assertIn("navigator.mediaSession", script)
+        self.assertIn("mediaSession.setActionHandler", script)
         # seekbackward / seekforward are what the lock screen buttons use.
-        self.assertIn("seekbackward", body)
-        self.assertIn("seekforward", body)
-        self.assertIn("MediaMetadata", body)
+        self.assertIn("seekbackward", script)
+        self.assertIn("seekforward", script)
+        self.assertIn("MediaMetadata", script)
 
     def test_control_bar_drives_the_active_player(self):
-        body = self.body()
+        script = player_script_text()
         # Switching to MP3 mode must not leave the bar bound to the video only.
-        self.assertIn("activePlayer", body)
-        self.assertIn("function refreshAllControls", body)
-        self.assertIn("if (typeof refreshAllControls", body)
+        self.assertIn("activePlayer", script)
+        self.assertIn("function refreshAll()", script)
+        mode_switch = between(script, "function setMode(next)", "/* --- Media Session")
+        self.assertIn("refreshAll()", mode_switch)
 
     def test_seek_and_volume_are_wired(self):
-        body = self.body()
-        self.assertIn("function seekBy", body)
-        self.assertIn('seekBar.addEventListener("input"', body)
-        self.assertIn('volumeBar.addEventListener("input"', body)
+        script = player_script_text()
+        self.assertIn("function seekBy", script)
+        self.assertIn('seekBar.addEventListener("input"', script)
+        self.assertIn('volumeBar.addEventListener("input"', script)
 
     def test_keyboard_transport_shortcuts_are_wired(self):
-        body = self.body()
-        self.assertIn('"keydown"', body)
-        self.assertIn("togglePlayPause()", body)
+        script = player_script_text()
+        self.assertIn('"keydown"', script)
+        self.assertIn("togglePlayPause()", script)
 
     def test_subtitle_tracks_still_reach_the_video_element(self):
         SubtitleTrack.objects.create(
             video=self.video, language_code="fr", label="French", content="WEBVTT"
         )
         body = self.body()
-        self.assertIn('kind="subtitles"', body)
-        self.assertIn(reverse("videos:subtitle_file", args=[self.video.id, "fr"]), body)
+        # The tracks are built from the payload when a video loads.
+        self.assertIn('track.kind = "subtitles"', player_script_text())
+        urls = [track["url"] for track in embedded_payload(body)["subtitles"]]
+        self.assertIn(reverse("videos:subtitle_file", args=[self.video.id, "fr"]), urls)
 
     def test_cc_button_is_visible_on_the_page_below_the_player(self):
         SubtitleTrack.objects.create(
@@ -843,8 +873,8 @@ class CustomPlayerTests(TestCase):
         self.assertIn('id="subtitleCcList"', body)
         controls = body.index('class="subtitle-controls"')
         self.assertIn('id="subtitleCcBtn"', body[controls:controls + 800])
-        # It sits after the player in the document, i.e. below it on the page.
-        self.assertGreater(controls, body.index('id="playerBar"'))
+        # It sits after the slot the player docks into, i.e. below the picture.
+        self.assertGreater(controls, body.index("data-player-slot"))
 
     def test_page_cc_button_names_the_current_language(self):
         SubtitleTrack.objects.create(
@@ -914,27 +944,29 @@ class CustomPlayerTests(TestCase):
             video=self.video, language_code="fr", label="French", content="WEBVTT"
         )
         body = self.body()
+        script = player_script_text()
         self.assertIn('id="captionLayer"', body)
         self.assertIn('id="captionText"', body)
-        self.assertIn("parseVtt", body)
+        self.assertIn("parseVtt", script)
         # The browser's own rendering is suppressed, not the cues themselves.
-        self.assertIn('track.mode = (lang && code === lang) ? mode : "disabled"', body)
+        self.assertIn('track.mode = (lang && code === lang) ? mode : "disabled"', script)
         # ...except inside iPhone native fullscreen, where the native player is
         # the only thing on screen and must be given the track to paint.
-        self.assertIn("function nativeVideoFullscreen()", body)
-        self.assertIn('? "showing" : "hidden"', body)
-        self.assertIn('"webkitbeginfullscreen", "webkitendfullscreen"', body)
+        self.assertIn("function nativeVideoFullscreen()", script)
+        self.assertIn('? "showing" : "hidden"', script)
+        self.assertIn('"webkitbeginfullscreen", "webkitendfullscreen"', script)
 
     def test_cc_menu_script_is_wired(self):
         SubtitleTrack.objects.create(
             video=self.video, language_code="fr", label="French", content="WEBVTT"
         )
-        body = self.body()
-        self.assertIn("closeCcMenus", body)
-        self.assertIn('menu.classList.add("open")', body)
-        self.assertIn('btn.setAttribute("aria-expanded"', body)
-        # Every CC menu on the page is wired, not just the one in the bar.
-        self.assertIn('document.querySelectorAll(".cc-menu")', body)
+        script = player_script_text()
+        self.assertIn("closeCcMenus", script)
+        self.assertIn('menu.classList.add("open")', script)
+        self.assertIn('button.setAttribute("aria-expanded"', script)
+        # Every CC menu on the page is wired through one delegated handler, so
+        # menus that are rendered later still work.
+        self.assertIn('target.closest(".cc-menu > .cc-btn")', script)
 
 
 class AudioModeCoverTests(TestCase):
@@ -963,9 +995,10 @@ class AudioModeCoverTests(TestCase):
     def test_cover_image_is_rendered(self):
         self.assertIn('id="audioCover"', self.body)
         # display_thumbnail_url may be a presigned R2 link, so match on the
-        # object key rather than the stored URL.
+        # object key rather than the stored URL. The player sets the picture
+        # from the data the page embeds.
         self.assertIn("thumbnails/c.jpg", self.body)
-        self.assertIn('alt="Cover art"', self.body)
+        self.assertEqual(embedded_payload(self.body)["title"], "Cover art")
 
     def test_cover_is_hidden_until_audio_mode_is_entered(self):
         # The rules live in the stylesheet, not the markup.
@@ -977,13 +1010,13 @@ class AudioModeCoverTests(TestCase):
         self.assertIn("display: none", cover)
 
     def test_switching_mode_toggles_the_cover_class(self):
-        self.assertIn('classList.add("audio-mode")', self.body)
-        self.assertIn('classList.remove("audio-mode")', self.body)
+        self.assertIn('classList.toggle("audio-mode", audioMode)', player_script_text())
 
-    def test_video_without_a_thumbnail_gets_no_cover_element(self):
+    def test_video_without_a_thumbnail_keeps_the_cover_hidden(self):
         bare = make_video(self.admin, title="No art", audio_file_id="audio/n.mp3")
         body = self.client.get(reverse("videos:detail", args=[bare.id])).content.decode()
-        self.assertNotIn('id="audioCover"', body)
+        self.assertEqual(embedded_payload(body)["thumbnail_url"], "")
+        self.assertIn("audioCover.hidden = !data.thumbnail_url", player_script_text())
 
     @staticmethod
     def _player_css() -> str:
@@ -1010,9 +1043,10 @@ class AutoHidingControlsTests(TestCase):
         self.body = self.client.get(
             reverse("videos:detail", args=[self.video.id])
         ).content.decode()
+        self.script = player_script_text()
 
     def test_bar_starts_hidden(self):
-        self.assertIn("hideControls()", self.body)
+        self.assertIn("hideControls()", self.script)
         # The hidden state is the default, so the first frame is never covered.
         self.assertIn("visibility: hidden", self._player_css())
 
@@ -1022,85 +1056,72 @@ class AutoHidingControlsTests(TestCase):
     def test_tapping_the_picture_plays_and_pauses(self):
         # Tapping used to only reveal the bar, which left no tap anywhere on
         # the video able to start playback.
-        self.assertIn("tapZone.addEventListener", self.body)
-        handler = self.body[
-            self.body.index("tapZone.addEventListener"):self.body.index("if (playerStage)")
-        ]
+        handler = between(self.script, "tapZone.addEventListener", "if (playerStage) {")
         self.assertIn("togglePlayPause()", handler)
         self.assertIn("showControls()", handler)
 
     def test_refused_playback_reveals_the_bar_instead_of_failing_silently(self):
-        toggle = self.body[
-            self.body.index("function togglePlayPause"):self.body.index("function seekBy")
-        ]
-        self.assertIn("showControls()", toggle)
-        self.assertIn(".catch(", toggle)
+        play_now = between(self.script, "function playNow()", "function dock(")
+        self.assertIn("showControls()", play_now)
+        self.assertIn(".catch(", play_now)
 
     def test_play_hides_and_pause_shows(self):
-        self.assertIn('el.addEventListener("play"', self.body)
-        self.assertIn('el.addEventListener("pause"', self.body)
-        self.assertIn("CONTROLS_IDLE_MS", self.body)
+        self.assertIn('element.addEventListener("play"', self.script)
+        self.assertIn('element.addEventListener("pause"', self.script)
+        self.assertIn("CONTROLS_IDLE_MS", self.script)
 
     def test_hover_reveals_the_bar_on_a_pointer_device(self):
         # Entering the picture must be enough, without needing to move.
-        self.assertIn('addEventListener("mouseenter"', self.body)
-        self.assertIn('addEventListener("mouseleave"', self.body)
+        self.assertIn('addEventListener("mouseenter"', self.script)
+        self.assertIn('addEventListener("mouseleave"', self.script)
 
     def test_hover_behaviour_is_limited_to_real_pointers(self):
         # A tablet reports hover: none even with a mouse attached; without this
         # guard a synthesised mouseenter would latch the bar open.
-        self.assertIn("(hover: hover) and (pointer: fine)", self.body)
-        self.assertIn("const canHover", self.body)
+        self.assertIn("(hover: hover) and (pointer: fine)", self.script)
+        self.assertIn("const canHover", self.script)
 
     def test_bar_never_hides_while_the_pointer_is_resting_on_it(self):
-        guard = self.body[
-            self.body.index("function hideControls()"):self.body.index("function toggleControls()")
-        ]
+        guard = between(self.script, "function hideControls()", "function wireAutoHide()")
         self.assertIn("if (pointerInsidePlayer() && canHover) return", guard)
 
     def test_the_pointer_is_tracked_on_the_bar_as_well_as_the_picture(self):
         # The bar floats over the bottom of the picture and is a sibling of it,
         # so moving down onto a control leaves the picture a moment before the
         # pointer lands on the bar.
-        self.assertIn("function pointerInsidePlayer()", self.body)
-        self.assertIn("pointerInsideBar = true", self.body)
-        self.assertIn("pointerInsideBar = false", self.body)
+        self.assertIn("function pointerInsidePlayer()", self.script)
+        self.assertIn("pointerInsideBar = true", self.script)
+        self.assertIn("pointerInsideBar = false", self.script)
 
     def test_playing_hides_only_when_nobody_is_hovering(self):
-        self.assertIn("function shouldAutoHide()", self.body)
-        helper = self.body[
-            self.body.index("function shouldAutoHide()"):self.body.index("function showControls()")
-        ]
+        self.assertIn("function shouldAutoHide()", self.script)
+        helper = between(self.script, "function shouldAutoHide()", "function showControls()")
         self.assertIn("pointerInsidePlayer()", helper)
         # A paused video must always keep its controls up.
-        self.assertIn("return playing && !pointerInsidePlayer()", helper)
-        play = self.body[self.body.index('el.addEventListener("play"'):]
+        self.assertIn("return isPlaying() && !pointerInsidePlayer()", helper)
+        play = self.script[self.script.index('element.addEventListener("play"'):]
         self.assertIn("if (shouldAutoHide()) hideControls()", play[:400])
 
     def test_a_paused_player_is_never_left_inert(self):
         # Removing the poster means no picture loads until playback starts, so
         # the player used to open as a black rectangle with hidden controls.
         self.assertIn('id="bigPlay"', self.body)
-        self.assertIn("function refreshBigPlay()", self.body)
+        self.assertIn("function refreshBigPlay()", self.script)
         self.assertIn(".player-bigplay", self._player_css())
 
     def test_big_play_button_starts_playback(self):
-        handler = self.body[
-            self.body.index("if (bigPlay) {"):self.body.index("if (tapZone) {")
-        ]
+        handler = between(self.script, "if (bigPlay) {", "if (tapZone) {")
         self.assertIn("togglePlayPause()", handler)
 
     def test_big_play_is_hidden_while_playing(self):
-        helper = self.body[
-            self.body.index("function refreshBigPlay()"):self.body.index("if (playerStage)")
-        ]
+        helper = between(self.script, "function refreshBigPlay()", "function refreshMini()")
         self.assertIn("bigPlay.hidden = !paused", helper)
 
     def test_controls_start_visible_not_hidden(self):
         # A paused video must show its bar; only playback hides it.
-        tail = self.body[self.body.index("wireControls()\n"):]
-        self.assertIn("showControls()", tail[:200])
-        self.assertNotIn("hideControls()", tail[:200])
+        startup = self.script[self.script.index("/* --- Start-up"):]
+        self.assertIn("showControls()", startup)
+        self.assertNotIn("hideControls()", startup)
 
     def test_mobile_puts_the_bar_below_the_picture(self):
         css = self._player_css()
@@ -1454,7 +1475,7 @@ class OfflineSupportTests(TestCase):
             reverse("videos:detail", args=[self.video.id])
         ).content.decode()
         self.assertIn('data-offline-url="/%d/audio-stream/"' % self.video.id, content)
-        self.assertIn('audioSrc = "/%d/audio-stream/"' % self.video.id, content)
+        self.assertIn('"audio_url": "/%d/audio-stream/"' % self.video.id, content)
 
     def test_base_page_links_manifest(self):
         content = self.client.get(reverse("videos:list")).content.decode()
@@ -3877,36 +3898,33 @@ class BackgroundPlaybackTests(TestCase):
         self.assertRegex(self._detail(), r"<video[^>]*\splaysinline")
 
     def test_media_session_is_registered(self):
-        content = self._detail()
+        content = player_script_text()
         self.assertIn("navigator.mediaSession", content)
         self.assertIn("new MediaMetadata", content)
         self.assertIn("mediaSession.metadata", content)
 
     def test_offline_capable_handlers_are_registered(self):
-        content = self._detail()
+        content = player_script_text()
         for action in ("play", "pause", "seekbackward", "seekforward", "stop"):
-            self.assertIn(f"        {action}:", content)
+            self.assertRegex(content, rf"\n\s+{action}:")
 
     def test_unsupported_actions_are_guarded(self):
         # setActionHandler throws for actions a browser does not implement.
-        self.assertIn("try { mediaSession.setActionHandler", self._detail())
+        self.assertIn("try { mediaSession.setActionHandler", player_script_text())
 
     def test_playback_state_follows_the_active_player(self):
-        content = self._detail()
-        self.assertIn("function setActivePlayer", content)
+        content = player_script_text()
         self.assertIn("function syncPlaybackState", content)
-        self.assertIn("el.addEventListener(name, syncPlaybackState)", content)
+        self.assertIn("element.addEventListener(name, syncPlaybackState)", content)
 
     def test_mode_switch_changes_the_active_player(self):
         # The OS controls must follow whichever mode the listener is in.
-        content = self._detail()
-        self.assertIn("setActivePlayer(audioPlayer)", content)
-        self.assertIn("setActivePlayer(videoPlayer)", content)
+        content = player_script_text()
+        self.assertIn("activePlayer = audioMode ? audioPlayer : videoPlayer", content)
 
     def test_metadata_uses_the_video_details(self):
-        content = self._detail()
-        self.assertIn('title: "Listen"', content)
-        self.assertIn('album: "Fazakkir"', content)
+        self.assertIn('"title": "Listen"', self._detail())
+        self.assertIn('album: "Fazakkir"', player_script_text())
 
 
 class AudioSweepTests(TestCase):
@@ -4420,7 +4438,8 @@ class AudioOnlyUploadTests(TestCase):
         # No picture to switch back to, so the Video / Listen toggle is gone.
         self.assertNotIn('id="mode-video"', body)
         self.assertNotIn('id="mode-audio"', body)
-        self.assertIn("audio-mode", body)
+        # The player starts in MP3 mode because the payload says so.
+        self.assertIs(embedded_payload(body)["is_audio_only"], True)
 
     def test_upload_page_offers_both_types(self):
         response = self.client.get(reverse("videos:upload"))
@@ -4732,10 +4751,15 @@ class MarkupBalanceTests(TestCase):
             reverse("videos:detail", args=[self.video.id])
         ).content.decode()
 
+    def _player_region(self):
+        # The shared player is rendered once, after the page content, from
+        # videos/_player.html; the queue markup follows it.
+        start = self.body.index('<div class="fz-player-host"')
+        end = self.body.index('<div id="fzLabels"')
+        return self.body[start:end]
+
     def test_no_unclosed_div_in_the_player_region(self):
-        start = self.body.index('<div class="video-player-container"')
-        end = self.body.index('<div class="video-details"')
-        chunk = self.body[start:end]
+        chunk = self._player_region()
         self.assertEqual(
             len(re.findall(r"<div\b", chunk)),
             len(re.findall(r"</div>", chunk)),
@@ -4743,25 +4767,15 @@ class MarkupBalanceTests(TestCase):
         )
 
     def test_download_buttons_are_not_inside_the_player_container(self):
-        start = self.body.index('<div class="video-player-container"')
-        end = self.body.index('<div class="player-controls"')
-        self.assertGreater(
-            end, start,
-            "player-controls must follow the closed player container",
-        )
-        # The container's closing tag has to appear before the controls.
-        tail = self.body[start:end]
-        self.assertEqual(
-            tail.count("<div"), tail.count("</div>"),
-            "player-controls leaked inside .video-player-container",
-        )
+        chunk = self._player_region()
+        self.assertNotIn('class="player-controls"', chunk)
+        self.assertNotIn("download-btn", chunk)
 
     def test_the_control_bar_is_a_sibling_of_the_picture(self):
-        stage = self.body.index('id="playerStage"')
-        bar = self.body.index('id="playerBar"')
-        controls = self.body.index('class="player-controls"')
+        chunk = self._player_region()
+        stage = chunk.index('id="playerStage"')
+        bar = chunk.index('id="playerBar"')
         self.assertLess(stage, bar)
-        self.assertLess(bar, controls)
 
 
 class ConfirmationDialogTests(TestCase):
@@ -4940,7 +4954,7 @@ class PlayerLayoutTests(TestCase):
 
 
 class PlayerScriptTests(TestCase):
-    """Execute the rendered player script instead of only grepping it.
+    """Execute the shared player script instead of only grepping it.
 
     Every earlier player test asserted that certain strings appeared in the
     HTML. That passed happily while the script threw a ReferenceError on the
@@ -4978,47 +4992,48 @@ class PlayerScriptTests(TestCase):
             audio_status="ready",
         )
 
-    def _script(self, video=None) -> str:
-        body = self.client.get(
-            reverse("videos:detail", args=[(video or self.video).id])
-        ).content.decode()
-        # The page opens with the theme bootstrap inline, so pick the block that
-        # actually holds the player rather than the first one on the page.
-        for block in re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>",
-                                body, re.S):
-            if "playerBar" in block:
-                return block
-        raise AssertionError("player script block not found in the page")
+    def _payload(self, video) -> dict:
+        body = self.client.get(reverse("videos:detail", args=[video.id])).content.decode()
+        return embedded_payload(body)
 
-    def _run(self, script=None) -> str:
+    def _run(self, video=None) -> str:
+        """Run the player, shown on the watch page of ``video`` (or on no video)."""
         project = Path(__file__).resolve().parent.parent
         harness = project / "static" / "js" / "tests" / "player_smoke.js"
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "player.js"
-            target.write_text(
-                script if script is not None else self._script(),
-                encoding="utf-8",
-            )
+            target.write_text(player_script_text(), encoding="utf-8")
+            args = [self.node, str(harness), str(target)]
+            if video is not None:
+                data = Path(tmp) / "payload.json"
+                data.write_text(json.dumps(self._payload(video)), encoding="utf-8")
+                args.append(str(data))
             proc = subprocess.run(
-                [self.node, str(harness), str(target)],
-                capture_output=True, text=True, timeout=120, cwd=str(project),
+                args, capture_output=True, text=True, timeout=120, cwd=str(project),
             )
         return (proc.stdout or "") + (proc.stderr or "")
 
     def test_player_script_runs_without_throwing(self):
-        output = self._run()
+        output = self._run(self.video)
         self.assertIn(
             "script executed without throwing", output,
             "the player script failed to execute:\n" + output,
         )
 
-    def test_tapping_the_picture_starts_playback(self):
+    def test_player_script_runs_on_a_page_without_a_video(self):
         output = self._run()
+        self.assertIn(
+            "script executed without throwing", output,
+            "the player script failed on a page with no video:\n" + output,
+        )
+
+    def test_tapping_the_picture_starts_playback(self):
+        output = self._run(self.video)
         self.assertIn("video.play() called : true", output)
         self.assertIn("bar visible         : true", output)
 
     def test_every_control_is_wired_to_a_handler(self):
-        output = self._run()
+        output = self._run(self.video)
         for element, event in (
             ("tapZone", "click"),
             ("bigPlay", "click"),
@@ -5033,7 +5048,7 @@ class PlayerScriptTests(TestCase):
 
     def test_every_referenced_element_variable_is_declared(self):
         # A variable used in the auto-hide code must also be declared.
-        script = self._script()
+        script = player_script_text()
         for name in ("playerBar", "playerStage", "tapZone", "bigPlay"):
             self.assertRegex(script, rf"const {name}\s*=", f"{name} is never declared")
             self.assertEqual(
@@ -5041,34 +5056,20 @@ class PlayerScriptTests(TestCase):
                 f"{name} is declared more than once",
             )
 
-    def test_audio_only_flag_is_a_boolean_not_a_quoted_string(self):
-        # "false" is a non-empty string and therefore truthy, which made every
-        # control drive the audio element instead of the video.
-        script = self._script()
-        match = re.search(r"const audioOnly\s*=\s*(.+)", script)
-        self.assertIsNotNone(match, "audioOnly is not set")
-        self.assertEqual(
-            match.group(1).strip(), "false",
-            'audioOnly must be a bare boolean; a quoted "false" is truthy',
-        )
+    def test_audio_only_flag_is_a_real_boolean_in_the_payload(self):
+        # "false" is a non-empty string and therefore truthy, which once made
+        # every control drive the audio element instead of the video. The
+        # payload is JSON, so the flag has to be a JSON boolean.
+        self.assertIs(self._payload(self.video)["is_audio_only"], False)
+        self.assertIs(self._payload(self.audio_only)["is_audio_only"], True)
 
     def test_controls_drive_the_video_for_a_normal_upload(self):
-        output = self._run()
+        output = self._run(self.video)
         self.assertIn("video.play() called : true", output)
 
     def test_player_script_runs_for_an_audio_only_upload(self):
-        """The audio-only page takes a different branch of the same script.
-
-        ``audioOnly`` a quoted "false" was truthy and made every control drive
-        the wrong element; executing the page is the only way to be sure the
-        branch really runs.
-        """
-        script = self._script(self.audio_only)
-        self.assertRegex(
-            script, r"const audioOnly\s*=\s*true\b",
-            "the audio-only page does not set the flag to a bare true",
-        )
-        output = self._run(script)
+        """The audio-only page takes a different branch of the same script."""
+        output = self._run(self.audio_only)
         self.assertIn(
             "script executed without throwing", output,
             "the audio-only player failed to execute:\n" + output,
@@ -5089,15 +5090,15 @@ class PlayerScriptTests(TestCase):
     def test_fullscreen_falls_back_to_the_video_on_iphone(self):
         """iPhone Safari has no Fullscreen API on elements.
 
-        The button called ``playerStage.requestFullscreen()`` unguarded, so on
-        an iPhone it threw a TypeError synchronously - before ``.catch`` could
-        be attached - and pressing it did nothing. The harness replays that
-        environment: a stage with neither ``requestFullscreen`` nor the webkit
+        The button called ``requestFullscreen()`` unguarded, so on an iPhone it
+        threw a TypeError synchronously - before ``.catch`` could be attached -
+        and pressing it did nothing. The harness replays that environment: a
+        player container with neither ``requestFullscreen`` nor the webkit
         prefix, which must fall through to the video's own API.
         """
-        output = self._run()
+        output = self._run(self.video)
         self.assertIn(
-            "desktop -> stage.requestFullscreen called    : true", output,
+            "desktop -> container.requestFullscreen called : true", output,
             "fullscreen no longer uses the standard API:\n" + output,
         )
         self.assertIn(
@@ -5116,12 +5117,12 @@ class PlayerScriptTests(TestCase):
         ``["a"].forEach(...)`` placed straight after ``foo()`` becomes
         ``foo()["a"].forEach(...)``, which threw at load time and killed the
         whole player. A bracket is only a hazard when the previous code line can
-        be continued; after a "}" or a restricted keyword such as "return", a new
-        statement begins instead and the bracket is harmless.
+        be continued; after a "}", a comment's end or a restricted keyword such
+        as "return", a new statement begins instead and the bracket is harmless.
         """
-        script = self._script()
+        script = player_script_text()
         lines = script.splitlines()
-        boundaries = ("}", ";", "{", ":")
+        boundaries = ("}", ";", "{", ":", "*/")
         restricted = ("return", "break", "continue", "throw", "yield")
         offenders = []
         for index, line in enumerate(lines):
@@ -5152,7 +5153,7 @@ class PlayerScriptTests(TestCase):
             "subtitleCcCurrent",
         }
 
-        output = self._run()
+        output = self._run(self.video)
         line = [l for l in output.splitlines() if l.startswith("requested ids:")]
         self.assertTrue(line, "harness did not report the ids it looked up")
         requested = [i for i in line[0].split(":", 1)[1].split() if i not in conditional]
@@ -5274,10 +5275,12 @@ class WatchLayoutTests(TestCase):
         aside = self.aside(self.render().content.decode())
         self.assertLess(aside.index("Popular clip"), aside.index("Quiet clip"))
 
-    def test_sidebar_is_left_out_when_there_is_nothing_else_to_watch(self):
+    def test_no_up_next_list_when_there_is_nothing_else_to_watch(self):
         Video.objects.exclude(id=self.main.id).delete()
         html = self.render().content.decode()
-        self.assertNotIn("watch-aside", html)
+        # The sidebar stays for the queue, but has no suggestions to list.
+        self.assertIn("data-queue-section", html)
+        self.assertNotIn('class="related-card"', html)
 
     def test_the_view_hands_the_template_the_related_videos(self):
         response = self.render()
@@ -5340,11 +5343,20 @@ class MarkupNestingTests(TestCase):
         self.assertNotIn("video-details", inside_player)
         self.assertNotIn("watch-aside", inside_player)
 
-    def test_the_player_and_the_details_are_side_by_side_in_the_main_column(self):
+    def test_the_player_slot_and_the_details_are_in_the_main_column(self):
+        # The player docks into the slot at run time, so the page itself only
+        # has to provide the slot in the picture's place.
         in_main = self.tree.inside.get("watch-main", set())
-        self.assertIn("video-player-container", in_main)
+        self.assertIn("watch-player-slot", in_main)
         self.assertIn("video-details", in_main)
         self.assertNotIn("watch-aside", in_main)
+
+    def test_the_shared_player_is_outside_the_page_content(self):
+        # It must survive the page changing, so it is never part of <main>.
+        self.assertNotIn(
+            "video-player-container",
+            self.tree.inside.get("main-content", set()),
+        )
 
     def test_the_sidebar_lives_inside_the_watch_layout(self):
         self.assertIn(
@@ -5466,3 +5478,250 @@ class TemplateCommentTests(TestCase):
                 body = self.client.get(url).content.decode()
                 self.assertNotIn("{#", body, f"{name} page leaks a template comment")
                 self.assertNotIn("#}", body, f"{name} page leaks a template comment")
+
+def static_text(name: str) -> str:
+    """Source of a file under static/, for checks on the shared scripts."""
+    root = Path(__file__).resolve().parent.parent
+    return (root / "static" / name).read_text(encoding="utf-8")
+
+
+class PlaybackEndpointTests(TestCase):
+    """The data the shared player loads for a video that is not open on a page."""
+
+    def setUp(self):
+        self.owner = make_user("curator", is_staff=True, is_superuser=True)
+        Profile.objects.filter(user=self.owner).update(access_level=Profile.Access.WRITE)
+        self.video = make_video(
+            self.owner,
+            title="Queued",
+            audio_file_id="audio/q.mp3",
+            audio_url="https://example.com/q.mp3",
+            audio_status="ready",
+        )
+        SubtitleTrack.objects.create(
+            video=self.video, language_code="fr", label="French", content="WEBVTT"
+        )
+
+    def fetch(self, video):
+        response = self.client.get(reverse("videos:playback", args=[video.id]))
+        self.assertEqual(response.status_code, 200)
+        return response.json()
+
+    def test_describes_the_video_for_the_player(self):
+        data = self.fetch(self.video)
+        self.assertEqual(data["id"], self.video.id)
+        self.assertEqual(data["title"], "Queued")
+        self.assertEqual(data["channel"], "curator")
+        self.assertEqual(data["url"], reverse("videos:detail", args=[self.video.id]))
+        self.assertEqual(data["playback_url"], reverse("videos:playback", args=[self.video.id]))
+        self.assertFalse(data["is_audio_only"])
+        self.assertEqual(data["video_url"], self.video.playback_url)
+        # The MP3 goes through our own route, never a link that expires.
+        self.assertEqual(data["audio_url"], reverse("videos:audio_stream", args=[self.video.id]))
+        self.assertEqual(
+            data["subtitles"],
+            [{
+                "lang": "fr",
+                "label": "French",
+                "url": reverse("videos:subtitle_file", args=[self.video.id, "fr"]),
+                "is_lyrics": False,
+            }],
+        )
+
+    def test_an_audio_only_upload_has_no_picture(self):
+        audio = Video.objects.create(
+            user=self.owner,
+            title="Recitation",
+            media_type="audio",
+            audio_file_id="audio/r.mp3",
+            audio_url="https://example.com/r.mp3",
+            audio_status="ready",
+        )
+        data = self.fetch(audio)
+        self.assertIs(data["is_audio_only"], True)
+        self.assertEqual(data["video_url"], "")
+        self.assertEqual(data["audio_url"], reverse("videos:audio_stream", args=[audio.id]))
+
+    def test_a_video_without_audio_has_no_audio_link_or_captions(self):
+        silent = make_video(self.owner, title="Silent")
+        data = self.fetch(silent)
+        self.assertEqual(data["audio_url"], "")
+        self.assertEqual(data["subtitles"], [])
+
+    def test_unknown_video_is_not_found(self):
+        self.assertEqual(self.client.get("/999999/playback/").status_code, 404)
+
+    def test_only_reads_are_allowed(self):
+        response = self.client.post(reverse("videos:playback", args=[self.video.id]))
+        self.assertEqual(response.status_code, 405)
+
+    def test_starting_a_video_counts_as_a_view(self):
+        self.fetch(self.video)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.views, 1)
+
+    def test_watch_page_and_playback_describe_the_video_the_same_way(self):
+        page = self.client.get(reverse("videos:detail", args=[self.video.id])).content.decode()
+
+        def addresses_only(data):
+            # A presigned link carries the second it was signed, so compare the
+            # addresses, not the signatures.
+            return {
+                key: value.split("?", 1)[0] if isinstance(value, str) else value
+                for key, value in data.items()
+            }
+
+        self.assertEqual(addresses_only(embedded_payload(page)), addresses_only(self.fetch(self.video)))
+
+
+class QueueMarkupTests(TestCase):
+    """Every video offers the ☰+ menu, and the menu knows which video it is for."""
+
+    def setUp(self):
+        self.user = make_user("queuer")
+        self.first = make_video(
+            self.user, title="First queue card",
+            audio_file_id="audio/a.mp3", audio_status="ready",
+        )
+        self.second = make_video(self.user, title="Second queue card")
+
+    def test_home_cards_carry_their_video(self):
+        body = self.client.get(reverse("videos:list")).content.decode()
+        for video in (self.first, self.second):
+            self.assertIn(f'data-queue-id="{video.id}"', body)
+            self.assertIn(
+                f'data-queue-playback="{reverse("videos:playback", args=[video.id])}"', body,
+            )
+        self.assertIn('data-queue-add="next"', body)
+        self.assertIn('data-queue-add="last"', body)
+
+    def test_search_results_have_the_menu(self):
+        body = self.client.get(reverse("videos:search"), {"q": "queue card"}).content.decode()
+        self.assertIn(f'data-queue-id="{self.first.id}"', body)
+
+    def test_channel_cards_have_the_menu(self):
+        body = self.client.get(reverse("videos:channel", args=[self.user.username])).content.decode()
+        self.assertIn(f'data-queue-id="{self.second.id}"', body)
+
+    def test_watch_page_has_the_menu_for_its_video_and_the_queue_section(self):
+        body = self.client.get(reverse("videos:detail", args=[self.first.id])).content.decode()
+        self.assertIn("queue-anchor-action", body)
+        self.assertIn(f'data-queue-id="{self.first.id}"', body)
+        self.assertIn("data-queue-section", body)
+
+    def test_titles_are_escaped_in_the_menu(self):
+        make_video(self.user, title='Quote "x" <b>bold</b>')
+        body = self.client.get(reverse("videos:list")).content.decode()
+        self.assertIn('data-queue-title="Quote &quot;x&quot; &lt;b&gt;bold&lt;/b&gt;"', body)
+
+
+class SharedPlayerMarkupTests(TestCase):
+    """The player and the queue sit outside the page content, on every page."""
+
+    def setUp(self):
+        self.user = make_user("shared")
+        self.video = make_video(self.user, title="Shared", audio_file_id="audio/s.mp3", audio_status="ready")
+
+    def test_the_player_and_the_queue_are_outside_main(self):
+        with mock.patch("videos.views.schedule_audio_generation"):
+            pages = [
+                reverse("videos:list"),
+                reverse("videos:detail", args=[self.video.id]),
+                reverse("videos:search") + "?q=shared",
+            ]
+            for url in pages:
+                with self.subTest(page=url):
+                    body = self.client.get(url).content.decode()
+                    end_of_main = body.index("</main>")
+                    self.assertGreater(body.index('id="fzPlayerHost"'), end_of_main)
+                    self.assertGreater(body.index('id="fzQueue"'), end_of_main)
+
+    def test_scripts_load_in_dependency_order(self):
+        with mock.patch("videos.views.schedule_audio_generation"):
+            body = self.client.get(reverse("videos:detail", args=[self.video.id])).content.decode()
+        positions = [
+            re.search(pattern, body).start()
+            for pattern in (
+                r"/static/js/nav[^\"']*\.js",
+                r"/static/js/queue[^\"']*\.js",
+                r"/static/js/player[^\"']*\.js",
+                r"<script data-fz-page>",
+            )
+        ]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_the_navbar_offers_the_queue(self):
+        body = self.client.get(reverse("videos:list")).content.decode()
+        self.assertIn('id="fzQueueToggle"', body)
+        self.assertIn('aria-controls="fzQueue"', body)
+
+    def test_the_drawer_starts_hidden(self):
+        body = self.client.get(reverse("videos:list")).content.decode()
+        self.assertRegex(body, r'<aside class="fz-queue" id="fzQueue"[^>]*\bhidden\b')
+
+    def test_script_labels_are_rendered_for_the_queue(self):
+        body = self.client.get(reverse("videos:list")).content.decode()
+        self.assertIn('data-play-next="Play next"', body)
+        self.assertIn('data-added-to-queue="Added to the queue"', body)
+
+
+class SpaNavigationTests(TestCase):
+    """Which pages move without a reload, and what they must do to allow it."""
+
+    def setUp(self):
+        self.user = make_user("walker")
+        self.video = make_video(self.user, title="Walked", audio_file_id="audio/w.mp3", audio_status="ready")
+
+    def test_client_side_navigation_covers_the_shared_pages(self):
+        script = static_text("js/nav.js")
+        for pattern in (r"/^\/$/", r"/^\/search\/?$/", r"/^\/channel\/[^\/]+\/?$/", r"/^\/\d+\/?$/"):
+            self.assertIn(pattern, script)
+
+    def test_the_watch_page_script_is_marked_to_run_again(self):
+        with mock.patch("videos.views.schedule_audio_generation"):
+            body = self.client.get(reverse("videos:detail", args=[self.video.id])).content.decode()
+        self.assertIn("<script data-fz-page>", body)
+
+    def test_the_watch_page_script_declares_nothing_at_top_level(self):
+        # Running it a second time must not redeclare names, so everything lives
+        # inside its function.
+        with mock.patch("videos.views.schedule_audio_generation"):
+            body = self.client.get(reverse("videos:detail", args=[self.video.id])).content.decode()
+        script = body.split("<script data-fz-page>", 1)[1].split("</script>", 1)[0]
+        self.assertNotRegex(script, r"(?m)^(const|let|var|function) ")
+
+    def test_the_watch_page_gives_back_its_listeners_when_left(self):
+        with mock.patch("videos.views.schedule_audio_generation"):
+            body = self.client.get(reverse("videos:detail", args=[self.video.id])).content.decode()
+        self.assertIn("signal: leaveController.signal", body)
+        self.assertIn("nav.onLeave(", body)
+
+    def test_pages_that_follow_a_move_refresh_their_widgets(self):
+        for name in ("offline.js", "navbar.js", "queue.js", "player.js"):
+            with self.subTest(script=name):
+                self.assertIn('"fz:page"', static_text(f"js/{name}"))
+
+    def test_the_player_leaves_its_page_before_the_page_is_replaced(self):
+        self.assertIn('"fz:leave"', static_text("js/player.js"))
+        self.assertIn('"fz:leave"', static_text("js/nav.js"))
+
+
+class QueueScriptTests(TestCase):
+    """Runs the queue's own rules: order, moves, taking, removing and saving."""
+
+    def setUp(self):
+        node = shutil.which("node") or shutil.which("node.exe")
+        if not node:
+            self.skipTest("node is not installed on this machine")
+        self.node = node
+
+    def test_the_queue_rules_hold(self):
+        project = Path(__file__).resolve().parent.parent
+        harness = project / "static" / "js" / "tests" / "queue_smoke.js"
+        proc = subprocess.run(
+            [self.node, str(harness), str(project / "static" / "js" / "queue.js")],
+            capture_output=True, text=True, timeout=120, cwd=str(project),
+        )
+        output = (proc.stdout or "") + (proc.stderr or "")
+        self.assertEqual(proc.returncode, 0, output)
+        self.assertIn("\nOK", output)

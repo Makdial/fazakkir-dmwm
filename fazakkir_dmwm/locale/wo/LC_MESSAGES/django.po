@@ -1279,3 +1279,72 @@ msgstr "Short bi amul son."
 
 msgid "The sound could not be prepared. Please try again."
 msgstr ""
+
+msgid "Add to queue"
+msgstr "Yokk ci tolluwaay bi"
+
+msgid "Added to the queue"
+msgstr "Yokk na ci tolluwaay bi"
+
+msgid "Back to the video"
+msgstr "Dellu ci vidéo bi"
+
+msgid "Clear queue"
+msgstr "Faagaagal tolluwaay bi"
+
+msgid "Clear the queue?"
+msgstr "Faagaagal tolluwaay bi?"
+
+msgid "Close"
+msgstr "Tëj"
+
+msgid "Close player"
+msgstr "Tëj player bi"
+
+msgid "Every video in the queue will be removed. The videos themselves are not affected."
+msgstr "Vidéo yépp ci tolluwaay bi dinañ ko jàll. Vidéo yi ci seeni bopp deesul jëm."
+
+msgid "In queue"
+msgstr "Ci tolluwaay bi"
+
+msgid "Move to end"
+msgstr "Yóbbal ci mujj bi"
+
+msgid "Next in queue"
+msgstr "Ki ci topp ci tolluwaay bi"
+
+msgid "Now playing"
+msgstr "Mi ngi topp léegi"
+
+msgid "Play all"
+msgstr "Topp lépp"
+
+msgid "Play next"
+msgstr "Topp ki ci topp"
+
+msgid "Play now"
+msgstr "Topp léegi"
+
+msgid "Queue"
+msgstr "Tolluwaay"
+
+msgid "Queue options"
+msgstr "Tànnec tolluwaay bi"
+
+msgid "Remove from queue"
+msgstr "Jéem ci tolluwaay bi"
+
+msgid "Show queue"
+msgstr "Wone tolluwaay bi"
+
+msgid "The queue has been cleared."
+msgstr "Tolluwaay bi faagaagal na."
+
+msgid "This video could not be played, so it was skipped."
+msgstr "Vidéo bi mënu na topp, looloo tooyal ko."
+
+msgid "Will play next"
+msgstr "Dina topp ki ci topp"
+
+msgid "Your queue is empty. Use the ☰+ button on any video to add it."
+msgstr "Tolluwaay bi amul dara. Jëfandikoo bouton ☰+ bi ci vidéo bu nekk ngir yokk ko."

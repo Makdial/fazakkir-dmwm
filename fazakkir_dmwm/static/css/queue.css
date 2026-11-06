@@ -1,0 +1,577 @@
+/**
+ * The shared player's places (docked on a watch page, floating as a mini player),
+ * the video queue, the ☰+ menus on videos, and the toast that confirms them.
+ *
+ * Logical properties (inset-inline-end and so on) are used throughout so that
+ * the layout mirrors for Arabic without a separate rule.
+ */
+
+/* Some component classes set `display`, which beats the `hidden` attribute.
+   Keep hidden controls (such as Next with an empty queue) out of the layout. */
+.player-btn[hidden],
+[data-queue-now][hidden] {
+    display: none;
+}
+
+/* --- The player's host: docked into the watch page, or floating ------------ */
+
+.fz-player-host {
+    position: relative;
+    width: 100%;
+}
+
+.fz-player-host[hidden] {
+    display: none;
+}
+
+/* Before player.js docks the player, the slot keeps the picture's space so the
+   page does not jump when it arrives. */
+.watch-player-slot:empty {
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: var(--radius-lg);
+    margin-bottom: 24px;
+}
+
+/* Mini player: a small window in the corner that keeps playing while the
+   visitor browses. Below the navbar (z-index 1000) and the queue panel. */
+.fz-player-host.is-mini {
+    position: fixed;
+    inset-inline-end: 16px;
+    inset-block-end: 16px;
+    width: min(360px, calc(100vw - 32px));
+    z-index: 900;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.fz-player-host.is-mini .video-player {
+    margin: 0;
+    border-radius: 0;
+}
+
+.fz-player-host.is-mini .player-bar {
+    display: none;
+}
+
+.fz-player-host.is-mini .player-bigplay {
+    width: 52px;
+    height: 52px;
+    font-size: 1.3rem;
+}
+
+.fz-player-host.is-mini .caption-text {
+    font-size: 0.8rem;
+}
+
+.fz-mini-bar {
+    /* The shared button colours are defined on .player-bar; this bar sits
+       outside it, so it carries its own. */
+    --bar-fg: var(--text-primary);
+    --bar-btn: var(--bg-tertiary);
+    --bar-btn-hover: var(--yt-chip-hover);
+    --bar-field: var(--bg-tertiary);
+
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+}
+
+.fz-player-host.is-mini .fz-mini-bar {
+    display: flex;
+}
+
+.fz-player-host.is-docked .fz-mini-bar {
+    display: none;
+}
+
+.fz-mini-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.fz-mini-title-text {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.fz-mini-channel {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+    .fz-player-host.is-mini {
+        width: auto;
+        inset-inline: 8px;
+        inset-block-end: 8px;
+    }
+}
+
+/* --- Navbar ------------------------------------------------------------ */
+
+.nav-queue-btn {
+    font-family: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.nav-queue-count {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--accent-red);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+}
+
+.nav-queue-count[hidden] {
+    display: none;
+}
+
+/* --- The ☰+ button and its menu ---------------------------------------- */
+
+.queue-anchor {
+    position: relative;
+}
+
+/* On a thumbnail: top-right corner. Hidden until hover on a mouse, always shown
+   on touch screens where there is no hover. */
+.queue-anchor-card {
+    position: absolute;
+    top: 8px;
+    inset-inline-end: 8px;
+    z-index: 3;
+}
+
+.queue-anchor-card .queue-toggle {
+    opacity: 0;
+    transition: opacity var(--transition-normal), background var(--transition-fast);
+}
+
+@media (hover: hover) {
+    .video-card-wrap:hover .queue-anchor-card .queue-toggle,
+    .queue-anchor-card:focus-within .queue-toggle,
+    .queue-anchor-card .queue-toggle[aria-expanded="true"] {
+        opacity: 1;
+    }
+}
+
+@media (hover: none) {
+    .queue-anchor-card .queue-toggle {
+        opacity: 1;
+    }
+}
+
+/* In the watch page's row of buttons, styled like the other pill buttons. */
+.queue-anchor-action .queue-toggle {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: var(--radius-full);
+    background: var(--yt-chip);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.queue-anchor-action .queue-toggle:hover {
+    background: var(--yt-chip-hover);
+}
+
+.queue-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 30px;
+    padding: 0 8px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.queue-toggle:hover,
+.queue-toggle:focus-visible {
+    background: var(--accent-red);
+}
+
+.queue-anchor.is-queued .queue-toggle {
+    background: var(--accent-red);
+    color: #fff;
+}
+
+.queue-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    inset-inline-end: 0;
+    z-index: 30;
+    min-width: 190px;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    background: var(--yt-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+}
+
+.queue-menu[hidden] {
+    display: none;
+}
+
+.queue-menu-item {
+    padding: 9px 12px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    text-align: start;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.queue-menu-item:hover,
+.queue-menu-item:focus-visible {
+    background: var(--yt-hover);
+    outline: none;
+}
+
+.queue-link-btn {
+    padding: 6px 0;
+    background: none;
+    border: none;
+    color: var(--accent-red);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.queue-link-btn:hover,
+.queue-link-btn:focus-visible {
+    text-decoration: underline;
+}
+
+/* --- The queue panel (drawer) ------------------------------------------- */
+
+.fz-queue {
+    position: fixed;
+    inset-block-start: 72px;
+    inset-inline-end: 16px;
+    z-index: 950;
+    width: min(380px, calc(100vw - 32px));
+    max-height: calc(100vh - 96px);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.fz-queue[hidden] {
+    display: none;
+}
+
+.fz-queue-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 16px 6px;
+}
+
+.fz-queue-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.fz-queue-title span {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.fz-queue-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--text-primary);
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.fz-queue-close:hover,
+.fz-queue-close:focus-visible {
+    background: var(--yt-hover);
+}
+
+.fz-queue-actions {
+    display: flex;
+    gap: 16px;
+    padding: 0 16px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.fz-queue-body {
+    overflow-y: auto;
+    padding: 8px 8px 12px;
+}
+
+@media (max-width: 768px) {
+    .fz-queue {
+        inset-inline: 0;
+        inset-block-start: auto;
+        inset-block-end: 0;
+        width: 100%;
+        max-height: 72vh;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+}
+
+/* --- Rows in a queue list ------------------------------------------------- */
+
+.queue-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.queue-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px;
+    border-radius: var(--radius-md);
+}
+
+.queue-row:hover {
+    background: var(--yt-hover);
+}
+
+.queue-row-now {
+    margin-bottom: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.queue-row-play {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-md);
+    color: inherit;
+    font-family: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.queue-row-play.is-static {
+    cursor: default;
+}
+
+.queue-row-index {
+    flex: none;
+    width: 18px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.queue-row-thumb {
+    flex: none;
+    position: relative;
+    width: 96px;
+    aspect-ratio: 16 / 9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--yt-thumb-bg);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.queue-row-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.queue-row-glyph {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+.queue-row-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.queue-row-title {
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.queue-row-channel {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.queue-row-label {
+    color: var(--accent-red);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.queue-row-actions {
+    flex: none;
+    display: flex;
+    gap: 2px;
+}
+
+.queue-row-btn {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+
+.queue-row-btn:hover:not(:disabled),
+.queue-row-btn:focus-visible {
+    background: var(--yt-hover);
+    color: var(--text-primary);
+}
+
+.queue-row-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.queue-empty {
+    margin: 0;
+    padding: 12px 8px;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+}
+
+/* --- Queue section on the watch page -------------------------------------- */
+
+.watch-queue {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.watch-queue[hidden] {
+    display: none;
+}
+
+.watch-queue-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.watch-queue .queue-list {
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+/* --- Toast ---------------------------------------------------------------- */
+
+/* Centred with auto margins rather than a translate, so it stays centred in
+   right-to-left layouts too. */
+.fz-toast {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 24px;
+    z-index: 1100;
+    width: max-content;
+    max-width: min(420px, calc(100vw - 32px));
+    margin-inline: auto;
+    padding: 10px 16px;
+    border-radius: var(--radius-md);
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 0.9rem;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fz-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}

@@ -59,12 +59,12 @@ logger = logging.getLogger(__name__)
 YOUTUBE_SEARCH_URL = "https://www.youtube.com/results?"
 
 
-def video_detail(request, video_id):
-    video = get_object_or_404(Video.objects, id=video_id)
+def _register_play(request, video):
+    """Count a view of ``video`` and start its MP3 if it has none yet.
 
-    if not video.duration_seconds:
-        schedule_missing_durations(Video.objects.filter(id=video.id))
-
+    Shared by the watch page and the playback endpoint, so a video started from
+    the queue (without its page being opened) counts the same as any other view.
+    """
     video.views += 1
     video.save(update_fields=["views"])
 
@@ -91,6 +91,46 @@ def video_detail(request, video_id):
     # up without the administrator having to do anything.
     if not video.has_audio and video.audio_status == "":
         schedule_audio_generation(video.id)
+
+
+def _playback_payload(video):
+    """Everything the shared player needs to play ``video``.
+
+    The watch page embeds this as JSON, and the playback endpoint returns it to
+    the queue, so the two always describe a video the same way.
+    """
+    has_audio = video.has_audio
+    return {
+        "id": video.id,
+        "title": video.title,
+        "channel": video.user.username,
+        "url": reverse("videos:detail", args=[video.id]),
+        "playback_url": reverse("videos:playback", args=[video.id]),
+        "thumbnail_url": video.display_thumbnail_url,
+        "is_audio_only": video.is_audio_only,
+        "video_url": "" if video.is_audio_only else video.playback_url,
+        # The MP3 goes through our own route (see audio_stream), never the raw
+        # presigned link, which would expire.
+        "audio_url": reverse("videos:audio_stream", args=[video.id]) if has_audio else "",
+        "subtitles": [
+            {
+                "lang": track.language_code,
+                "label": track.display_label,
+                "url": reverse("videos:subtitle_file", args=[video.id, track.language_code]),
+                "is_lyrics": track.is_lyrics,
+            }
+            for track in video.subtitle_tracks.all()
+        ],
+    }
+
+
+def video_detail(request, video_id):
+    video = get_object_or_404(Video.objects, id=video_id)
+
+    if not video.duration_seconds:
+        schedule_missing_durations(Video.objects.filter(id=video.id))
+
+    _register_play(request, video)
 
     audio_pending = not video.has_audio and video.audio_status in ("", "processing")
     audio_failed = not video.has_audio and video.audio_status == "failed"
@@ -142,6 +182,7 @@ def video_detail(request, video_id):
         "videos/detail.html",
         {
             "video": video,
+            "playback": _playback_payload(video),
             "user_vote": user_vote,
             "comments": comments,
             "related_videos": related_videos,
@@ -162,6 +203,18 @@ def video_detail(request, video_id):
             "subtitle_choices": [(code, _(name)) for code, name in language_choices()],
         },
     )
+
+
+@require_GET
+def video_playback(request, video_id):
+    """What the player needs to start a video that is not open on a page.
+
+    Used when a queued video plays in the mini player. Starting it counts as a
+    view, just as opening its page does.
+    """
+    video = get_object_or_404(Video.objects.select_related("user"), id=video_id)
+    _register_play(request, video)
+    return JsonResponse(_playback_payload(video))
 
 
 def video_list(request):

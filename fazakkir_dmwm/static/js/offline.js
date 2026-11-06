@@ -230,4 +230,8 @@
     } else {
         init();
     }
+
+    // A page shown by nav.js arrives without running this script again, so its
+    // save buttons and saved-audio list are wired up here.
+    document.addEventListener("fz:page", init);
 })();

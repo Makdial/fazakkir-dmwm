@@ -29,6 +29,9 @@
     <link rel="stylesheet" href="{% static 'css/messages.css' %}">
     <link rel="stylesheet" href="{% static 'css/buttons.css' %}">
     <link rel="stylesheet" href="{% static 'css/forms.css' %}">
+    {# The player and the queue live on every page, so their styles do too. #}
+    <link rel="stylesheet" href="{% static 'css/videoplayer.css' %}">
+    <link rel="stylesheet" href="{% static 'css/queue.css' %}">
 
     {# Installable web app (PWA) + offline audio support. #}
     <link rel="manifest" href="{% url 'manifest' %}">
@@ -92,6 +95,12 @@
                 {% endif %}
                 {% comment %}Every visitor gets a guest account automatically, so these are available without signing in.{% endcomment %}
                 <li><a href="{% url 'videos:playlists' %}" class="nav-link">{% trans "Playlists" %}</a></li>
+                <li>
+                    <button type="button" class="nav-link nav-queue-btn" id="fzQueueToggle"
+                            aria-controls="fzQueue" aria-expanded="false">
+                        {% trans "Queue" %}<span class="nav-queue-count" id="fzQueueCount" hidden>0</span>
+                    </button>
+                </li>
                 <li><a href="{% url 'shorts:list' %}" class="nav-link">{% trans "Shorts" %}</a></li>
                 <li><a href="{% url 'videos:offline' %}" class="nav-link">{% trans "Offline" %}</a></li>
                 {% if can_read %}
@@ -126,11 +135,19 @@
         {% block content %}{% endblock %}
     </main>
 
+    {# Outside <main> on purpose: these survive the page changes made by nav.js. #}
+    {% include "videos/_player.html" %}
+    {% include "videos/_queue.html" %}
+
     <script src="{% static 'js/theme.js' %}"></script>
     {# Loaded before offline.js so a page can confirm a removal straight away. #}
     <script src="{% static 'js/confirm.js' %}"></script>
     <script src="{% static 'js/navbar.js' %}"></script>
     <script src="{% static 'js/offline.js' %}"></script>
+    {# Order matters: nav.js creates window.FZ, which queue.js and player.js extend. #}
+    <script src="{% static 'js/nav.js' %}"></script>
+    <script src="{% static 'js/queue.js' %}"></script>
+    <script src="{% static 'js/player.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,0 +1,50 @@
+{% load i18n %}
+{% comment %}
+    Text the queue and player scripts show. Kept in data attributes, which Django
+    escapes, so translations can contain quotes safely.
+{% endcomment %}
+<div id="fzLabels" hidden
+     data-off="{% trans 'Off' %}"
+     data-no-captions="{% trans 'No captions for this video yet.' %}"
+     data-play="{% trans 'Play' %}"
+     data-pause="{% trans 'Pause' %}"
+     data-fullscreen="{% trans 'Fullscreen' %}"
+     data-exit-fullscreen="{% trans 'Exit fullscreen' %}"
+     data-subtitles="{% trans 'Subtitles' %}"
+     data-load-failed="{% trans 'This video could not be played, so it was skipped.' %}"
+     data-play-now="{% trans 'Play now' %}"
+     data-play-next="{% trans 'Play next' %}"
+     data-move-up="{% trans 'Move up' %}"
+     data-move-down="{% trans 'Move down' %}"
+     data-move-to-end="{% trans 'Move to end' %}"
+     data-remove="{% trans 'Remove from queue' %}"
+     data-now-playing="{% trans 'Now playing' %}"
+     data-queue-options="{% trans 'Queue options' %}"
+     data-in-queue="{% trans 'In queue' %}"
+     data-will-play-next="{% trans 'Will play next' %}"
+     data-added-to-queue="{% trans 'Added to the queue' %}"
+     data-queue-cleared="{% trans 'The queue has been cleared.' %}"
+     data-clear-queue-title="{% trans 'Clear the queue?' %}"
+     data-clear-queue-message="{% trans 'Every video in the queue will be removed. The videos themselves are not affected.' %}"
+     data-clear-queue-confirm="{% trans 'Clear queue' %}"></div>
+
+<aside class="fz-queue" id="fzQueue" aria-label="{% trans 'Queue' %}" hidden>
+    <div class="fz-queue-head">
+        <h2 class="fz-queue-title">{% trans "Queue" %} <span data-queue-count></span></h2>
+        <button type="button" class="fz-queue-close" data-queue-action="close-drawer"
+                aria-label="{% trans 'Close' %}">✕</button>
+    </div>
+    <div class="fz-queue-actions">
+        <button type="button" class="queue-link-btn" data-queue-action="play-all">{% trans "Play all" %}</button>
+        <button type="button" class="queue-link-btn" data-queue-action="clear">{% trans "Clear queue" %}</button>
+    </div>
+    <div class="fz-queue-body">
+        <div class="queue-now" data-queue-now hidden></div>
+        <ol class="queue-list" data-queue-list></ol>
+        <p class="queue-empty" data-queue-empty>
+            {% trans "Your queue is empty. Use the ☰+ button on any video to add it." %}
+        </p>
+    </div>
+</aside>
+
+<div class="fz-toast" id="fzToast" role="status" aria-live="polite"></div>

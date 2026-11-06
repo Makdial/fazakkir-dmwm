@@ -1303,3 +1303,72 @@ msgstr "لا يحتوي هذا المقطع على صوت."
 
 msgid "The sound could not be prepared. Please try again."
 msgstr "تعذّر تجهيز الصوت. يرجى المحاولة مرة أخرى."
+
+msgid "Add to queue"
+msgstr "إضافة إلى قائمة الانتظار"
+
+msgid "Added to the queue"
+msgstr "تمت الإضافة إلى قائمة الانتظار"
+
+msgid "Back to the video"
+msgstr "العودة إلى الفيديو"
+
+msgid "Clear queue"
+msgstr "إفراغ قائمة الانتظار"
+
+msgid "Clear the queue?"
+msgstr "إفراغ قائمة الانتظار؟"
+
+msgid "Close"
+msgstr "إغلاق"
+
+msgid "Close player"
+msgstr "إغلاق المشغّل"
+
+msgid "Every video in the queue will be removed. The videos themselves are not affected."
+msgstr "ستتم إزالة كل الفيديوهات من قائمة الانتظار. الفيديوهات نفسها لن تتأثر."
+
+msgid "In queue"
+msgstr "في قائمة الانتظار"
+
+msgid "Move to end"
+msgstr "نقل إلى النهاية"
+
+msgid "Next in queue"
+msgstr "التالي في قائمة الانتظار"
+
+msgid "Now playing"
+msgstr "قيد التشغيل"
+
+msgid "Play all"
+msgstr "تشغيل الكل"
+
+msgid "Play next"
+msgstr "تشغيل التالي"
+
+msgid "Play now"
+msgstr "تشغيل الآن"
+
+msgid "Queue"
+msgstr "قائمة الانتظار"
+
+msgid "Queue options"
+msgstr "خيارات قائمة الانتظار"
+
+msgid "Remove from queue"
+msgstr "إزالة من قائمة الانتظار"
+
+msgid "Show queue"
+msgstr "عرض قائمة الانتظار"
+
+msgid "The queue has been cleared."
+msgstr "تم إفراغ قائمة الانتظار."
+
+msgid "This video could not be played, so it was skipped."
+msgstr "تعذّر تشغيل هذا الفيديو، فتم تخطيه."
+
+msgid "Will play next"
+msgstr "سيتم التشغيل تاليًا"
+
+msgid "Your queue is empty. Use the ☰+ button on any video to add it."
+msgstr "قائمة الانتظار فارغة. استخدم زر ☰+ أسفل أي فيديو لإضافته."

@@ -1,0 +1,98 @@
+{% load i18n %}
+{% comment %}
+    The one player for the whole site. It sits outside the page content so it can
+    keep playing while nav.js moves between pages: on a watch page player.js docks
+    it into that page's [data-player-slot]; anywhere else it floats as a mini player.
+
+    Nothing here is specific to a video. player.js fills in the source, the
+    subtitle tracks and the title for whichever video is current.
+{% endcomment %}
+<div class="fz-player-host" id="fzPlayerHost" hidden>
+    <div class="video-player-container" id="playerContainer">
+        <div class="video-player" id="playerStage">
+            {% comment %}
+                No poster and no native controls. The custom control bar below takes
+                their place, and the Media Session wiring in player.js is independent
+                of the `controls` attribute, so background playback still works.
+            {% endcomment %}
+            <video id="video-player" playsinline preload="metadata"></video>
+            <audio id="audio-player" preload="metadata" class="audio-player" style="display: none;"></audio>
+            <img id="audioCover" class="audio-cover" alt="" hidden>
+            {% comment %}
+                Captions are drawn here rather than by the browser, so they can look
+                the same on every platform and stay put in fullscreen.
+            {% endcomment %}
+            <div class="caption-layer" id="captionLayer" aria-live="polite" aria-atomic="true">
+                <span class="caption-text" id="captionText"></span>
+            </div>
+            <div id="video-error" class="video-error" style="display: none;">
+                <span class="error-icon">⚠</span>
+                <p>{% trans "Video Unavailable" %}</p>
+                <small>{% trans "The video file could not be loaded." %}</small>
+            </div>
+            <button type="button" class="player-tapzone" id="tapZone"
+                    aria-label="{% trans 'Show or hide the player controls' %}"></button>
+            <button type="button" class="player-bigplay" id="bigPlay"
+                    aria-label="{% trans 'Play' %}">▶</button>
+        </div>
+
+        <div class="player-bar" id="playerBar">
+            <input type="range" class="player-seek" id="seekBar" value="0" min="0" max="100" step="0.1"
+                   aria-label="{% trans 'Seek' %}">
+            <div class="player-bar-row">
+                <button type="button" class="player-btn" id="playPauseBtn"
+                        aria-label="{% trans 'Play' %}">▶</button>
+                <button type="button" class="player-btn" id="nextBtn" hidden
+                        aria-label="{% trans 'Next in queue' %}">⏭</button>
+                <button type="button" class="player-btn" id="backBtn"
+                        aria-label="{% trans 'Back 10 seconds' %}">↺<span>10</span></button>
+                <button type="button" class="player-btn" id="fwdBtn"
+                        aria-label="{% trans 'Forward 10 seconds' %}"><span>10</span>↻</button>
+                <span class="player-time"><span id="currentTime">0:00</span> / <span id="duration">0:00</span></span>
+                <button type="button" class="player-btn" id="muteBtn"
+                        aria-label="{% trans 'Mute' %}">🔊</button>
+                <input type="range" class="player-volume" id="volumeBar" value="1" min="0" max="1" step="0.05"
+                       aria-label="{% trans 'Volume' %}">
+                <select class="player-rate" id="rateSelect" aria-label="{% trans 'Playback speed' %}">
+                    <option value="0.5">0.5×</option>
+                    <option value="0.75">0.75×</option>
+                    <option value="1" selected>1×</option>
+                    <option value="1.25">1.25×</option>
+                    <option value="1.5">1.5×</option>
+                    <option value="2">2×</option>
+                </select>
+                <button type="button" class="player-btn" id="pipBtn" hidden
+                        aria-label="{% trans 'Picture in picture' %}">⧉</button>
+                <div class="cc-menu" id="ccMenu">
+                    <button type="button" class="player-btn cc-btn" id="ccBtn"
+                            aria-haspopup="true" aria-expanded="false"
+                            aria-controls="ccList"
+                            aria-label="{% trans 'Subtitles' %}">CC</button>
+                    <div class="cc-list" id="ccList" role="menu"
+                         aria-label="{% trans 'Caption language' %}">
+                        <button type="button" class="cc-item active" role="menuitem"
+                                data-lang="">{% trans "Off" %}</button>
+                    </div>
+                </div>
+                <button type="button" class="player-btn" id="fullscreenBtn"
+                        aria-label="{% trans 'Fullscreen' %}">⛶</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="fz-mini-bar" id="miniBar">
+        <button type="button" class="fz-mini-title" id="miniExpand"
+                title="{% trans 'Back to the video' %}">
+            <span class="fz-mini-title-text" id="miniTitle"></span>
+            <span class="fz-mini-channel" id="miniChannel"></span>
+        </button>
+        <button type="button" class="player-btn" id="miniPlay"
+                aria-label="{% trans 'Play' %}">▶</button>
+        <button type="button" class="player-btn" id="miniNext" hidden
+                aria-label="{% trans 'Next in queue' %}">⏭</button>
+        <button type="button" class="player-btn" id="miniQueue"
+                aria-label="{% trans 'Show queue' %}" aria-controls="fzQueue" aria-expanded="false">☰</button>
+        <button type="button" class="player-btn" id="miniClose"
+                aria-label="{% trans 'Close player' %}">✕</button>
+    </div>
+</div>

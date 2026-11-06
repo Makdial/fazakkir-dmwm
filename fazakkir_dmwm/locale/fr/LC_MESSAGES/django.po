@@ -1282,3 +1282,72 @@ msgstr "Ce short n'a pas de son."
 
 msgid "The sound could not be prepared. Please try again."
 msgstr "Impossible de préparer le son. Veuillez réessayer."
+
+msgid "Add to queue"
+msgstr "Ajouter à la file d'attente"
+
+msgid "Added to the queue"
+msgstr "Ajoutée à la file d'attente"
+
+msgid "Back to the video"
+msgstr "Retour à la vidéo"
+
+msgid "Clear queue"
+msgstr "Vider la file d'attente"
+
+msgid "Clear the queue?"
+msgstr "Vider la file d'attente ?"
+
+msgid "Close"
+msgstr "Fermer"
+
+msgid "Close player"
+msgstr "Fermer le lecteur"
+
+msgid "Every video in the queue will be removed. The videos themselves are not affected."
+msgstr "Toutes les vidéos de la file d'attente seront retirées. Les vidéos elles-mêmes ne sont pas supprimées."
+
+msgid "In queue"
+msgstr "Dans la file"
+
+msgid "Move to end"
+msgstr "Déplacer à la fin"
+
+msgid "Next in queue"
+msgstr "Suivante dans la file"
+
+msgid "Now playing"
+msgstr "En cours de lecture"
+
+msgid "Play all"
+msgstr "Tout lire"
+
+msgid "Play next"
+msgstr "Lire ensuite"
+
+msgid "Play now"
+msgstr "Lire maintenant"
+
+msgid "Queue"
+msgstr "File d'attente"
+
+msgid "Queue options"
+msgstr "Options de la file d'attente"
+
+msgid "Remove from queue"
+msgstr "Retirer de la file d'attente"
+
+msgid "Show queue"
+msgstr "Afficher la file d'attente"
+
+msgid "The queue has been cleared."
+msgstr "La file d'attente a été vidée."
+
+msgid "This video could not be played, so it was skipped."
+msgstr "Cette vidéo ne peut pas être lue ; elle a été ignorée."
+
+msgid "Will play next"
+msgstr "Sera lue ensuite"
+
+msgid "Your queue is empty. Use the ☰+ button on any video to add it."
+msgstr "La file d'attente est vide. Utilisez le bouton ☰+ sous une vidéo pour l'ajouter."

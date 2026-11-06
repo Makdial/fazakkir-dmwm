@@ -49,4 +49,9 @@
             setOpen(false);
         }
     });
+
+    // Following a link closes the menu, as a full page load used to.
+    document.addEventListener("fz:page", function () {
+        setOpen(false);
+    });
 })();
