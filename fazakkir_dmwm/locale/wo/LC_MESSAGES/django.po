@@ -1346,5 +1346,8 @@ msgstr "Vidéo bi mënu na topp, looloo tooyal ko."
 msgid "Will play next"
 msgstr "Dina topp ki ci topp"
 
+msgid "Watch on the video page"
+msgstr "Xool ci xëtu vidéo bi"
+
 msgid "Your queue is empty. Use the ☰+ button on any video to add it."
 msgstr "Tolluwaay bi amul dara. Jëfandikoo bouton ☰+ bi ci vidéo bu nekk ngir yokk ko."

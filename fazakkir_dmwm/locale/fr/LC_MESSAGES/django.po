@@ -1349,5 +1349,8 @@ msgstr "Cette vidéo ne peut pas être lue ; elle a été ignorée."
 msgid "Will play next"
 msgstr "Sera lue ensuite"
 
+msgid "Watch on the video page"
+msgstr "Regarder sur la page de la vidéo"
+
 msgid "Your queue is empty. Use the ☰+ button on any video to add it."
 msgstr "La file d'attente est vide. Utilisez le bouton ☰+ sous une vidéo pour l'ajouter."

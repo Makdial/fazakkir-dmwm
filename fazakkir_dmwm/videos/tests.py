@@ -5672,6 +5672,12 @@ class SharedPlayerMarkupTests(TestCase):
         self.assertIn("safe-area-inset-bottom", css)
         self.assertIn("body.fz-queue-open", css)
 
+    def test_a_queued_video_can_open_on_its_own_page(self):
+        body = self.client.get(reverse("videos:list")).content.decode()
+        self.assertIn('data-watch-page="Watch on the video page"', body)
+        self.assertIn('"watch-page"', static_text("js/queue.js"))
+        self.assertIn("watchOnPage", static_text("js/player.js"))
+
 
 class SpaNavigationTests(TestCase):
     """Which pages move without a reload, and what they must do to allow it."""

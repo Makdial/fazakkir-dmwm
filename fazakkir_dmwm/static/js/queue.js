@@ -186,6 +186,7 @@
         actions.appendChild(rowAction("up", entry.id, labels.moveUp, "▲", index === 0));
         actions.appendChild(rowAction("down", entry.id, labels.moveDown, "▼", index === last));
         actions.appendChild(rowAction("last", entry.id, labels.moveToEnd, "⤓", index === last));
+        actions.appendChild(rowAction("watch-page", entry.id, labels.watchPage, "↗", !entry.url));
         actions.appendChild(rowAction("remove", entry.id, labels.remove, "✕", false));
 
         row.appendChild(play);
@@ -327,6 +328,9 @@
             if (player) player.playFromQueue(id);
         } else if (action === "play-all") {
             if (player) player.playNextFromQueue();
+        } else if (action === "watch-page") {
+            var entry = take(id);
+            if (entry && player && player.watchOnPage) player.watchOnPage(entry);
         } else if (action === "first" || action === "up" || action === "down" || action === "last") {
             move(id, action);
         } else if (action === "remove") {

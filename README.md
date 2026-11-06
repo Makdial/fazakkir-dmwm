@@ -26,7 +26,8 @@ videos; every visitor can browse and play them.
 - **Playlists**: any signed-in user (administrators included) can create private
   or public playlists and save videos to them.
 - **Video queue & mini player**: line up videos with their ☰+ button (play next or
-  add to the end), reorder them, and the queue plays through by itself. The player
+  add to the end), reorder them, and the queue plays through by itself. A queued
+  video can play in the small window or open on its full watch page. The player
   keeps going while you browse the home, search and channel pages, in a small
   window in the corner, as on YouTube.
 - **Comments**: signed-in users can comment on videos; authors can delete their
@@ -303,8 +304,9 @@ Every video has a **☰+** button: on its thumbnail, and next to **Save** on the
 video page. **Play next** puts the video first in the queue, **Add to queue** puts
 it last. The **Queue** button in the navigation bar opens the list, where a video
 can be played from its row, moved up or down, sent to the top (play next) or the
-bottom, removed, or the whole queue cleared. When a video ends, the next one starts
-by itself.
+bottom, removed, or the whole queue cleared. Clicking a row starts the video in the
+mini player; its **↗** button instead opens the video on its own page, where it
+plays on the full-size player. When a video ends, the next one starts by itself.
 
 The queue is kept in the browser, so it survives a reload. The player belongs to the
 whole site: while a video plays you can go to the home page, search or a channel and

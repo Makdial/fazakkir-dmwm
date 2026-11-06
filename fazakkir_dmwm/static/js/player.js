@@ -373,6 +373,23 @@
         if (entry) playItem(entry)
     }
 
+    // The "big screen" choice: open the video on its own page instead of
+    // starting it in the mini player. The page always starts playing, whether
+    // or not something was already playing.
+    function watchOnPage(entry) {
+        if (!entry) return
+        if (docked && item && item.id === entry.id) {
+            playNow()
+            return
+        }
+        if (entry.url && window.FZ && window.FZ.nav) {
+            pendingAutoplay = true
+            window.FZ.nav.navigate(entry.url)
+            return
+        }
+        playItem(entry)
+    }
+
     function playNextFromQueue() {
         const entry = window.FZ.queue.take()
         if (entry) playItem(entry)
@@ -1135,6 +1152,7 @@
             isPlaying: isPlaying,
             playItem: playItem,
             playFromQueue: playFromQueue,
+            watchOnPage: watchOnPage,
             playNextFromQueue: playNextFromQueue,
             close: close,
             toggle: togglePlayPause,
