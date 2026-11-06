@@ -155,7 +155,20 @@
     if (index < 0) index = 0;
     var next = index + 1;
     if (next >= slides.length) return;
-    slides[next].scrollIntoView({ behavior: "smooth", block: "start" });
+    var nextSlide = slides[next];
+    var nextWrap = nextSlide.querySelector(".short-video-wrap");
+    if (inView) stopWrap(inView);
+    if (feed && typeof feed.scrollTo === "function") {
+      feed.scrollTo({ top: nextSlide.offsetTop || (next * (feed.clientHeight || window.innerHeight)), behavior: "smooth" });
+    } else {
+      nextSlide.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    // Fallback: if the observer does not fire on this device, start it ourselves.
+    setTimeout(function () {
+      if (currentSlide !== nextSlide && nextWrap) {
+        playWrap(nextWrap);
+      }
+    }, 400);
   }
 
   // IntersectionObserver for autoplay + view tracking
