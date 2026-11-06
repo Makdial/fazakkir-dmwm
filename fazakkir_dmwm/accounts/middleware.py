@@ -5,28 +5,37 @@ from django.contrib.auth import logout
 
 from .guests import is_guest_user, login_guest
 
-# Sign-in, registration, the Django admin and the management dashboard keep
-# working normally: an existing guest is signed out there so an administrator
-# can enter their own credentials. Static files and probes never need an
-# account.
-_EXEMPT_PREFIXES = (
+# On these prefixes a guest must step aside so an administrator can sign in.
+# No guest account is created here.
+_LOGOUT_PREFIXES = (
     "/accounts/",
     "/admin/",
     "/manage/",
-    "/static/",
-    "/media/",
-    "/i18n/",
 )
-_EXEMPT_PATHS = {
+
+# These never need an account and must not touch the visitor's session: creating
+# or flushing one here would rotate their CSRF cookie and break the next save
+# (the service worker checks /sw.js on every page load, for example).
+_NO_GUEST_PATHS = {
     "/healthz/",
     "/manifest.webmanifest",
     "/sw.js",
     "/favicon.ico",
+    "/offline/",
 }
+_NO_GUEST_PREFIXES = (
+    "/static/",
+    "/media/",
+    "/i18n/",
+)
 
 
-def _is_exempt(path: str) -> bool:
-    return path in _EXEMPT_PATHS or path.startswith(_EXEMPT_PREFIXES)
+def _needs_logout(path: str) -> bool:
+    return path.startswith(_LOGOUT_PREFIXES)
+
+
+def _no_guest(path: str) -> bool:
+    return path in _NO_GUEST_PATHS or path.startswith(_NO_GUEST_PREFIXES)
 
 
 class GuestAccessMiddleware:
@@ -40,7 +49,19 @@ class GuestAccessMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if _is_exempt(request.path_info):
+        path = request.path_info
+
+        if _no_guest(path):
+            response = self.get_response(request)
+            # An empty session would make SessionMiddleware delete the visitor's
+            # session cookie on the way out. Keep it untouched.
+            session = getattr(request, "session", None)
+            if session is not None:
+                session.accessed = False
+                session.modified = False
+            return response
+
+        if _needs_logout(path):
             # On the account/admin pages a guest must step aside so the login
             # form is reachable (Django redirects already-authenticated users
             # away from the login page).

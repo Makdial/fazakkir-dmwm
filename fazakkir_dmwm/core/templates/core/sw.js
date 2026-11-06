@@ -4,7 +4,7 @@
  * Keeps the app shell available offline and feeds the in-app audio player from
  * a local cache for any MP3 the user chose to "Save offline".
  */
-const SHELL_CACHE = "fazakkir-shell-v1";
+const SHELL_CACHE = "fazakkir-shell-v2";
 const MEDIA_CACHE = "fazakkir-media-v1";
 const OFFLINE_URL = "{% url 'videos:offline' %}";
 
@@ -27,11 +27,29 @@ const SHELL_ASSETS = [
     "{% static 'icons/icon.svg' %}",
 ].map(asset);
 
+// The offline page is cached without cookies. It is a public shell, and a
+// cookie-bearing request here would sign the visitor in as a second guest while
+// the page they are looking at is still using the first one, rotating the CSRF
+// cookie and making their next save fail.
+function cacheOfflinePage() {
+    return fetch(OFFLINE_URL, { credentials: "omit", cache: "reload" })
+        .then((response) => {
+            if (!response || !response.ok) return;
+            return caches
+                .open(SHELL_CACHE)
+                .then((cache) => cache.put(OFFLINE_URL, response));
+        })
+        .catch(() => {
+            // The rest of the app still works offline even without this page.
+        });
+}
+
 self.addEventListener("install", (event) => {
     event.waitUntil(
         caches
             .open(SHELL_CACHE)
-            .then((cache) => cache.addAll(SHELL_ASSETS.concat([OFFLINE_URL])))
+            .then((cache) => cache.addAll(SHELL_ASSETS))
+            .then(cacheOfflinePage)
             .then(() => self.skipWaiting())
     );
 });

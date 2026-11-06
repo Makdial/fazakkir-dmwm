@@ -330,6 +330,9 @@ msgstr "التعليقات"
 msgid "Could not create the playlist."
 msgstr "تعذّر إنشاء قائمة التشغيل."
 
+msgid "Could not update the playlist. Please try again."
+msgstr "تعذّر تحديث قائمة التشغيل. يرجى المحاولة مرة أخرى."
+
 msgid "Create"
 msgstr "إنشاء"
 

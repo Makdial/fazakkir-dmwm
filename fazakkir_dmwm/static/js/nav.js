@@ -47,6 +47,14 @@
         }
     }
 
+    // Read the CSRF cookie at request time. The token can be rotated without a
+    // full page reload (for example when a visitor is given a background guest
+    // account), and an embedded token would then be stale.
+    function csrfToken() {
+        var match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+    }
+
     function onLeave(handler) {
         leaveHandlers.push(handler);
     }
@@ -227,6 +235,7 @@
     });
 
     window.FZ = window.FZ || {};
+    window.FZ.csrfToken = csrfToken;
     window.FZ.nav = {
         navigate: function (href, options) {
             return navigate(href, options);

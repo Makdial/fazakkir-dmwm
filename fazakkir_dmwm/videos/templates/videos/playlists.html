@@ -64,6 +64,13 @@
 <script>
 const csrf = '{{ csrf_token }}';
 
+// The cookie holds the current token even if it was rotated after this page was
+// sent, so prefer it over the value embedded in the HTML.
+function csrfHeader() {
+    const token = window.FZ && window.FZ.csrfToken ? window.FZ.csrfToken() : "";
+    return token || csrf;
+}
+
 // Shrink a chosen picture before sending it, so a full-size phone photo does
 // not blow past the request size limit. Returns a JPEG data URL.
 function coverToDataUrl(file, maxSize) {
@@ -114,19 +121,18 @@ document.getElementById("newPlaylistForm").addEventListener("submit", async func
 
     fetch("{% url 'videos:playlist_create' %}", {
         method: "POST",
-        headers: { "X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded" },
+        headers: { "X-CSRFToken": csrfHeader(), "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams(params).toString(),
     })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                if (data.cover_error) alert(data.cover_error);
-                window.location.href = data.playlist.url;
-            } else {
-                alert(data.error || "{% trans 'Could not create the playlist.' %}");
+        .then(r => r.json().catch(() => ({})).then(data => ({ ok: r.ok, data })))
+        .then(({ ok, data }) => {
+            if (!ok || !data.success) {
+                throw new Error(data.error || "{% trans 'Could not create the playlist.' %}");
             }
+            if (data.cover_error) alert(data.cover_error);
+            window.location.href = data.playlist.url;
         })
-        .catch(() => alert("{% trans 'Could not create the playlist.' %}"));
+        .catch(error => alert(error.message || "{% trans 'Could not create the playlist.' %}"));
 });
 </script>
 {% endblock %}

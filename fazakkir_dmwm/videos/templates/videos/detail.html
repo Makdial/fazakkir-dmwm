@@ -360,6 +360,13 @@
     const nav = window.FZ.nav;
     const videoId = {{ video.id }};
     const csrf = '{{ csrf_token }}';
+    // The cookie always holds the current token, even if the page was rendered
+    // before a background request rotated it. Fall back to the server-rendered
+    // value when the cookie is not readable.
+    function csrfHeader() {
+        const token = window.FZ && window.FZ.csrfToken ? window.FZ.csrfToken() : "";
+        return token || csrf;
+    }
     let onThisPage = true;
     const leaveController = new AbortController();
     nav.onLeave(function () {
@@ -393,7 +400,7 @@
         const url = el ? el.dataset.generateUrl : "";
         if (!url) return;
         button.disabled = true;
-        fetch(url, { method: "POST", headers: { "X-CSRFToken": csrf } })
+        fetch(url, { method: "POST", headers: { "X-CSRFToken": csrfHeader() } })
             .then(() => nav.reload())
             .catch(() => { button.disabled = false; });
     };
@@ -408,7 +415,7 @@
         }).then(function (ok) {
             // Cancelling changes nothing at all.
             if (!ok) return;
-            fetch(`/${id}/delete/`, { method: "POST", headers: { "X-CSRFToken": csrf } })
+            fetch(`/${id}/delete/`, { method: "POST", headers: { "X-CSRFToken": csrfHeader() } })
                 .then(r => r.json())
                 .then(data => {
                     if (!data.success) {
@@ -434,7 +441,7 @@
         formData.append("subtitle_file", fileInput.files[0]);
 
         fetch(`/${videoId}/subtitles/upload/`, {
-            method: "POST", headers: { "X-CSRFToken": csrf }, body: formData
+            method: "POST", headers: { "X-CSRFToken": csrfHeader() }, body: formData
         })
             .then(r => r.json())
             .then(data => {
@@ -453,7 +460,7 @@
         }).then(function (ok) {
             if (!ok) return;
             fetch(`/${videoId}/subtitles/${language}/delete/`, {
-                method: "POST", headers: { "X-CSRFToken": csrf }
+                method: "POST", headers: { "X-CSRFToken": csrfHeader() }
             })
                 .then(r => r.json())
                 .then(data => { if (data.success) nav.reload(); })
@@ -491,7 +498,7 @@
         button.disabled = true;
         button.textContent = "{% trans 'Starting…' %}";
         fetch(panel.dataset.generateUrl, {
-            method: "POST", headers: { "X-CSRFToken": csrf }
+            method: "POST", headers: { "X-CSRFToken": csrfHeader() }
         })
             .then(r => r.json())
             .then(data => {
@@ -519,7 +526,7 @@
             autoSubBtn.disabled = true;
             autoSubMessage.textContent = "{% trans 'Starting…' %}";
             fetch(autoSubPanel.dataset.generateUrl, {
-                method: "POST", headers: { "X-CSRFToken": csrf }
+                method: "POST", headers: { "X-CSRFToken": csrfHeader() }
             })
                 .then(r => r.json())
                 .then(data => {
@@ -543,7 +550,7 @@
         fetch(`/${id}/vote/`, {
             method: "POST",
             headers: {
-                "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": csrf
+                "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": csrfHeader()
             },
             body: `vote=${voteType}`
         })
@@ -582,23 +589,29 @@
     };
 
     function togglePlaylist(playlistId, checkbox) {
+        const wanted = checkbox.checked;
+        checkbox.disabled = true;
         fetch(withId(PLAYLIST_TOGGLE_URL, playlistId), {
             method: "POST",
-            headers: { "X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded" },
+            headers: { "X-CSRFToken": csrfHeader(), "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams({ video_id: videoId }).toString(),
         })
-            .then(r => r.json())
-            .then(data => {
-                if (!data.success) {
-                    alert(data.error || "{% trans 'Failed.' %}");
-                    checkbox.checked = !checkbox.checked;
-                    return;
+            .then(r => r.json().catch(() => ({})).then(data => ({ ok: r.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok || !data.success) {
+                    throw new Error(data.error || "{% trans 'Could not update the playlist. Please try again.' %}");
                 }
                 const row = checkbox.closest(".save-item");
                 const count = row ? row.querySelector(".save-count") : null;
                 if (count) count.textContent = data.count;
             })
-            .catch(() => { checkbox.checked = !checkbox.checked; });
+            .catch(error => {
+                checkbox.checked = !wanted;
+                alert(error.message || "{% trans 'Could not update the playlist. Please try again.' %}");
+            })
+            .finally(() => {
+                checkbox.disabled = false;
+            });
     };
 
     // --- Sharing ------------------------------------------------------------------
@@ -783,16 +796,18 @@
 
         fetch("{% url 'videos:playlist_create' %}", {
             method: "POST",
-            headers: { "X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded" },
+            headers: { "X-CSRFToken": csrfHeader(), "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams(params).toString(),
         })
-            .then(r => r.json())
-            .then(data => {
-                if (!data.success) { alert(data.error || "{% trans 'Failed.' %}"); return; }
+            .then(r => r.json().catch(() => ({})).then(data => ({ ok: r.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok || !data.success) {
+                    throw new Error(data.error || "{% trans 'Could not create the playlist.' %}");
+                }
                 if (data.cover_error) alert(data.cover_error);
                 nav.reload();
             })
-            .catch(() => alert("{% trans 'Failed.' %}"));
+            .catch(error => alert(error.message || "{% trans 'Could not create the playlist.' %}"));
         return false;
     };
 
@@ -806,7 +821,7 @@
 
         fetch(`/${videoId}/comments/add/`, {
             method: "POST",
-            headers: { "X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded" },
+            headers: { "X-CSRFToken": csrfHeader(), "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams({ body: body }).toString(),
         })
             .then(r => r.json())
@@ -867,7 +882,7 @@
         }).then(function (ok) {
             if (!ok) return;
             fetch(withId(COMMENT_DELETE_URL, commentId), {
-                method: "POST", headers: { "X-CSRFToken": csrf },
+                method: "POST", headers: { "X-CSRFToken": csrfHeader() },
             })
                 .then(r => r.json())
                 .then(data => {

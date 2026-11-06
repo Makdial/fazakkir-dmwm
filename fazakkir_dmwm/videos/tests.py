@@ -347,6 +347,17 @@ class PlaylistTests(TestCase):
         self.assertIn("has-cover", body)
         self.assertIn("playlist-header-cover has-cover", detail)
 
+    def test_playlist_requests_use_the_current_csrf_cookie(self):
+        # The token can be rotated after the page was rendered. All three
+        # playlist screens therefore read the live cookie instead of relying
+        # only on the value embedded in the HTML.
+        root = Path(__file__).resolve().parent / "templates" / "videos"
+        for name in ("detail.html", "playlists.html", "playlist_detail.html"):
+            with self.subTest(template=name):
+                source = (root / name).read_text(encoding="utf-8")
+                self.assertIn("function csrfHeader()", source)
+                self.assertIn("csrfHeader()", source)
+
 
 class CommentTests(TestCase):
     def setUp(self):
@@ -1465,10 +1476,44 @@ class OfflineSupportTests(TestCase):
         self.assertEqual(response["Service-Worker-Allowed"], "/")
         self.assertIn("fazakkir-media-v1", response.content.decode())
 
+    def test_service_worker_caches_the_offline_page_without_cookies(self):
+        # A cookie-bearing install request signs in a second guest and rotates
+        # the CSRF cookie, so the visitor's next save fails with a 403.
+        body = self.client.get(reverse("service_worker")).content.decode()
+        self.assertIn('credentials: "omit"', body)
+        self.assertIn("cacheOfflinePage", body)
+        self.assertNotIn("SHELL_ASSETS.concat([OFFLINE_URL])", body)
+
     def test_offline_page_renders(self):
         response = self.client.get(reverse("videos:offline"))
         self.assertEqual(response.status_code, 200)
         self.assertIn('id="offlineList"', response.content.decode())
+
+    def test_the_offline_shell_does_not_rotate_the_visitors_identity(self):
+        # The service worker caches this page on install. Signing in a second
+        # guest here used to rotate the CSRF cookie and break the next save.
+        self.client.get(reverse("videos:list"))
+        session_key = self.client.session.session_key
+        users = User.objects.count()
+
+        response = self.client.get(reverse("videos:offline"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.session.session_key, session_key)
+        self.assertEqual(User.objects.count(), users)
+
+    def test_the_service_worker_script_does_not_rotate_the_visitors_identity(self):
+        # /sw.js is fetched on every page load to check for updates; it must
+        # not log a guest out or flush their session.
+        self.client.get(reverse("videos:list"))
+        session_key = self.client.session.session_key
+        users = User.objects.count()
+
+        response = self.client.get(reverse("service_worker"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.session.session_key, session_key)
+        self.assertEqual(User.objects.count(), users)
 
     def test_detail_page_has_offline_button_and_stream_src(self):
         content = self.client.get(
@@ -5722,6 +5767,12 @@ class SpaNavigationTests(TestCase):
     def test_opening_the_queue_folds_the_mobile_menu(self):
         self.assertIn('new CustomEvent("fz:queue"', static_text("js/queue.js"))
         self.assertIn('addEventListener("fz:queue"', static_text("js/navbar.js"))
+
+    def test_the_live_csrf_cookie_is_available_to_pages(self):
+        script = static_text("js/nav.js")
+        self.assertIn("function csrfToken()", script)
+        self.assertIn("csrftoken=", script)
+        self.assertIn("window.FZ.csrfToken = csrfToken", script)
 
 
 class QueueScriptTests(TestCase):

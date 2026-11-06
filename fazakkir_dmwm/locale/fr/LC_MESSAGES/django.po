@@ -320,6 +320,9 @@ msgstr "Commentaires"
 msgid "Could not create the playlist."
 msgstr "Impossible de créer la playlist."
 
+msgid "Could not update the playlist. Please try again."
+msgstr "Impossible de mettre à jour la playlist. Veuillez réessayer."
+
 msgid "Create"
 msgstr "Créer"
 

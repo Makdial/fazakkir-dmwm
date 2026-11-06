@@ -318,6 +318,9 @@ msgstr "Commentaires"
 msgid "Could not create the playlist."
 msgstr "Txtà playlist bi amu."
 
+msgid "Could not update the playlist. Please try again."
+msgstr "Txtà playlist bi soppi. Jéemaat."
+
 msgid "Create"
 msgstr "Sos"
 
