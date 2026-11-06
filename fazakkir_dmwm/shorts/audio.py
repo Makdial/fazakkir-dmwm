@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 # A Short whose sound failed is not converted again for this long. The endpoint
 # is public, so without a pause every request could make the server download and
-# encode the same clip again.
-RETRY_AFTER = timedelta(minutes=5)
+# encode the same clip again. Kept short so a retry after a hiccup just works.
+RETRY_AFTER = timedelta(seconds=30)
 
 
 def _remove(path: str | None) -> None:
@@ -56,6 +56,23 @@ def _record(short: Short, status: str, audio_file_id: str = "", audio_url: str =
     return bool(updated)
 
 
+def _settle(short: Short, status: str) -> str:
+    """Record a failed attempt, unless another request has made the sound meanwhile.
+
+    Returns the status to report: ``"ready"`` when the Short has its MP3 by now,
+    otherwise ``status``.
+    """
+    _record(short, status)
+    current = (
+        Short.objects.filter(pk=short.pk)
+        .values_list("audio_status", "audio_file_id")
+        .first()
+    )
+    if current and current[0] == "ready" and current[1]:
+        return "ready"
+    return status
+
+
 def store_sound(short: Short, video_path: str) -> str:
     """Make the MP3 of the clip at ``video_path`` and record it on ``short``.
 
@@ -83,8 +100,7 @@ def store_sound(short: Short, video_path: str) -> str:
         return "ready"
     except (AudioExtractionError, r2_storage.StorageError, OSError):
         logger.warning("Making the sound for short %s failed", short.pk, exc_info=True)
-        _record(short, "failed")
-        return "failed"
+        return _settle(short, "failed")
     finally:
         _remove(mp3_path)
 
@@ -121,8 +137,7 @@ def ensure_sound(short: Short) -> str:
         return store_sound(short, video_path)
     except Exception:  # noqa: BLE001 - the visitor gets a retryable failure
         logger.warning("Could not read short %s to make its sound", short.pk, exc_info=True)
-        _record(short, "failed")
-        return "failed"
+        return _settle(short, "failed")
     finally:
         _remove(video_path)
 

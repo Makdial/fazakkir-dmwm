@@ -117,6 +117,12 @@ class ShortsScriptTests(TestCase):
         self.assertIn("downloading makes the MP3 first", output)
         self.assertIn("the sound sign plays the MP3 once it exists", output)
 
+    def test_a_dropped_connection_is_tried_once_more(self):
+        code, output = self._run("older-flaky")
+        self.assertEqual(code, 0, output)
+        self.assertIn("a dropped connection is tried again", output)
+        self.assertIn("the download starts after the retry", output)
+
     def test_a_failed_mp3_is_reported_and_sound_only_mode_turns_off(self):
         code, output = self._run("older-fails")
         self.assertEqual(code, 0, output)
@@ -331,6 +337,21 @@ class ShortSoundConversionTests(TestCase):
 
         self.assertTrue(response.json()["success"])
         delete_file.assert_called_once_with("audio/new.mp3")
+        self.short.refresh_from_db()
+        self.assertEqual(self.short.audio_file_id, "audio/other.mp3")
+
+    def test_a_failure_after_another_request_made_the_sound_still_succeeds(self):
+        def other_finishes_then_this_one_fails(source, dest):
+            Short.objects.filter(pk=self.short.pk).update(
+                audio_status="ready", audio_file_id="audio/other.mp3", audio_url="https://cdn/other.mp3"
+            )
+            raise AudioExtractionError("ffmpeg boom")
+
+        with mock.patch("shorts.r2_storage.get_object", return_value={"Body": io.BytesIO(b"clip")}), \
+                mock.patch("shorts.audio.extract_mp3", side_effect=other_finishes_then_this_one_fails):
+            response = self.client.post(reverse("shorts:audio", args=[self.short.id]))
+
+        self.assertTrue(response.json()["success"])
         self.short.refresh_from_db()
         self.assertEqual(self.short.audio_file_id, "audio/other.mp3")
 

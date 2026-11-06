@@ -56,15 +56,22 @@
     if (el) el.classList.toggle("busy", busy);
   }
 
+  // Ask the server to make a Short's MP3, or say where it is. A dropped
+  // connection, or a gateway page instead of an answer, is tried once more.
+  function requestSound(url, retry) {
+    return fetch(url, { method: "POST", headers: { "X-CSRFToken": CSRF } })
+      .then(function (r) { return r.json(); })
+      .catch(function () {
+        if (!retry) return { success: false };
+        return new Promise(function (resolve) { setTimeout(resolve, 1500); })
+          .then(function () { return requestSound(url, false); });
+      });
+  }
+
   // Make a Short's MP3 if it has none yet. The server answers with the address
   // to play from and the address to download from.
   function prepareSound(wrap) {
-    return fetch(wrap.getAttribute("data-audio-prepare-url"), {
-      method: "POST",
-      headers: { "X-CSRFToken": CSRF },
-    })
-      .then(function (r) { return r.json(); })
-      .catch(function () { return { success: false }; })
+    return requestSound(wrap.getAttribute("data-audio-prepare-url"), true)
       .then(function (d) {
         if (!d.success || !d.url) {
           throw new Error(d.error || "The sound could not be prepared. Please try again.");

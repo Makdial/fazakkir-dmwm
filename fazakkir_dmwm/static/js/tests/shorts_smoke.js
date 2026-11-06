@@ -7,6 +7,7 @@
  *   detail       one Short on its own page, with its MP3
  *   older        one Short without an MP3, which is made on first use
  *   older-fails  the same, but making the MP3 fails
+ *   older-flaky  the same, but the first request is dropped by the network
  */
 "use strict";
 
@@ -147,6 +148,8 @@ const mutes = shorts.map((s) => s.mute);
 const toggles = shorts.filter((s) => s.toggle).map((s) => s.toggle);
 const downloads = shorts.filter((s) => s.download).map((s) => s.download);
 const prepareFails = mode === "older-fails";
+const prepareDropsFirst = mode === "older-flaky";
+let prepareCalls = 0;
 
 globalThis.document = {
     cookie: "",
@@ -168,10 +171,15 @@ globalThis.window = {
 };
 globalThis.alert = (message) => alerts.push(message);
 globalThis.confirm = () => false;
+globalThis.setTimeout = (callback) => { callback(); return 0; };
 globalThis.fetch = (url, options) => {
     fetches.push(url);
     let body = { success: true };
     if (options && options.method === "POST" && /\/audio\/$/.test(url)) {
+        prepareCalls += 1;
+        if (prepareDropsFirst && prepareCalls === 1) {
+            return Promise.reject(new TypeError("Failed to fetch"));
+        }
         const id = url.match(/\/shorts\/(\d+)\/audio\//)[1];
         body = prepareFails
             ? { success: false, error: "The sound could not be prepared. Please try again." }
@@ -294,6 +302,16 @@ async function olderScenario() {
     check("the sound sign plays the MP3 once it exists", !only.audio.paused && only.wrap.classList.contains("listen-only"));
 }
 
+async function olderFlakyScenario() {
+    const [only] = shorts;
+
+    only.download.click();
+    await flush();
+    check("a dropped connection is tried again", fetches.filter((url) => url === "/shorts/1/audio/").length === 2);
+    check("the download starts after the retry", navigations[navigations.length - 1] === "https://r2.example/audio/1.mp3?download=1");
+    check("the visitor sees no error for a dropped connection", alerts.length === 0);
+}
+
 async function olderFailsScenario() {
     const [only] = shorts;
 
@@ -321,6 +339,7 @@ async function main() {
         if (mode === "feed") await feedScenario();
         else if (mode === "detail") await detailScenario();
         else if (mode === "older") await olderScenario();
+        else if (mode === "older-flaky") await olderFlakyScenario();
         else await olderFailsScenario();
     } catch (err) {
         check("the visitor's taps run without error (" + err.message + ")", false);
