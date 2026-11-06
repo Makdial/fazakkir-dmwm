@@ -89,7 +89,11 @@
   // the speaker button turns the sound on.
   function playMedia(media) {
     active = media;
+    // Keep sound on for the first play on every device, including mobile:
+    // the browser may still block it, but we always try unmuted first.
+    media.defaultMuted = false;
     media.muted = !soundOn;
+    try { media.volume = 1; } catch (e) {}
     showMuteState(media);
     var playPromise = media.play();
     if (playPromise && typeof playPromise.catch === "function") {
