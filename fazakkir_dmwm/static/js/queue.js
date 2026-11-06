@@ -311,7 +311,11 @@
             var button = document.getElementById(id);
             if (button) button.setAttribute("aria-expanded", String(open));
         });
+        if (document.body) document.body.classList.toggle("fz-queue-open", open);
         if (open) render();
+        // The mobile navbar closes its dropdown when this opens; the drawer
+        // would otherwise appear underneath it with both panels on screen.
+        document.dispatchEvent(new CustomEvent("fz:queue", { detail: { open: open } }));
     }
 
     function runAction(button) {

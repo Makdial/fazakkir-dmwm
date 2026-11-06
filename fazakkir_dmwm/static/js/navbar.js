@@ -54,4 +54,10 @@
     document.addEventListener("fz:page", function () {
         setOpen(false);
     });
+
+    // The queue drawer lives above the page too. On a phone both cannot be
+    // open, so opening the queue folds the menu away.
+    document.addEventListener("fz:queue", function (event) {
+        if (event.detail && event.detail.open) setOpen(false);
+    });
 })();

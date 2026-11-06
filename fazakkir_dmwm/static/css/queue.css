@@ -38,7 +38,7 @@
 .fz-player-host.is-mini {
     position: fixed;
     inset-inline-end: 16px;
-    inset-block-end: 16px;
+    inset-block-end: calc(16px + env(safe-area-inset-bottom, 0px));
     width: min(360px, calc(100vw - 32px));
     z-index: 900;
     background: var(--bg-secondary);
@@ -124,7 +124,7 @@
     .fz-player-host.is-mini {
         width: auto;
         inset-inline: 8px;
-        inset-block-end: 8px;
+        inset-block-end: calc(8px + env(safe-area-inset-bottom, 0px));
     }
 }
 
@@ -185,6 +185,12 @@
 @media (hover: none) {
     .queue-anchor-card .queue-toggle {
         opacity: 1;
+        min-width: 40px;
+        height: 34px;
+    }
+
+    .queue-menu-item {
+        padding: 12px 14px;
     }
 }
 
@@ -553,7 +559,7 @@
 .fz-toast {
     position: fixed;
     inset-inline: 0;
-    inset-block-end: 24px;
+    inset-block-end: calc(24px + env(safe-area-inset-bottom, 0px));
     z-index: 1100;
     width: max-content;
     max-width: min(420px, calc(100vw - 32px));
@@ -574,4 +580,48 @@
 .fz-toast.is-visible {
     opacity: 1;
     transform: translateY(0);
+}
+
+/* --- Phones and small tablets ------------------------------------------- */
+
+@media (max-width: 768px) {
+    /* A bottom sheet covers the page, so scrolling behind it should stop. */
+    body.fz-queue-open {
+        overflow: hidden;
+    }
+
+    .fz-queue {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .queue-row-btn {
+        width: 34px;
+        height: 34px;
+    }
+}
+
+/* On a narrow phone the row's five controls would squeeze the title, so they
+   move onto their own line with finger-sized targets. */
+@media (max-width: 480px) {
+    .queue-row {
+        flex-wrap: wrap;
+        row-gap: 2px;
+    }
+
+    .queue-row-play {
+        flex-basis: 100%;
+    }
+
+    .queue-row-actions {
+        flex-basis: 100%;
+        justify-content: flex-end;
+        gap: 4px;
+        padding-inline: 4px;
+    }
+
+    .queue-row-btn {
+        width: 40px;
+        height: 34px;
+        border-radius: 8px;
+    }
 }

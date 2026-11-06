@@ -5664,6 +5664,14 @@ class SharedPlayerMarkupTests(TestCase):
         self.assertIn('data-play-next="Play next"', body)
         self.assertIn('data-added-to-queue="Added to the queue"', body)
 
+    def test_the_queue_is_touch_friendly_on_a_phone(self):
+        css = static_text("css/queue.css")
+        phone = css[css.rindex("@media (max-width: 480px)"):]
+        self.assertIn("flex-basis: 100%", phone)
+        self.assertIn("width: 40px", phone)
+        self.assertIn("safe-area-inset-bottom", css)
+        self.assertIn("body.fz-queue-open", css)
+
 
 class SpaNavigationTests(TestCase):
     """Which pages move without a reload, and what they must do to allow it."""
@@ -5704,6 +5712,10 @@ class SpaNavigationTests(TestCase):
     def test_the_player_leaves_its_page_before_the_page_is_replaced(self):
         self.assertIn('"fz:leave"', static_text("js/player.js"))
         self.assertIn('"fz:leave"', static_text("js/nav.js"))
+
+    def test_opening_the_queue_folds_the_mobile_menu(self):
+        self.assertIn('new CustomEvent("fz:queue"', static_text("js/queue.js"))
+        self.assertIn('addEventListener("fz:queue"', static_text("js/navbar.js"))
 
 
 class QueueScriptTests(TestCase):
