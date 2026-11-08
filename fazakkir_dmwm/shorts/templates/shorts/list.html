@@ -7,7 +7,7 @@
 {% endblock %}
 {% block content %}
 <div class="shorts-topbar">
-    <a href="/" class="shorts-logo"><span class="play">▶</span> Fazakkir <span style="font-size:14px;opacity:.8;margin-left:4px;">Shorts</span></a>
+    <a href="/" class="shorts-logo"><img src="{% static 'img/dmwm-logo-usa.jpg' %}" alt="DMWM" class="shorts-logo-img"> Fazakkir <span style="font-size:14px;opacity:.8;margin-left:4px;">Shorts</span></a>
     <div class="shorts-topbar-actions">
         {% if can_write %}
         <a href="{% url 'shorts:upload' %}" title="{% trans 'Upload short' %}">⬆</a>

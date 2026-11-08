@@ -39,18 +39,47 @@
     outline-offset: 2px;
 }
 
-/* The rounded red square behind the play glyph, as on the YouTube wordmark. */
-.brand-icon {
+/* Brand logo image, beautifully framed with a gradient ring + soft glow. */
+.brand-logo-wrap {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
-    background: var(--accent-red);
-    color: #fff;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    padding-left: 2px;
+    width: 40px;
+    height: 40px;
+    padding: 2px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #ff3b3b 0%, #ff7a3b 45%, #ffd166 100%);
+    box-shadow: 0 4px 14px rgba(255, 59, 59, 0.32),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    overflow: hidden;
+    flex: none;
+}
+
+.brand-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+    display: block;
+    background: var(--bg-primary);
+}
+
+.navbar-brand:hover .brand-logo-wrap {
+    transform: translateY(-1px) scale(1.06);
+    box-shadow: 0 7px 18px rgba(255, 59, 59, 0.42),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.brand-name {
+    font-weight: 800;
+    font-size: 1.3rem;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-red) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 .navbar-actions {

@@ -21,6 +21,10 @@ body.shorts-immersive { overflow: hidden; }
     font-weight: 700; font-size: 20px; color: #fff; text-decoration: none;
 }
 .shorts-topbar .shorts-logo .play { color: #ff0000; }
+.shorts-topbar .shorts-logo-img {
+    width: 30px; height: 30px; border-radius: 9px; object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35); border: 1.5px solid rgba(255,255,255,0.25);
+}
 .shorts-topbar-actions { display: flex; gap: 12px; align-items: center; }
 .shorts-topbar-actions a, .shorts-topbar-actions button {
     color: #fff; background: rgba(255,255,255,0.12); border: none;
