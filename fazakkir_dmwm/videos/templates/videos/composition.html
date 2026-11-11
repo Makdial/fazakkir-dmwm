@@ -37,7 +37,7 @@
             <div class="comp-library">
                 <h3>{% trans "Library" %}</h3>
                 {% for video in videos %}
-                <div class="comp-lib-item" draggable="true" data-video-id="{{ video.id }}" data-duration="{{ video.duration_seconds }}" data-title="{{ video.title|escapejs }}" data-preview-url="{% url 'videos:playback' video.id %}">
+                <div class="comp-lib-item" draggable="true" data-video-id="{{ video.id }}" data-duration="{{ video.duration_seconds }}" data-title="{{ video.title|escapejs }}" data-preview-url="{{ video.playback_url }}">
                     <strong>{{ video.title }}</strong>
                     <div><small>{{ video.duration_formatted }}</small></div>
                 </div>
@@ -62,6 +62,7 @@
         </div>
         <div id="compResult" hidden style="margin-top:0.5rem;">
             <a id="compResultLink" href="#">{% trans "Open composed video" %}</a>
+            <a id="compDownloadLink" href="#" download>{% trans "Download to device" %}</a>
         </div>
     </div>
 </div>
@@ -209,6 +210,9 @@
                 if (data.status === "ready") {
                     statusEl.textContent = "{% trans 'Done.' %}";
                     resultLink.href = "/videos/" + data.video_id + "/";
+                    const dl = document.getElementById("compDownloadLink");
+                    if (data.download_url) { dl.href = data.download_url; dl.removeAttribute("hidden"); }
+                    else { dl.setAttribute("hidden", ""); }
                     resultEl.removeAttribute("hidden");
                 } else if (data.status === "failed") {
                     statusEl.textContent = data.error || "{% trans 'Failed.' %}";

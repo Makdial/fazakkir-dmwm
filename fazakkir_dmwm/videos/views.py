@@ -1362,6 +1362,7 @@ def composition_start(request):
         _COMPOSITION_JOBS[job_id] = {
             "status": "queued",
             "video_id": None,
+            "download_url": "",
             "error": "",
         }
 
@@ -1481,7 +1482,7 @@ def _composition_worker(job_id, title, clips, user_id):
         video.video_url = result["url"]
         video.save()
 
-        _composition_update(job_id, status="ready", video_id=video.id)
+        _composition_update(job_id, status="ready", video_id=video.id, download_url=video.video_download_url)
     except Exception as exc:  # noqa: BLE001
         _composition_update(job_id, status="failed", error=str(exc)[:500])
     finally:

@@ -1426,3 +1426,6 @@ msgstr ""
 
 msgid "Split"
 msgstr ""
+
+msgid "Download to device"
+msgstr ""
