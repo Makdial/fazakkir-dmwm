@@ -38,16 +38,16 @@
     <link rel="icon" href="{% static 'img/dmwm-logo-usa.jpg' %}" type="image/jpeg" sizes="any">
     <link rel="shortcut icon" href="{% static 'img/dmwm-logo-usa.jpg' %}" type="image/jpeg">
     <link rel="apple-touch-icon" href="{% static 'img/dmwm-logo-usa.jpg' %}">
-    <meta name="description" content="{% block meta_description %}Watch and listen to videos and audio, online or offline.{% endblock %}">
+    <meta name="description" content="{% block meta_description %}{% trans "Watch and listen to videos and audio, online or offline." %}{% endblock %}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Fazakkir">
     <meta property="og:title" content="Fazakkir">
-    <meta property="og:description" content="{% block og_description %}Watch and listen to videos and audio, online or offline.{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{% trans "Watch and listen to videos and audio, online or offline." %}{% endblock %}">
     <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/dmwm-logo-usa.jpg' %}">
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Fazakkir">
-    <meta name="twitter:description" content="{% block twitter_description %}Watch and listen to videos and audio, online or offline.{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{% trans "Watch and listen to videos and audio, online or offline." %}{% endblock %}">
     <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/dmwm-logo-usa.jpg' %}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Fazakkir">

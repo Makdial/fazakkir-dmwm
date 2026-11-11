@@ -1393,3 +1393,9 @@ msgstr "Confirm password"
 
 msgid "Create a new administrator account manually."
 msgstr "Create a new administrator account manually."
+
+msgid "Watch and listen to videos and audio, online or offline."
+msgstr "شاهد واستمع إلى الفيديوهات والصوتيات، عبر الإنترنت أو دون اتصال."
+
+msgid "Watch and listen to videos and audio, online or offline."
+msgstr "شاهد واستمع إلى الفيديوهات والصوتيات، عبر الإنترنت أو دون اتصال."
