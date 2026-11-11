@@ -222,11 +222,6 @@
         return list.filter((c) => c.vid === item.id).length;
     }
 
-    function metaText(item, isAudio) {
-        if (isAudio) return item.uploader + " \u00B7 " + fmtShort(item.duration);
-        return item.uploader + " \u00B7 " + Number(item.views).toLocaleString() + " " + S.views;
-    }
-
     function refreshUsage() {
         el.library.querySelectorAll(".comp-card").forEach((card) => {
             const item = LIBRARY.find((v) => String(v.id) === card.dataset.vid);
@@ -234,7 +229,8 @@
             if (!item || !badge) return;
             const count = usageOf(item);
             badge.hidden = count === 0;
-            badge.textContent = S.onTimeline + " \u00D7" + count;
+            badge.textContent = "\u2713 " + count;
+            badge.setAttribute("aria-label", S.onTimeline + " \u00D7" + count);
         });
         document.querySelectorAll(".comp-tab-count").forEach((tab) => {
             const isAudio = tab.dataset.count === "audio";
@@ -278,23 +274,10 @@
             thumb.classList.add("is-placeholder");
             thumb.textContent = (item.title.trim().charAt(0) || "\u25B6").toUpperCase();
         }
-        const length = document.createElement("span");
-        length.className = "comp-card-dur";
-        length.textContent = fmtShort(item.duration);
-        thumb.appendChild(length);
 
-        const body = document.createElement("div");
-        body.className = "comp-card-body";
-        const title = document.createElement("div");
-        title.className = "comp-card-title";
-        title.textContent = item.title;
-        const meta = document.createElement("div");
-        meta.className = "comp-card-meta";
-        meta.textContent = metaText(item, isAudio);
         const used = document.createElement("span");
         used.className = "comp-card-used";
         used.hidden = true;
-        body.append(title, meta, used);
 
         const add = document.createElement("button");
         add.type = "button";
@@ -303,7 +286,31 @@
         add.title = S.add;
         add.setAttribute("aria-label", S.add);
 
-        card.append(thumb, body, add);
+        if (isAudio) {
+            const body = document.createElement("div");
+            body.className = "comp-card-body";
+            const name = document.createElement("div");
+            name.className = "comp-card-title";
+            name.textContent = item.title;
+            const meta = document.createElement("div");
+            meta.className = "comp-card-meta";
+            meta.textContent = item.uploader + " \u00B7 " + fmtShort(item.duration);
+            body.append(name, meta, used);
+            card.append(thumb, body, add);
+            return card;
+        }
+
+        const length = document.createElement("span");
+        length.className = "comp-card-dur";
+        length.textContent = fmtShort(item.duration);
+        const caption = document.createElement("span");
+        caption.className = "comp-card-caption";
+        const name = document.createElement("span");
+        name.className = "comp-card-title";
+        name.textContent = item.title;
+        caption.appendChild(name);
+        thumb.append(length, used, caption, add);
+        card.appendChild(thumb);
         return card;
     }
 
@@ -324,7 +331,7 @@
         previewCard = card;
         card.classList.add("is-previewing");
         previewVideo.src = item.videoUrl;
-        thumb.appendChild(previewVideo);
+        thumb.insertBefore(previewVideo, thumb.firstChild);
         previewVideo.play().catch(() => {});
     }
 
