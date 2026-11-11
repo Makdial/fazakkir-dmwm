@@ -4,39 +4,47 @@
 {% block title %}{% trans "Composition" %} - Fazakkir{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/videos.css' %}">
+<style>
+.comp-layout { display: grid; grid-template-columns: 260px 1fr; gap: 1rem; }
+.comp-library { max-height: 70vh; overflow: auto; }
+.comp-timeline { min-height: 120px; border: 2px dashed #555; padding: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: stretch; }
+.comp-clip { background: #222; color: #fff; padding: 0.5rem; border-radius: 6px; cursor: move; min-width: 160px; }
+.comp-clip.dragging { opacity: 0.5; }
+.comp-clip input { width: 60px; }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="composition-page">
     <h1>{% trans "Composition" %}</h1>
-    <p class="section-subtitle">{% trans "Select videos, trim them and compose a new video like CapCut." %}</p>
+    <p class="section-subtitle">{% trans "Drag videos into the timeline, trim them and compose a new video like CapCut." %}</p>
 
     <div class="form-group">
         <label for="compTitle">{% trans "New video title" %}</label>
         <input type="text" id="compTitle" class="form-input" placeholder="{% trans 'Composed video' %}">
     </div>
 
-    <div class="video-grid" id="compVideoGrid">
-        {% for video in videos %}
-        <div class="video-card-wrap comp-card" data-video-id="{{ video.id }}" data-duration="{{ video.duration_seconds }}">
-            <label class="comp-select">
-                <input type="checkbox" class="comp-check">
-                <span class="video-title">{{ video.title }}</span>
-            </label>
-            <div class="comp-trim" hidden>
-                <label>{% trans "Start (s)" %}</label>
-                <input type="number" class="comp-start" min="0" step="0.1" value="0">
-                <label>{% trans "End (s)" %}</label>
-                <input type="number" class="comp-end" min="0" step="0.1" placeholder="{% trans 'Full length' %}">
+    <div class="comp-layout">
+        <div class="comp-library">
+            <h3>{% trans "Library" %}</h3>
+            {% for video in videos %}
+            <div class="comp-lib-item" draggable="true" data-video-id="{{ video.id }}" data-duration="{{ video.duration_seconds }}" data-title="{{ video.title|escapejs }}">
+                <strong>{{ video.title }}</strong>
+                <small>{{ video.duration_formatted }}</small>
             </div>
+            {% empty %}
+            <p>{% trans "No videos available." %}</p>
+            {% endfor %}
         </div>
-        {% empty %}
-        <p>{% trans "No videos available." %}</p>
-        {% endfor %}
+        <div>
+            <h3>{% trans "Timeline" %}</h3>
+            <div id="compTimeline" class="comp-timeline"></div>
+        </div>
     </div>
 
-    <div class="comp-actions">
+    <div class="comp-actions" style="margin-top:1rem;">
         <button type="button" id="compComposeBtn" class="btn btn-primary">{% trans "Compose" %}</button>
+        <button type="button" id="compClearBtn" class="btn">{% trans "Clear" %}</button>
         <span id="compStatus" role="status"></span>
     </div>
     <div id="compResult" hidden>
@@ -47,29 +55,103 @@
 <script data-fz-page>
 (function () {
     "use strict";
-    const grid = document.getElementById("compVideoGrid");
-    const composeBtn = document.getElementById("compComposeBtn");
+    const timeline = document.getElementById("compTimeline");
     const statusEl = document.getElementById("compStatus");
     const resultEl = document.getElementById("compResult");
     const resultLink = document.getElementById("compResultLink");
 
-    grid.addEventListener("change", function (e) {
-        if (!e.target.classList.contains("comp-check")) return;
-        const card = e.target.closest(".comp-card");
-        const trim = card.querySelector(".comp-trim");
-        if (e.target.checked) trim.removeAttribute("hidden");
-        else trim.setAttribute("hidden", "");
+    function makeClip(videoId, title, duration) {
+        const clip = document.createElement("div");
+        clip.className = "comp-clip";
+        clip.draggable = true;
+        clip.dataset.videoId = videoId;
+        clip.innerHTML =
+            "<div><strong>" + title + "</strong></div>" +
+            "<label>S {% trans 'Start (s)' %}<input type='number' class='comp-start' min='0' step='0.1' value='0'></label> " +
+            "<label>E {% trans 'End (s)' %}<input type='number' class='comp-end' min='0' step='0.1' placeholder='{% trans 'Full length' %}'></label>";
+        addDragHandlers(clip);
+        return clip;
+    }
+
+    function addDragHandlers(el) {
+        el.addEventListener("dragstart", function (e) {
+            el.classList.add("dragging");
+            e.dataTransfer.setData("text/plain", "move");
+            window._draggingClip = el;
+        });
+        el.addEventListener("dragend", function () {
+            el.classList.remove("dragging");
+            window._draggingClip = null;
+        });
+    }
+
+    // Library drag
+    document.querySelectorAll(".comp-lib-item").forEach(function (item) {
+        item.draggable = true;
+        item.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("application/x-video-id", item.dataset.videoId);
+            e.dataTransfer.setData("text/plain", item.dataset.title);
+            e.dataTransfer.effectAllowed = "copy";
+        });
     });
 
-    composeBtn.addEventListener("click", function () {
+    // Timeline drop
+    timeline.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+    });
+    timeline.addEventListener("drop", function (e) {
+        e.preventDefault();
+        const vid = e.dataTransfer.getData("application/x-video-id");
+        if (vid) {
+            const item = document.querySelector('.comp-lib-item[data-video-id="' + vid + '"]');
+            const title = item ? item.dataset.title : "Video";
+            const duration = item ? item.dataset.duration : "";
+            timeline.appendChild(makeClip(vid, title, duration));
+            return;
+        }
+        // reorder
+        const dragging = window._draggingClip;
+        if (dragging && dragging.parentNode === timeline) {
+            const after = getDragAfterElement(timeline, e.clientX);
+            if (after == null) timeline.appendChild(dragging);
+            else timeline.insertBefore(dragging, after);
+        }
+    });
+
+    function getDragAfterElement(container, x) {
+        const draggableElements = [...container.querySelectorAll(".comp-clip:not(.dragging)")];
+        return draggableElements.reduce(function (closest, child) {
+            const box = child.getBoundingClientRect();
+            const offset = x - box.left - box.width / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+    }
+
+    // clip internal drag for reorder
+    timeline.addEventListener("dragstart", function (e) {
+        if (e.target.classList.contains("comp-clip")) {
+            e.target.classList.add("dragging");
+        }
+    });
+
+    document.getElementById("compClearBtn").addEventListener("click", function () {
+        timeline.innerHTML = "";
+        statusEl.textContent = "";
+        resultEl.setAttribute("hidden", "");
+    });
+
+    document.getElementById("compComposeBtn").addEventListener("click", function () {
         const clips = [];
-        grid.querySelectorAll(".comp-card").forEach(function (card) {
-            const check = card.querySelector(".comp-check");
-            if (!check.checked) return;
+        timeline.querySelectorAll(".comp-clip").forEach(function (clip) {
             clips.push({
-                video_id: parseInt(card.dataset.videoId, 10),
-                start: card.querySelector(".comp-start").value,
-                end: card.querySelector(".comp-end").value,
+                video_id: parseInt(clip.dataset.videoId, 10),
+                start: clip.querySelector(".comp-start").value,
+                end: clip.querySelector(".comp-end").value,
             });
         });
         if (!clips.length) {

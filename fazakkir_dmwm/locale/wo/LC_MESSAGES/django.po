@@ -1414,3 +1414,12 @@ msgstr ""
 
 msgid "Start (s)"
 msgstr ""
+
+msgid "Drag videos into the timeline, trim them and compose a new video like CapCut."
+msgstr ""
+
+msgid "Library"
+msgstr ""
+
+msgid "Timeline"
+msgstr ""
