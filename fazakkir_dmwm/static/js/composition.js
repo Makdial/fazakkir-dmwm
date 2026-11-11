@@ -242,7 +242,6 @@
         hidePreview();
         const isAudio = libTab === "audio";
         el.library.innerHTML = "";
-        el.library.classList.toggle("is-list", isAudio);
         const total = LIBRARY.filter((v) => (isAudio ? v.hasAudio : v.hasVideo)).length;
         const items = libraryItems();
         if (!items.length) {
@@ -264,6 +263,7 @@
         thumb.className = "comp-card-thumb";
         if (isAudio) {
             thumb.textContent = "\u266A";
+            thumb.classList.add("is-sound");
         } else if (item.thumb) {
             const img = document.createElement("img");
             img.src = item.thumb;
@@ -286,19 +286,6 @@
         add.title = S.add;
         add.setAttribute("aria-label", S.add);
 
-        if (isAudio) {
-            const body = document.createElement("div");
-            body.className = "comp-card-body";
-            const name = document.createElement("div");
-            name.className = "comp-card-title";
-            name.textContent = item.title;
-            const meta = document.createElement("div");
-            meta.className = "comp-card-meta";
-            meta.textContent = item.uploader + " \u00B7 " + fmtShort(item.duration);
-            body.append(name, meta, used);
-            card.append(thumb, body, add);
-            return card;
-        }
 
         const length = document.createElement("span");
         length.className = "comp-card-dur";
@@ -1242,7 +1229,7 @@
     const backdrop = $("compBackdrop");
     const mediaToggle = $("compMediaToggle");
     const propsToggle = $("compPropsToggle");
-    const phoneQuery = window.matchMedia("(max-width: 639px)");
+    const phoneQuery = window.matchMedia("(max-width: 767px)");
 
     function closeDrawers() {
         mediaPanel.classList.remove("is-open");
