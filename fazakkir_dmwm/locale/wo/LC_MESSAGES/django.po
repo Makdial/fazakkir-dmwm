@@ -1444,3 +1444,165 @@ msgstr ""
 
 msgid "Video track"
 msgstr ""
+
+msgid "Untitled project"
+msgstr ""
+
+msgid "Project name"
+msgstr ""
+
+msgid "Undo"
+msgstr ""
+
+msgid "Redo"
+msgstr ""
+
+msgid "Canvas"
+msgstr ""
+
+msgid "Export"
+msgstr ""
+
+msgid "Media"
+msgstr ""
+
+msgid "Drag an item onto the timeline, or tap + to add it."
+msgstr ""
+
+msgid "Export ready"
+msgstr ""
+
+msgid "Save to device"
+msgstr ""
+
+msgid "Back to editing"
+msgstr ""
+
+msgid "Discard"
+msgstr ""
+
+msgid "Go to start"
+msgstr ""
+
+msgid "Go to end"
+msgstr ""
+
+msgid "Properties"
+msgstr ""
+
+msgid "Select a clip on the timeline to edit it."
+msgstr ""
+
+msgid "In point (s)"
+msgstr ""
+
+msgid "Out point (s)"
+msgstr ""
+
+msgid "Start on timeline (s)"
+msgstr ""
+
+msgid "Split at playhead"
+msgstr ""
+
+msgid "Zoom out"
+msgstr ""
+
+msgid "Zoom in"
+msgstr ""
+
+msgid "Zoom"
+msgstr ""
+
+msgid "Tap + on a video in Media to add it."
+msgstr ""
+
+msgid "Tap + on a sound in Audio to add it."
+msgstr ""
+
+msgid "Add to timeline"
+msgstr ""
+
+msgid "Nothing here yet."
+msgstr ""
+
+msgid "Add a video or audio to the timeline to start."
+msgstr ""
+
+msgid "Audio only: the sound plays while you preview."
+msgstr ""
+
+msgid "Add a clip to the timeline first."
+msgstr ""
+
+msgid "Could not read this file."
+msgstr ""
+
+msgid "Move the playhead onto a clip, then split."
+msgstr ""
+
+msgid "The playhead is too close to the edge of the clip."
+msgstr ""
+
+msgid "Export discarded."
+msgstr ""
+
+msgid "Waiting for the renderer…"
+msgstr ""
+
+msgid "Preparing clips…"
+msgstr ""
+
+msgid "Encoding clips…"
+msgstr ""
+
+msgid "Joining clips…"
+msgstr ""
+
+msgid "Mixing audio…"
+msgstr ""
+
+msgid "Finishing…"
+msgstr ""
+
+msgid "The export request was invalid."
+msgstr ""
+
+msgid "Add at least one clip."
+msgstr ""
+
+msgid "There are too many clips for one export."
+msgstr ""
+
+msgid "The timeline is too long for one export."
+msgstr ""
+
+msgid "One of the clips is no longer available."
+msgstr ""
+
+msgid "A video clip has no picture."
+msgstr ""
+
+msgid "An audio clip has no sound track."
+msgstr ""
+
+msgid "A clip is too short (0.2 seconds minimum)."
+msgstr ""
+
+msgid "A clip could not be downloaded."
+msgstr ""
+
+msgid "A clip could not be rendered."
+msgstr ""
+
+msgid "The export took too long. Try a shorter timeline."
+msgstr ""
+
+msgid "The export was interrupted. Please try again."
+msgstr ""
+
+msgid "The export failed. Please try again."
+msgstr ""
+
+msgid "Could not reach the server. Check your connection."
+msgstr ""

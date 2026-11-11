@@ -1413,7 +1413,7 @@ msgid "Composing…"
 msgstr ""
 
 msgid "Composition"
-msgstr ""
+msgstr "المونتاج"
 
 msgid "Done."
 msgstr ""
@@ -1446,10 +1446,10 @@ msgid "Library"
 msgstr ""
 
 msgid "Timeline"
-msgstr ""
+msgstr "الخط الزمني"
 
 msgid "Split"
-msgstr ""
+msgstr "تقسيم"
 
 msgid "Download to device"
 msgstr ""
@@ -1468,3 +1468,165 @@ msgstr ""
 
 msgid "Video track"
 msgstr ""
+
+msgid "Untitled project"
+msgstr "مشروع بدون عنوان"
+
+msgid "Project name"
+msgstr "اسم المشروع"
+
+msgid "Undo"
+msgstr "تراجع"
+
+msgid "Redo"
+msgstr "إعادة"
+
+msgid "Canvas"
+msgstr "شكل الإطار"
+
+msgid "Export"
+msgstr "تصدير"
+
+msgid "Media"
+msgstr "الوسائط"
+
+msgid "Drag an item onto the timeline, or tap + to add it."
+msgstr "اسحب عنصرا إلى الخط الزمني، أو اضغط + لإضافته."
+
+msgid "Export ready"
+msgstr "التصدير جاهز"
+
+msgid "Save to device"
+msgstr "حفظ على الجهاز"
+
+msgid "Back to editing"
+msgstr "العودة إلى التحرير"
+
+msgid "Discard"
+msgstr "تجاهل"
+
+msgid "Go to start"
+msgstr "الانتقال إلى البداية"
+
+msgid "Go to end"
+msgstr "الانتقال إلى النهاية"
+
+msgid "Properties"
+msgstr "الخصائص"
+
+msgid "Select a clip on the timeline to edit it."
+msgstr "حدد مقطعا على الخط الزمني لتعديله."
+
+msgid "In point (s)"
+msgstr "بداية المقطع (ث)"
+
+msgid "Out point (s)"
+msgstr "نهاية المقطع (ث)"
+
+msgid "Start on timeline (s)"
+msgstr "البداية على الخط الزمني (ث)"
+
+msgid "Split at playhead"
+msgstr "تقسيم عند مؤشر التشغيل"
+
+msgid "Zoom out"
+msgstr "تصغير"
+
+msgid "Zoom in"
+msgstr "تكبير"
+
+msgid "Zoom"
+msgstr "التكبير"
+
+msgid "Tap + on a video in Media to add it."
+msgstr "اضغط + على فيديو في الوسائط لإضافته."
+
+msgid "Tap + on a sound in Audio to add it."
+msgstr "اضغط + على مقطع صوتي في الصوت لإضافته."
+
+msgid "Add to timeline"
+msgstr "إضافة إلى الخط الزمني"
+
+msgid "Nothing here yet."
+msgstr "لا يوجد شيء بعد."
+
+msgid "Add a video or audio to the timeline to start."
+msgstr "أضف فيديو أو صوتا إلى الخط الزمني للبدء."
+
+msgid "Audio only: the sound plays while you preview."
+msgstr "صوت فقط: يُشغَّل الصوت أثناء المعاينة."
+
+msgid "Add a clip to the timeline first."
+msgstr "أضف مقطعا إلى الخط الزمني أولا."
+
+msgid "Could not read this file."
+msgstr "تعذّرت قراءة هذا الملف."
+
+msgid "Move the playhead onto a clip, then split."
+msgstr "ضع مؤشر التشغيل على مقطع ثم قسّمه."
+
+msgid "The playhead is too close to the edge of the clip."
+msgstr "مؤشر التشغيل قريب جدا من طرف المقطع."
+
+msgid "Export discarded."
+msgstr "تم تجاهل التصدير."
+
+msgid "Waiting for the renderer…"
+msgstr "في انتظار محرك المعالجة…"
+
+msgid "Preparing clips…"
+msgstr "جارٍ تجهيز المقاطع…"
+
+msgid "Encoding clips…"
+msgstr "جارٍ ترميز المقاطع…"
+
+msgid "Joining clips…"
+msgstr "جارٍ دمج المقاطع…"
+
+msgid "Mixing audio…"
+msgstr "جارٍ مزج الصوت…"
+
+msgid "Finishing…"
+msgstr "جارٍ الإنهاء…"
+
+msgid "The export request was invalid."
+msgstr "طلب التصدير غير صالح."
+
+msgid "Add at least one clip."
+msgstr "أضف مقطعا واحدا على الأقل."
+
+msgid "There are too many clips for one export."
+msgstr "عدد المقاطع كبير جدا لتصدير واحد."
+
+msgid "The timeline is too long for one export."
+msgstr "الخط الزمني طويل جدا لتصدير واحد."
+
+msgid "One of the clips is no longer available."
+msgstr "أحد المقاطع لم يعد متاحا."
+
+msgid "A video clip has no picture."
+msgstr "مقطع الفيديو لا يحتوي على صورة."
+
+msgid "An audio clip has no sound track."
+msgstr "المقطع الصوتي لا يحتوي على مسار صوت."
+
+msgid "A clip is too short (0.2 seconds minimum)."
+msgstr "المقطع قصير جدا (0.2 ثانية كحد أدنى)."
+
+msgid "A clip could not be downloaded."
+msgstr "تعذّر تنزيل أحد المقاطع."
+
+msgid "A clip could not be rendered."
+msgstr "تعذّر معالجة أحد المقاطع."
+
+msgid "The export took too long. Try a shorter timeline."
+msgstr "استغرق التصدير وقتا طويلا. جرّب خطا زمنيا أقصر."
+
+msgid "The export was interrupted. Please try again."
+msgstr "انقطع التصدير. يرجى المحاولة مرة أخرى."
+
+msgid "The export failed. Please try again."
+msgstr "فشل التصدير. يرجى المحاولة مرة أخرى."
+
+msgid "Could not reach the server. Check your connection."
+msgstr "تعذّر الوصول إلى الخادم. تحقق من اتصالك."

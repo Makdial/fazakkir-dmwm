@@ -1392,7 +1392,7 @@ msgid "Composing…"
 msgstr ""
 
 msgid "Composition"
-msgstr ""
+msgstr "Montage"
 
 msgid "Done."
 msgstr ""
@@ -1425,10 +1425,10 @@ msgid "Library"
 msgstr ""
 
 msgid "Timeline"
-msgstr ""
+msgstr "Timeline"
 
 msgid "Split"
-msgstr ""
+msgstr "Couper"
 
 msgid "Download to device"
 msgstr ""
@@ -1447,3 +1447,165 @@ msgstr ""
 
 msgid "Video track"
 msgstr ""
+
+msgid "Untitled project"
+msgstr "Projet sans titre"
+
+msgid "Project name"
+msgstr "Nom du projet"
+
+msgid "Undo"
+msgstr "Annuler"
+
+msgid "Redo"
+msgstr "Rétablir"
+
+msgid "Canvas"
+msgstr "Format"
+
+msgid "Export"
+msgstr "Exporter"
+
+msgid "Media"
+msgstr "Médias"
+
+msgid "Drag an item onto the timeline, or tap + to add it."
+msgstr "Faites glisser un élément sur la timeline, ou appuyez sur + pour l'ajouter."
+
+msgid "Export ready"
+msgstr "Export prêt"
+
+msgid "Save to device"
+msgstr "Enregistrer sur l'appareil"
+
+msgid "Back to editing"
+msgstr "Retour au montage"
+
+msgid "Discard"
+msgstr "Abandonner"
+
+msgid "Go to start"
+msgstr "Aller au début"
+
+msgid "Go to end"
+msgstr "Aller à la fin"
+
+msgid "Properties"
+msgstr "Propriétés"
+
+msgid "Select a clip on the timeline to edit it."
+msgstr "Sélectionnez un clip sur la timeline pour le modifier."
+
+msgid "In point (s)"
+msgstr "Début du clip (s)"
+
+msgid "Out point (s)"
+msgstr "Fin du clip (s)"
+
+msgid "Start on timeline (s)"
+msgstr "Départ sur la timeline (s)"
+
+msgid "Split at playhead"
+msgstr "Couper à la tête de lecture"
+
+msgid "Zoom out"
+msgstr "Dézoomer"
+
+msgid "Zoom in"
+msgstr "Zoomer"
+
+msgid "Zoom"
+msgstr "Zoom"
+
+msgid "Tap + on a video in Media to add it."
+msgstr "Appuyez sur + sur une vidéo dans Médias pour l'ajouter."
+
+msgid "Tap + on a sound in Audio to add it."
+msgstr "Appuyez sur + sur un son dans Audio pour l'ajouter."
+
+msgid "Add to timeline"
+msgstr "Ajouter à la timeline"
+
+msgid "Nothing here yet."
+msgstr "Rien pour le moment."
+
+msgid "Add a video or audio to the timeline to start."
+msgstr "Ajoutez une vidéo ou un audio à la timeline pour commencer."
+
+msgid "Audio only: the sound plays while you preview."
+msgstr "Audio seul : le son se joue pendant l'aperçu."
+
+msgid "Add a clip to the timeline first."
+msgstr "Ajoutez d'abord un clip à la timeline."
+
+msgid "Could not read this file."
+msgstr "Impossible de lire ce fichier."
+
+msgid "Move the playhead onto a clip, then split."
+msgstr "Placez la tête de lecture sur un clip, puis coupez."
+
+msgid "The playhead is too close to the edge of the clip."
+msgstr "La tête de lecture est trop près du bord du clip."
+
+msgid "Export discarded."
+msgstr "Export abandonné."
+
+msgid "Waiting for the renderer…"
+msgstr "En attente du moteur de rendu…"
+
+msgid "Preparing clips…"
+msgstr "Préparation des clips…"
+
+msgid "Encoding clips…"
+msgstr "Encodage des clips…"
+
+msgid "Joining clips…"
+msgstr "Assemblage des clips…"
+
+msgid "Mixing audio…"
+msgstr "Mixage audio…"
+
+msgid "Finishing…"
+msgstr "Finalisation…"
+
+msgid "The export request was invalid."
+msgstr "La demande d'export est invalide."
+
+msgid "Add at least one clip."
+msgstr "Ajoutez au moins un clip."
+
+msgid "There are too many clips for one export."
+msgstr "Il y a trop de clips pour un seul export."
+
+msgid "The timeline is too long for one export."
+msgstr "La timeline est trop longue pour un seul export."
+
+msgid "One of the clips is no longer available."
+msgstr "L'un des clips n'est plus disponible."
+
+msgid "A video clip has no picture."
+msgstr "Un clip vidéo n'a pas d'image."
+
+msgid "An audio clip has no sound track."
+msgstr "Un clip audio n'a pas de piste sonore."
+
+msgid "A clip is too short (0.2 seconds minimum)."
+msgstr "Un clip est trop court (0,2 seconde minimum)."
+
+msgid "A clip could not be downloaded."
+msgstr "Un clip n'a pas pu être téléchargé."
+
+msgid "A clip could not be rendered."
+msgstr "Un clip n'a pas pu être rendu."
+
+msgid "The export took too long. Try a shorter timeline."
+msgstr "L'export a pris trop de temps. Essayez une timeline plus courte."
+
+msgid "The export was interrupted. Please try again."
+msgstr "L'export a été interrompu. Veuillez réessayer."
+
+msgid "The export failed. Please try again."
+msgstr "L'export a échoué. Veuillez réessayer."
+
+msgid "Could not reach the server. Check your connection."
+msgstr "Impossible de joindre le serveur. Vérifiez votre connexion."

@@ -1,0 +1,747 @@
+/* Composition editor: a dark, CapCut-style layout.
+   Media | monitor | properties, with the timeline under them. The editor keeps
+   its own colours in every theme, the way CapCut does. */
+
+.comp {
+    --comp-bg: #0d0d10;
+    --comp-panel: #16161b;
+    --comp-panel-2: #1f1f26;
+    --comp-line: #2b2b35;
+    --comp-text: #f2f2f5;
+    --comp-muted: #9b9bab;
+    --comp-accent: #2ee6d6;
+    --comp-accent-ink: #04302c;
+    --comp-danger: #f36b84;
+    --comp-video: #2c2c38;
+    --comp-audio: #0f5f4e;
+    position: relative;
+    display: grid;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 14px;
+    background: var(--comp-bg);
+    color: var(--comp-text);
+    font-size: 14px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "top" "monitor" "timeline" "media" "inspector";
+}
+
+.comp *,
+.comp *::before,
+.comp *::after {
+    box-sizing: border-box;
+}
+
+.comp [hidden] {
+    display: none !important;
+}
+
+@media (min-width: 600px) {
+    .comp {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-areas: "top top" "monitor monitor" "timeline timeline" "media inspector";
+    }
+}
+
+@media (min-width: 960px) {
+    .comp {
+        grid-template-columns: 280px minmax(0, 1fr) 260px;
+        grid-template-areas: "top top top" "media monitor inspector" "timeline timeline timeline";
+    }
+}
+
+.comp-top { grid-area: top; }
+.comp-monitor-wrap { grid-area: monitor; }
+.comp-media { grid-area: media; }
+.comp-inspector { grid-area: inspector; }
+.comp-timeline { grid-area: timeline; }
+
+/* Top bar */
+
+.comp-top {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: var(--comp-panel);
+}
+
+.comp-back {
+    padding: 4px 8px;
+    border-radius: 8px;
+    color: var(--comp-muted);
+    text-decoration: none;
+}
+
+.comp-title {
+    flex: 1 1 180px;
+    min-width: 0;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--comp-text);
+    font: inherit;
+    font-weight: 600;
+}
+
+.comp-title:hover,
+.comp-title:focus {
+    outline: none;
+    border-color: var(--comp-line);
+    background: var(--comp-panel-2);
+}
+
+.comp-top-group {
+    display: flex;
+    gap: 4px;
+}
+
+.comp-ratio {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 8px;
+    background: var(--comp-panel-2);
+}
+
+.comp-ratio-btn {
+    padding: 5px 9px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--comp-muted);
+    font: inherit;
+    cursor: pointer;
+}
+
+.comp-ratio-btn.is-active {
+    background: var(--comp-line);
+    color: var(--comp-text);
+}
+
+.comp-export {
+    padding: 8px 16px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--comp-accent);
+    color: var(--comp-accent-ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.comp-export:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+.comp-iconbtn {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--comp-text);
+    font: inherit;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.comp-iconbtn:hover {
+    background: var(--comp-panel-2);
+}
+
+.comp-iconbtn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+/* Panels and shared controls */
+
+.comp-panel {
+    min-width: 0;
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--comp-panel);
+}
+
+.comp-panel-title {
+    margin: 0 0 8px;
+    color: var(--comp-muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.comp-hint {
+    margin: 8px 0;
+    color: var(--comp-muted);
+    font-size: 12px;
+}
+
+.comp-btn {
+    padding: 7px 12px;
+    border: 1px solid var(--comp-line);
+    border-radius: 8px;
+    background: var(--comp-panel-2);
+    color: var(--comp-text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.comp-btn:hover {
+    border-color: #464656;
+}
+
+.comp-btn-primary {
+    border-color: transparent;
+    background: var(--comp-accent);
+    color: var(--comp-accent-ink);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.comp-btn-danger {
+    color: var(--comp-danger);
+}
+
+/* Media panel */
+
+.comp-media {
+    display: flex;
+    flex-direction: column;
+    max-height: 56vh;
+}
+
+.comp-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 8px;
+    background: var(--comp-panel-2);
+}
+
+.comp-tab {
+    flex: 1;
+    padding: 6px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--comp-muted);
+    font: inherit;
+    cursor: pointer;
+}
+
+.comp-tab.is-active {
+    background: var(--comp-line);
+    color: var(--comp-text);
+}
+
+.comp-library {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.comp-library.is-list {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.comp-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    background: var(--comp-panel-2);
+    user-select: none;
+}
+
+.comp-card-thumb {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    touch-action: none;
+    cursor: grab;
+}
+
+.comp-card-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+}
+
+.comp-card.is-audio .comp-card-thumb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: auto;
+    height: 44px;
+    background: linear-gradient(135deg, var(--comp-audio), #0a3d33);
+    color: #fff;
+    font-size: 18px;
+}
+
+.comp-card-dur {
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.65);
+    font-size: 11px;
+}
+
+.comp-card-title {
+    padding: 6px 8px 8px;
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.comp-add {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--comp-accent);
+    color: var(--comp-accent-ink);
+    font: inherit;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.comp-card.is-audio .comp-add {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Monitor */
+
+.comp-monitor-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.comp-monitor {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 220px;
+    padding: 8px;
+    border-radius: 10px;
+    background: #000;
+}
+
+.comp-stage {
+    position: relative;
+    width: min(100%, calc(44vh * var(--w, 16) / var(--h, 9)));
+    aspect-ratio: var(--w, 16) / var(--h, 9);
+    overflow: hidden;
+    border-radius: 6px;
+    background: #050506;
+}
+
+.comp-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+}
+
+.comp-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    color: var(--comp-muted);
+    font-size: 13px;
+    text-align: center;
+    pointer-events: none;
+}
+
+.comp-timecode {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.55);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.comp-result {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px;
+    background: rgba(8, 8, 10, 0.94);
+}
+
+.comp-result-title {
+    margin: 0;
+    font-weight: 700;
+}
+
+.comp-result-media {
+    width: 100%;
+    max-height: 60%;
+    border-radius: 8px;
+    background: #000;
+}
+
+.comp-result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.comp-transport {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.comp-play {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--comp-text);
+    color: #000;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.comp-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1 1 200px;
+    color: var(--comp-muted);
+    font-size: 12px;
+}
+
+.comp-progress-track {
+    flex: 1;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--comp-line);
+}
+
+.comp-progress-bar {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--comp-accent);
+    transition: width 0.3s ease;
+}
+
+/* Properties */
+
+.comp-clip-title {
+    margin: 0 0 10px;
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.comp-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+    color: var(--comp-muted);
+    font-size: 12px;
+}
+
+.comp-field input[type="number"] {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--comp-line);
+    border-radius: 6px;
+    background: var(--comp-panel-2);
+    color: var(--comp-text);
+    font: inherit;
+}
+
+.comp-field input[type="range"] {
+    width: 100%;
+    accent-color: var(--comp-accent);
+}
+
+.comp-field-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Timeline */
+
+.comp-timeline {
+    min-width: 0;
+    padding: 6px 8px 8px;
+    border-radius: 10px;
+    background: var(--comp-panel);
+}
+
+.comp-tl-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.comp-spacer {
+    flex: 1;
+}
+
+.comp-zoom {
+    width: 120px;
+    accent-color: var(--comp-accent);
+}
+
+.comp-tl-grid {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.comp-tl-labels {
+    display: flex;
+    flex-direction: column;
+}
+
+.comp-tl-corner {
+    display: flex;
+    align-items: center;
+    height: 26px;
+    color: var(--comp-muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.comp-tl-label {
+    display: flex;
+    align-items: center;
+    height: 84px;
+    color: var(--comp-muted);
+    font-size: 12px;
+}
+
+.comp-tl-label.is-audio {
+    height: 60px;
+}
+
+.comp-tl-scroll {
+    position: relative;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-radius: 6px;
+    background: #101014;
+}
+
+.comp-tl-inner {
+    position: relative;
+    min-width: 100%;
+    height: 170px;
+}
+
+.comp-ruler {
+    position: relative;
+    height: 26px;
+    border-bottom: 1px solid var(--comp-line);
+    background: #121216;
+    touch-action: pan-x;
+    cursor: pointer;
+}
+
+.comp-tick {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    padding-left: 4px;
+    border-left: 1px solid #3a3a46;
+    color: var(--comp-muted);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.comp-lane {
+    position: relative;
+    height: 84px;
+    border-bottom: 1px solid var(--comp-line);
+}
+
+.comp-lane-audio {
+    height: 60px;
+}
+
+.comp-lane:empty::before {
+    content: attr(data-empty);
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    color: #5d5d6b;
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.comp-lane.is-drop {
+    background: rgba(46, 230, 214, 0.08);
+    outline: 1px dashed var(--comp-accent);
+}
+
+.comp-clip {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background: var(--comp-video);
+    touch-action: none;
+    cursor: grab;
+    user-select: none;
+}
+
+.comp-clip.is-audio {
+    background: var(--comp-audio);
+}
+
+.comp-clip.is-selected {
+    border-color: #ffffff;
+}
+
+.comp-clip.dragging {
+    z-index: 3;
+    cursor: grabbing;
+}
+
+.comp-clip-thumb {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+.comp-clip-name {
+    position: absolute;
+    left: 8px;
+    right: 14px;
+    bottom: 4px;
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.comp-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 12px;
+    background: #ffffff;
+    opacity: 0;
+    cursor: ew-resize;
+    touch-action: none;
+}
+
+.comp-handle[data-edge="l"] {
+    left: 0;
+    border-radius: 8px 0 0 8px;
+}
+
+.comp-handle[data-edge="r"] {
+    right: 0;
+    border-radius: 0 8px 8px 0;
+}
+
+.comp-clip.is-selected .comp-handle {
+    opacity: 1;
+}
+
+.comp-playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #ffffff;
+    pointer-events: none;
+    z-index: 4;
+}
+
+/* Feedback */
+
+.comp-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    z-index: 50;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #2a2a34;
+    color: #ffffff;
+    font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    transform: translateX(-50%);
+}
+
+.comp-ghost {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 60;
+    max-width: 200px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--comp-accent);
+    color: var(--comp-accent-ink);
+    font-size: 12px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}

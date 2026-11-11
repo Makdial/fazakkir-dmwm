@@ -2,259 +2,124 @@
 {% load static i18n %}
 
 {% block title %}{% trans "Composition" %} - Fazakkir{% endblock %}
+
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/videos.css' %}">
-<style>
-.comp-app { background:#0f0f12; color:#eaeaea; border-radius:12px; padding:0.75rem; }
-.comp-toolbar { display:flex; gap:0.5rem; padding:0.5rem; border-bottom:1px solid #2a2a2e; margin-bottom:0.75rem; flex-wrap:wrap; }
-.comp-toolbar button { background:#2a2a2e; color:#fff; border:none; padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; }
-.comp-toolbar button:hover { background:#3a3a3e; }
-.comp-main { display:grid; grid-template-columns: 240px 1fr; gap:0.75rem; }
-.comp-library { background:#18181c; border-radius:8px; padding:0.5rem; max-height:60vh; overflow:auto; }
-.comp-lib-item { background:#232329; padding:0.5rem; margin-bottom:0.5rem; border-radius:6px; cursor:grab; }
-.comp-lib-item:active { cursor:grabbing; }
-.comp-preview { background:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; min-height:320px; }
-.comp-preview video { max-width:100%; max-height:320px; }
-.comp-timeline-wrap { margin-top:0.75rem; background:#18181c; border-radius:8px; padding:0.5rem; }
-.comp-track { margin-bottom:0.5rem; }
-.comp-track-label { font-size:0.8rem; color:#aaa; margin-bottom:0.25rem; }
-.comp-timeline { min-height:70px; border:1px solid #2a2a2e; border-radius:6px; padding:0.5rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:stretch; background:#101014; position:relative; }
-.comp-clip { background:linear-gradient(135deg,#2d2d35,#1f1f25); color:#fff; padding:0.5rem; border-radius:6px; cursor:move; min-width:180px; border:1px solid #3a3a3e; }
-.comp-clip.dragging { opacity:0.4; }
-.comp-clip input { width:64px; background:#0f0f12; color:#fff; border:1px solid #3a3a3e; border-radius:4px; }
-.comp-actions { margin-top:0.75rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
-.comp-playhead { position:absolute; top:0; bottom:0; width:2px; background:#ff4d4f; left:0; pointer-events:none; }
-</style>
+<link rel="stylesheet" href="{% static 'css/composition.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="composition-page">
-    <h1>{% trans "Composition" %}</h1>
-    <div class="comp-app">
-        <div class="comp-toolbar">
-            <button type="button" id="toolSplit">{% trans "Scissors" %}</button>
-            <button type="button" id="toolDelete">{% trans "Delete" %}</button>
-            <button type="button" id="toolClear">{% trans "Clear" %}</button>
-            <label style="color:#aaa; font-size:0.85rem;">{% trans "Split at (s)" %} <input type="number" id="splitAt" min="0" step="0.1" value="0" style="width:70px; background:#0f0f12; color:#fff; border:1px solid #3a3a3e; border-radius:4px;"></label>
+<div class="comp" id="comp">
+    <header class="comp-top">
+        <a class="comp-back" href="{% url 'videos:list' %}" aria-label="{% trans 'Back to videos' %}">&larr;</a>
+        <input type="text" class="comp-title" id="compTitle" maxlength="120"
+               placeholder="{% trans 'Untitled project' %}" aria-label="{% trans 'Project name' %}">
+        <div class="comp-top-group">
+            <button type="button" class="comp-iconbtn" id="compUndo" title="{% trans 'Undo' %}" aria-label="{% trans 'Undo' %}">&#8630;</button>
+            <button type="button" class="comp-iconbtn" id="compRedo" title="{% trans 'Redo' %}" aria-label="{% trans 'Redo' %}">&#8631;</button>
         </div>
-        <div class="comp-main">
-            <div class="comp-library">
-                <h3>{% trans "Library" %}</h3>
-                {% for video in videos %}
-                <div class="comp-lib-item" draggable="true" data-video-id="{{ video.id }}" data-duration="{{ video.duration_seconds }}" data-title="{{ video.title|escapejs }}" data-preview-url="{{ video.playback_url }}">
-                    <strong>{{ video.title }}</strong>
-                    <div><small>{{ video.duration_formatted }}</small></div>
-                </div>
-                {% empty %}
-                <p>{% trans "No videos available." %}</p>
-                {% endfor %}
-            </div>
-            <div>
-                <div class="comp-preview">
-                    <video id="compPreview" controls></video>
-                </div>
-                <div class="comp-timeline-wrap">
-                    <div class="comp-track">
-                        <div class="comp-track-label">{% trans "Video track" %}</div>
-                        <div id="compTimeline" class="comp-timeline"></div>
+        <div class="comp-ratio" role="group" aria-label="{% trans 'Canvas' %}">
+            <button type="button" class="comp-ratio-btn is-active" data-ratio="16:9">16:9</button>
+            <button type="button" class="comp-ratio-btn" data-ratio="9:16">9:16</button>
+            <button type="button" class="comp-ratio-btn" data-ratio="1:1">1:1</button>
+        </div>
+        <button type="button" class="comp-export" id="compExport">{% trans "Export" %}</button>
+    </header>
+
+    <aside class="comp-panel comp-media" aria-label="{% trans 'Media' %}">
+        <div class="comp-tabs" role="tablist">
+            <button type="button" class="comp-tab is-active" role="tab" data-tab="media" aria-selected="true">{% trans "Media" %}</button>
+            <button type="button" class="comp-tab" role="tab" data-tab="audio" aria-selected="false">{% trans "Audio" %}</button>
+        </div>
+        <p class="comp-hint">{% trans "Drag an item onto the timeline, or tap + to add it." %}</p>
+        <div class="comp-library" id="compLibrary"></div>
+    </aside>
+
+    <section class="comp-monitor-wrap">
+        <div class="comp-monitor">
+            <div class="comp-stage" id="compStage">
+                <video id="compPreview" class="comp-video" playsinline preload="auto"></video>
+                <div class="comp-empty" id="compEmpty" hidden></div>
+                <div class="comp-timecode" id="compTimecode">00:00.0 / 00:00.0</div>
+                <div class="comp-result" id="compResult" hidden>
+                    <p class="comp-result-title">{% trans "Export ready" %}</p>
+                    <video id="compResultVideo" class="comp-result-media" controls playsinline hidden></video>
+                    <audio id="compResultAudio" class="comp-result-media" controls hidden></audio>
+                    <div class="comp-result-actions">
+                        <a class="comp-btn comp-btn-primary" id="compSave" href="#" download>{% trans "Save to device" %}</a>
+                        <button type="button" class="comp-btn" id="compBackEdit">{% trans "Back to editing" %}</button>
+                        <button type="button" class="comp-btn comp-btn-danger" id="compDiscard">{% trans "Discard" %}</button>
                     </div>
-                    <div class="comp-track">
-                        <div class="comp-track-label">{% trans "Audio track" %}</div>
-                        <div id="compAudioTimeline" class="comp-timeline" style="min-height:50px;"></div>
-                    </div>
                 </div>
             </div>
         </div>
-        <div class="comp-actions">
-            <input type="text" id="compTitle" class="form-input" placeholder="{% trans 'Composed video' %}" style="max-width:260px;">
-            <button type="button" id="compComposeBtn" class="btn btn-primary">{% trans "Compose" %}</button>
-            <span id="compStatus" role="status"></span>
+        <div class="comp-transport">
+            <button type="button" class="comp-iconbtn" id="compStart" title="{% trans 'Go to start' %}" aria-label="{% trans 'Go to start' %}">&#9198;</button>
+            <button type="button" class="comp-play" id="compPlay" title="{% trans 'Play' %}" aria-label="{% trans 'Play' %}">&#9654;</button>
+            <button type="button" class="comp-iconbtn" id="compEnd" title="{% trans 'Go to end' %}" aria-label="{% trans 'Go to end' %}">&#9197;</button>
+            <div class="comp-progress" id="compProgress" hidden>
+                <div class="comp-progress-track"><span class="comp-progress-bar" id="compProgressBar"></span></div>
+                <span id="compProgressText"></span>
+            </div>
         </div>
-        <div id="compResult" hidden style="margin-top:0.5rem;">
-            <a id="compResultLink" href="#">{% trans "Preview composed video" %}</a>
-            <a id="compDownloadLink" href="#" download>{% trans "Download to device" %}</a>
+    </section>
+
+    <aside class="comp-panel comp-inspector" aria-label="{% trans 'Properties' %}">
+        <h2 class="comp-panel-title">{% trans "Properties" %}</h2>
+        <p class="comp-hint" id="compInspEmpty">{% trans "Select a clip on the timeline to edit it." %}</p>
+        <div id="compInspBody" hidden>
+            <p class="comp-clip-title" id="compClipTitle"></p>
+            <label class="comp-field">{% trans "In point (s)" %}
+                <input type="number" step="0.1" min="0" id="compIn">
+            </label>
+            <label class="comp-field">{% trans "Out point (s)" %}
+                <input type="number" step="0.1" min="0" id="compOut">
+            </label>
+            <label class="comp-field" id="compOffsetField">{% trans "Start on timeline (s)" %}
+                <input type="number" step="0.1" min="0" id="compOffset">
+            </label>
+            <label class="comp-field">
+                <span>{% trans "Volume" %} <b id="compVolLabel">100%</b></span>
+                <input type="range" min="0" max="100" step="1" id="compVol">
+            </label>
+            <div class="comp-field-row">
+                <button type="button" class="comp-btn" id="compSplitBtn">&#9986; {% trans "Split" %}</button>
+                <button type="button" class="comp-btn comp-btn-danger" id="compDelBtn">{% trans "Delete" %}</button>
+            </div>
         </div>
-    </div>
+    </aside>
+
+    <section class="comp-timeline" aria-label="{% trans 'Timeline' %}">
+        <div class="comp-tl-toolbar">
+            <button type="button" class="comp-btn" id="compSplitTool" title="{% trans 'Split at playhead' %}">&#9986; {% trans "Split" %}</button>
+            <button type="button" class="comp-btn comp-btn-danger" id="compDelTool">{% trans "Delete" %}</button>
+            <span class="comp-spacer"></span>
+            <button type="button" class="comp-iconbtn" id="compZoomOut" aria-label="{% trans 'Zoom out' %}">&minus;</button>
+            <input type="range" class="comp-zoom" id="compZoom" min="10" max="200" step="1" value="60" aria-label="{% trans 'Zoom' %}">
+            <button type="button" class="comp-iconbtn" id="compZoomIn" aria-label="{% trans 'Zoom in' %}">+</button>
+        </div>
+        <div class="comp-tl-grid">
+            <div class="comp-tl-labels">
+                <div class="comp-tl-corner" id="compTime">00:00.0</div>
+                <div class="comp-tl-label">{% trans "Video" %}</div>
+                <div class="comp-tl-label is-audio">{% trans "Audio" %}</div>
+            </div>
+            <div class="comp-tl-scroll" id="compScroll">
+                <div class="comp-tl-inner" id="compInner">
+                    <div class="comp-ruler" id="compRuler"></div>
+                    <div class="comp-lane" id="compLaneVideo" data-empty="{% trans 'Tap + on a video in Media to add it.' %}"></div>
+                    <div class="comp-lane comp-lane-audio" id="compLaneAudio" data-empty="{% trans 'Tap + on a sound in Audio to add it.' %}"></div>
+                    <div class="comp-playhead" id="compPlayhead"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="comp-toast" id="compToast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<script data-fz-page>
-(function () {
-    "use strict";
-    const timeline = document.getElementById("compTimeline");
-    const audioTimeline = document.getElementById("compAudioTimeline");
-    const statusEl = document.getElementById("compStatus");
-    const resultEl = document.getElementById("compResult");
-    const resultLink = document.getElementById("compResultLink");
-    const preview = document.getElementById("compPreview");
+{{ config|json_script:"comp-config" }}
+{% endblock %}
 
-    function makeClip(videoId, title) {
-        const clip = document.createElement("div");
-        clip.className = "comp-clip";
-        clip.draggable = true;
-        clip.dataset.videoId = videoId;
-        clip.innerHTML =
-            "<div><strong>" + title + "</strong></div>" +
-            "<div style='margin-top:0.3rem;'>" +
-            "<label>S <input type='number' class='comp-start' min='0' step='0.1' value='0'></label> " +
-            "<label>E <input type='number' class='comp-end' min='0' step='0.1' placeholder='{% trans 'Full length' %}'></label>" +
-            "</div>";
-        addDragHandlers(clip);
-        clip.addEventListener("click", function () {
-            const item = document.querySelector('.comp-lib-item[data-video-id="' + videoId + '"]');
-            if (item && preview) preview.src = item.dataset.previewUrl;
-        });
-        return clip;
-    }
-
-    function addDragHandlers(el) {
-        el.addEventListener("dragstart", function (e) {
-            el.classList.add("dragging");
-            window._draggingClip = el;
-            e.dataTransfer.effectAllowed = "move";
-        });
-        el.addEventListener("dragend", function () {
-            el.classList.remove("dragging");
-            window._draggingClip = null;
-        });
-    }
-
-    document.querySelectorAll(".comp-lib-item").forEach(function (item) {
-        item.draggable = true;
-        item.addEventListener("dragstart", function (e) {
-            e.dataTransfer.setData("application/x-video-id", item.dataset.videoId);
-            e.dataTransfer.effectAllowed = "copy";
-        });
-        item.addEventListener("click", function () {
-            if (preview) preview.src = item.dataset.previewUrl;
-        });
-    });
-
-    timeline.addEventListener("dragover", function (e) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; });
-    timeline.addEventListener("drop", function (e) {
-        e.preventDefault();
-        const vid = e.dataTransfer.getData("application/x-video-id");
-        if (vid) {
-            const item = document.querySelector('.comp-lib-item[data-video-id="' + vid + '"]');
-            const title = item ? item.dataset.title : "Video";
-            const clip = makeClip(vid, title);
-            timeline.appendChild(clip);
-            // mirror an audio block
-            const audioBlock = document.createElement("div");
-            audioBlock.className = "comp-clip";
-            audioBlock.style.background = "#1a3a2a";
-            audioBlock.textContent = title + " (audio)";
-            audioTimeline.appendChild(audioBlock);
-            return;
-        }
-        const dragging = window._draggingClip;
-        if (dragging && dragging.parentNode === timeline) {
-            const after = getDragAfterElement(timeline, e.clientX);
-            if (after == null) timeline.appendChild(dragging);
-            else timeline.insertBefore(dragging, after);
-        }
-    });
-
-    function getDragAfterElement(container, x) {
-        const draggableElements = [...container.querySelectorAll(".comp-clip:not(.dragging)")];
-        return draggableElements.reduce(function (closest, child) {
-            const box = child.getBoundingClientRect();
-            const offset = x - box.left - box.width / 2;
-            if (offset < 0 && offset > closest.offset) {
-                return { offset: offset, element: child };
-            } else {
-                return closest;
-            }
-        }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
-    }
-
-    document.getElementById("toolSplit").addEventListener("click", function () {
-        const clips = timeline.querySelectorAll(".comp-clip");
-        if (!clips.length) return;
-        const splitTime = parseFloat(document.getElementById("splitAt").value || "0");
-        // split the last clip at the requested time by duplicating with trimmed ranges
-        const last = clips[clips.length - 1];
-        const startInput = last.querySelector(".comp-start");
-        const endInput = last.querySelector(".comp-end");
-        const start = parseFloat(startInput.value || "0");
-        let end = endInput.value ? parseFloat(endInput.value) : null;
-        if (end === null) {
-            const item = document.querySelector('.comp-lib-item[data-video-id="' + last.dataset.videoId + '"]');
-            end = item ? parseFloat(item.dataset.duration || "0") : start + 1;
-        }
-        if (splitTime <= start || splitTime >= end) return;
-        // first part
-        endInput.value = splitTime;
-        // second part
-        const clone = makeClip(last.dataset.videoId, last.querySelector("strong").textContent);
-        clone.querySelector(".comp-start").value = splitTime;
-        clone.querySelector(".comp-end").value = end;
-        timeline.appendChild(clone);
-    });
-
-    document.getElementById("toolDelete").addEventListener("click", function () {
-        const selected = document.activeElement && document.activeElement.closest ? document.activeElement.closest(".comp-clip") : null;
-        if (selected && selected.parentNode === timeline) selected.remove();
-    });
-
-    document.getElementById("toolClear").addEventListener("click", function () {
-        timeline.innerHTML = "";
-        audioTimeline.innerHTML = "";
-        statusEl.textContent = "";
-        resultEl.setAttribute("hidden", "");
-        if (preview) preview.removeAttribute("src");
-    });
-
-    document.getElementById("compComposeBtn").addEventListener("click", function () {
-        const clips = [];
-        timeline.querySelectorAll(".comp-clip").forEach(function (clip) {
-            clips.push({
-                video_id: parseInt(clip.dataset.videoId, 10),
-                start: clip.querySelector(".comp-start").value,
-                end: clip.querySelector(".comp-end").value,
-            });
-        });
-        if (!clips.length) {
-            statusEl.textContent = "{% trans 'Choose at least one video.' %}";
-            return;
-        }
-        const title = document.getElementById("compTitle").value.trim();
-        statusEl.textContent = "{% trans 'Starting…' %}";
-        resultEl.setAttribute("hidden", "");
-        fetch("{% url 'videos:composition_start' %}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
-            body: JSON.stringify({ title: title, clips: clips }),
-        })
-            .then(r => r.json())
-            .then(data => {
-                if (!data.success) { statusEl.textContent = data.error || "{% trans 'Failed.' %}"; return; }
-                poll(data.job_id);
-            })
-            .catch(() => { statusEl.textContent = "{% trans 'Failed.' %}"; });
-    });
-
-    function poll(jobId) {
-        fetch("{% url 'videos:composition_status' '00000000-0000-0000-0000-000000000000' %}".replace("00000000-0000-0000-0000-000000000000", jobId))
-            .then(r => r.json())
-            .then(data => {
-                if (data.status === "ready") {
-                    statusEl.textContent = "{% trans 'Done.' %}";
-                    const previewUrl = data.download_url + "?inline=1";
-                    if (preview) preview.src = previewUrl;
-                    resultLink.href = previewUrl;
-                    const dl = document.getElementById("compDownloadLink");
-                    if (data.download_url) { dl.href = data.download_url; dl.removeAttribute("hidden"); }
-                    else { dl.setAttribute("hidden", ""); }
-                    resultEl.removeAttribute("hidden");
-                } else if (data.status === "failed") {
-                    statusEl.textContent = data.error || "{% trans 'Failed.' %}";
-                } else {
-                    statusEl.textContent = "{% trans 'Composing…' %}";
-                    setTimeout(function () { poll(jobId); }, 3000);
-                }
-            })
-            .catch(() => setTimeout(function () { poll(jobId); }, 5000));
-    }
-})();
-</script>
+{% block extra_js %}
+<script src="{% static 'js/composition.js' %}"></script>
 {% endblock %}
