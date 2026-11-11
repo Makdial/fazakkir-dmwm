@@ -1429,3 +1429,18 @@ msgstr ""
 
 msgid "Download to device"
 msgstr ""
+
+msgid "Audio track"
+msgstr ""
+
+msgid "Preview composed video"
+msgstr ""
+
+msgid "Scissors"
+msgstr ""
+
+msgid "Split at (s)"
+msgstr ""
+
+msgid "Video track"
+msgstr ""
