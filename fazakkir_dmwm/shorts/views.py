@@ -31,6 +31,17 @@ def short_detail(request, short_id):
     short = get_object_or_404(Short.objects.select_related("user"), id=short_id)
     short.views += 1
     short.save(update_fields=["views"])
+
+    # Translate the description into the visitor's chosen language when possible.
+    try:
+        from django.utils.translation import get_language
+
+        from videos.views import _translate_description
+
+        short.description = _translate_description(short.description, get_language())
+    except Exception:  # noqa: BLE001
+        pass
+
     liked = False
     if request.user.is_authenticated:
         liked = ShortLike.objects.filter(user=request.user, short=short).exists()
