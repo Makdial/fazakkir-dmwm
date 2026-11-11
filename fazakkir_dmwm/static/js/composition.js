@@ -205,22 +205,61 @@
 
     /* --- Media library --------------------------------------------------------- */
 
+    const searchInput = $("compSearch");
+    let previewCard = null;
+    let previewVideo = null;
+    let lastPointerType = "mouse";
+
+    function libraryItems() {
+        const isAudio = libTab === "audio";
+        const query = searchInput.value.trim().toLowerCase();
+        return LIBRARY.filter((v) => (isAudio ? v.hasAudio : v.hasVideo))
+            .filter((v) => !query || v.title.toLowerCase().indexOf(query) !== -1);
+    }
+
+    function usageOf(item) {
+        const list = libTab === "audio" ? state.audio : state.video;
+        return list.filter((c) => c.vid === item.id).length;
+    }
+
+    function metaText(item, isAudio) {
+        if (isAudio) return item.uploader + " \u00B7 " + fmtShort(item.duration);
+        return item.uploader + " \u00B7 " + Number(item.views).toLocaleString() + " " + S.views;
+    }
+
+    function refreshUsage() {
+        el.library.querySelectorAll(".comp-card").forEach((card) => {
+            const item = LIBRARY.find((v) => String(v.id) === card.dataset.vid);
+            const badge = card.querySelector(".comp-card-used");
+            if (!item || !badge) return;
+            const count = usageOf(item);
+            badge.hidden = count === 0;
+            badge.textContent = S.onTimeline + " \u00D7" + count;
+        });
+        document.querySelectorAll(".comp-tab-count").forEach((tab) => {
+            const isAudio = tab.dataset.count === "audio";
+            tab.textContent = String(LIBRARY.filter((v) => (isAudio ? v.hasAudio : v.hasVideo)).length);
+        });
+    }
+
     function renderLibrary() {
+        hidePreview();
+        const isAudio = libTab === "audio";
         el.library.innerHTML = "";
-        el.library.classList.toggle("is-list", libTab === "audio");
-        const items = LIBRARY.filter((v) => (libTab === "audio" ? v.hasAudio : v.hasVideo));
+        el.library.classList.toggle("is-list", isAudio);
+        const total = LIBRARY.filter((v) => (isAudio ? v.hasAudio : v.hasVideo)).length;
+        const items = libraryItems();
         if (!items.length) {
             const hint = document.createElement("p");
             hint.className = "comp-hint";
-            hint.textContent = S.noItems;
+            hint.textContent = total ? S.noMatches : S.noItems;
             el.library.appendChild(hint);
-            return;
         }
-        items.forEach((item) => el.library.appendChild(buildCard(item)));
+        items.forEach((item) => el.library.appendChild(buildCard(item, isAudio)));
+        refreshUsage();
     }
 
-    function buildCard(item) {
-        const isAudio = libTab === "audio";
+    function buildCard(item, isAudio) {
         const card = document.createElement("div");
         card.className = "comp-card" + (isAudio ? " is-audio" : "");
         card.dataset.vid = String(item.id);
@@ -235,15 +274,27 @@
             img.alt = "";
             img.loading = "lazy";
             thumb.appendChild(img);
+        } else {
+            thumb.classList.add("is-placeholder");
+            thumb.textContent = (item.title.trim().charAt(0) || "\u25B6").toUpperCase();
         }
-        const dur = document.createElement("span");
-        dur.className = "comp-card-dur";
-        dur.textContent = fmtShort(item.duration);
-        thumb.appendChild(dur);
+        const length = document.createElement("span");
+        length.className = "comp-card-dur";
+        length.textContent = fmtShort(item.duration);
+        thumb.appendChild(length);
 
+        const body = document.createElement("div");
+        body.className = "comp-card-body";
         const title = document.createElement("div");
         title.className = "comp-card-title";
         title.textContent = item.title;
+        const meta = document.createElement("div");
+        meta.className = "comp-card-meta";
+        meta.textContent = metaText(item, isAudio);
+        const used = document.createElement("span");
+        used.className = "comp-card-used";
+        used.hidden = true;
+        body.append(title, meta, used);
 
         const add = document.createElement("button");
         add.type = "button";
@@ -252,8 +303,40 @@
         add.title = S.add;
         add.setAttribute("aria-label", S.add);
 
-        card.append(thumb, title, add);
+        card.append(thumb, body, add);
         return card;
+    }
+
+    function showPreview(card) {
+        if (card === previewCard || libTab !== "media") return;
+        const item = LIBRARY.find((v) => String(v.id) === card.dataset.vid);
+        const thumb = card.querySelector(".comp-card-thumb");
+        if (!item || !item.videoUrl || !thumb) return;
+        hidePreview();
+        if (!previewVideo) {
+            previewVideo = document.createElement("video");
+            previewVideo.className = "comp-card-preview";
+            previewVideo.muted = true;
+            previewVideo.loop = true;
+            previewVideo.playsInline = true;
+            previewVideo.preload = "auto";
+        }
+        previewCard = card;
+        card.classList.add("is-previewing");
+        previewVideo.src = item.videoUrl;
+        thumb.appendChild(previewVideo);
+        previewVideo.play().catch(() => {});
+    }
+
+    function hidePreview() {
+        if (previewVideo) {
+            previewVideo.pause();
+            previewVideo.removeAttribute("src");
+            previewVideo.load();
+            previewVideo.remove();
+        }
+        if (previewCard) previewCard.classList.remove("is-previewing");
+        previewCard = null;
     }
 
     function probe(url, isVideo) {
@@ -348,6 +431,7 @@
         el.laneAudio.querySelectorAll(".comp-clip").forEach((n) => n.remove());
         state.video.forEach((c) => el.laneVideo.appendChild(buildClip(c, "video")));
         state.audio.forEach((c) => el.laneAudio.appendChild(buildClip(c, "audio")));
+        refreshUsage();
     }
 
     function placeClip(node, start, length, selected) {
@@ -694,6 +778,7 @@
     }
 
     el.library.addEventListener("pointerdown", (e) => {
+        lastPointerType = e.pointerType;
         if (e.pointerType === "mouse" && e.button !== 0) return;
         if (e.target.closest(".comp-add")) return;
         const card = e.target.closest(".comp-card");
@@ -708,6 +793,18 @@
         addGestureListeners();
     });
 
+    el.library.addEventListener("pointerover", (e) => {
+        if (e.pointerType !== "mouse") return;
+        const card = e.target.closest(".comp-card");
+        if (card) showPreview(card);
+    });
+
+    el.library.addEventListener("pointerout", (e) => {
+        if (e.pointerType !== "mouse") return;
+        const card = e.target.closest(".comp-card");
+        if (card && card === previewCard && !card.contains(e.relatedTarget)) hidePreview();
+    });
+
     el.library.addEventListener("click", (e) => {
         if (suppressClick) {
             suppressClick = false;
@@ -716,8 +813,16 @@
         const card = e.target.closest(".comp-card");
         if (!card) return;
         const item = LIBRARY.find((v) => String(v.id) === card.dataset.vid);
-        if (item) addItem(item, libTab === "audio" ? "audio" : "video", null);
+        if (!item) return;
+        if (e.target.closest(".comp-add")) {
+            addItem(item, libTab === "audio" ? "audio" : "video", null);
+        } else if (lastPointerType === "touch" && e.target.closest(".comp-card-thumb")) {
+            if (previewCard === card) hidePreview();
+            else showPreview(card);
+        }
     });
+
+    searchInput.addEventListener("input", renderLibrary);
 
     el.scroll.addEventListener("pointerdown", (e) => {
         if (e.pointerType === "mouse" && e.button !== 0) return;

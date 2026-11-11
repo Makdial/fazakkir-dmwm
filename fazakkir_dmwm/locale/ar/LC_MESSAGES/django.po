@@ -1630,3 +1630,12 @@ msgstr "فشل التصدير. يرجى المحاولة مرة أخرى."
 
 msgid "Could not reach the server. Check your connection."
 msgstr "تعذّر الوصول إلى الخادم. تحقق من اتصالك."
+
+msgid "Hover or tap a video to preview it. Drag it or press + to add it."
+msgstr "مرّر المؤشر على فيديو أو المسه لمعاينته. اسحبه أو اضغط + لإضافته."
+
+msgid "No matches for this search."
+msgstr "لا توجد نتائج لهذا البحث."
+
+msgid "On timeline"
+msgstr "على الخط الزمني"

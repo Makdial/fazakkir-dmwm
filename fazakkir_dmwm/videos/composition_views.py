@@ -147,6 +147,8 @@ def _library_entry(video: Video) -> dict:
     return {
         "id": video.id,
         "title": video.title,
+        "uploader": video.user.username,
+        "views": video.views,
         "duration": float(video.duration_seconds or 0),
         "thumb": video.display_thumbnail_url or "",
         "hasVideo": video.has_video,
@@ -159,6 +161,9 @@ def _library_entry(video: Video) -> dict:
 def _strings() -> dict:
     return {
         "add": _("Add to timeline"),
+        "noMatches": _("No matches for this search."),
+        "onTimeline": _("On timeline"),
+        "views": _("Views"),
         "noItems": _("Nothing here yet."),
         "play": _("Play"),
         "pause": _("Pause"),
@@ -197,7 +202,7 @@ def _strings() -> dict:
 def composition_page(request):
     library = [
         _library_entry(video)
-        for video in Video.objects.order_by("-created_at")[:MAX_LIBRARY]
+        for video in Video.objects.select_related("user").order_by("-created_at")[:MAX_LIBRARY]
     ]
     config = {
         "urls": {

@@ -27,10 +27,11 @@
 
     <aside class="comp-panel comp-media" aria-label="{% trans 'Media' %}">
         <div class="comp-tabs" role="tablist">
-            <button type="button" class="comp-tab is-active" role="tab" data-tab="media" aria-selected="true">{% trans "Media" %}</button>
-            <button type="button" class="comp-tab" role="tab" data-tab="audio" aria-selected="false">{% trans "Audio" %}</button>
+            <button type="button" class="comp-tab is-active" role="tab" data-tab="media" aria-selected="true">{% trans "Media" %}<span class="comp-tab-count" data-count="media"></span></button>
+            <button type="button" class="comp-tab" role="tab" data-tab="audio" aria-selected="false">{% trans "Audio" %}<span class="comp-tab-count" data-count="audio"></span></button>
         </div>
-        <p class="comp-hint">{% trans "Drag an item onto the timeline, or tap + to add it." %}</p>
+        <input type="search" class="comp-search" id="compSearch" placeholder="{% trans 'Search videos' %}" aria-label="{% trans 'Search videos' %}">
+        <p class="comp-hint">{% trans "Hover or tap a video to preview it. Drag it or press + to add it." %}</p>
         <div class="comp-library" id="compLibrary"></div>
     </aside>
 

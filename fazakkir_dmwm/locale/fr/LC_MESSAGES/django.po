@@ -1609,3 +1609,12 @@ msgstr "L'export a échoué. Veuillez réessayer."
 
 msgid "Could not reach the server. Check your connection."
 msgstr "Impossible de joindre le serveur. Vérifiez votre connexion."
+
+msgid "Hover or tap a video to preview it. Drag it or press + to add it."
+msgstr "Survolez ou touchez une vidéo pour la prévisualiser. Faites-la glisser ou appuyez sur + pour l'ajouter."
+
+msgid "No matches for this search."
+msgstr "Aucun résultat pour cette recherche."
+
+msgid "On timeline"
+msgstr "Sur la timeline"

@@ -1606,3 +1606,12 @@ msgstr ""
 
 msgid "Could not reach the server. Check your connection."
 msgstr ""
+
+msgid "Hover or tap a video to preview it. Drag it or press + to add it."
+msgstr ""
+
+msgid "No matches for this search."
+msgstr ""
+
+msgid "On timeline"
+msgstr ""

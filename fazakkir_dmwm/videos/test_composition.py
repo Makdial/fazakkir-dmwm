@@ -188,6 +188,20 @@ class CompositionViewTests(TestCase):
         self.assertIn("preview_url", data)
         self.assertNotIn("file", data)
 
+    def test_library_cards_show_uploader_and_views(self):
+        user = User.objects.create_user("composer", password="pw12345678")
+        Video.objects.create(
+            user=user,
+            title="Talk",
+            file_id="videos/talk.mp4",
+            video_url="https://example.com/talk.mp4",
+            duration_seconds=30.0,
+            views=7,
+        )
+        response = self.client.get(reverse("videos:composition"))
+        self.assertContains(response, '"uploader": "composer"')
+        self.assertContains(response, '"views": 7')
+
     def test_unknown_job_is_not_found(self):
         url = reverse("videos:composition_status", args=[uuid.uuid4()])
         self.assertEqual(self.client.get(url).status_code, 404)
