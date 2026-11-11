@@ -275,6 +275,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     align-content: start;
+    grid-auto-rows: max-content;
     gap: 12px 10px;
     flex: 1 1 0;
     min-height: 0;
@@ -306,6 +307,7 @@
 .comp-card-thumb {
     position: relative;
     aspect-ratio: 16 / 9;
+    flex-shrink: 0;
     overflow: hidden;
     background: #000;
     touch-action: pan-y;
@@ -377,6 +379,7 @@
 
 .comp-card-title {
     display: -webkit-box;
+    flex-shrink: 0;
     overflow: hidden;
     padding: 8px 10px 10px;
     color: var(--comp-text);
@@ -847,7 +850,7 @@
 .comp-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 45;
+    z-index: 1150;
     background: rgba(0, 0, 0, 0.55);
 }
 
@@ -881,7 +884,7 @@
         top: 0;
         right: 0;
         bottom: 0;
-        z-index: 50;
+        z-index: 1200;
         width: min(88vw, 320px);
         max-height: none;
         overflow-y: auto;
@@ -916,7 +919,7 @@
         top: 0;
         left: 0;
         bottom: 0;
-        z-index: 50;
+        z-index: 1200;
         width: min(88vw, 320px);
         height: 100%;
         max-height: none;
