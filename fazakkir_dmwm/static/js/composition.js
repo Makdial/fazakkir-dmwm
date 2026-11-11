@@ -403,6 +403,7 @@
             }
             renderStructure();
             afterEdit();
+            if (phoneQuery.matches) closeDrawers();
         });
     }
 
@@ -1233,6 +1234,44 @@
             select(null, null);
         }
     });
+
+    /* --- Drawers: the media library and the properties on phones and tablets --- */
+
+    const mediaPanel = document.querySelector(".comp-media");
+    const inspPanel = document.querySelector(".comp-inspector");
+    const backdrop = $("compBackdrop");
+    const mediaToggle = $("compMediaToggle");
+    const propsToggle = $("compPropsToggle");
+    const phoneQuery = window.matchMedia("(max-width: 639px)");
+
+    function closeDrawers() {
+        mediaPanel.classList.remove("is-open");
+        inspPanel.classList.remove("is-open");
+        backdrop.hidden = true;
+        mediaToggle.setAttribute("aria-expanded", "false");
+        propsToggle.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleDrawer(panel, toggle) {
+        const wasOpen = panel.classList.contains("is-open");
+        closeDrawers();
+        if (wasOpen) return;
+        panel.classList.add("is-open");
+        backdrop.hidden = false;
+        toggle.setAttribute("aria-expanded", "true");
+    }
+
+    mediaToggle.addEventListener("click", () => toggleDrawer(mediaPanel, mediaToggle));
+    propsToggle.addEventListener("click", () => toggleDrawer(inspPanel, propsToggle));
+    backdrop.addEventListener("click", closeDrawers);
+    document.querySelectorAll(".comp-drawer-close").forEach((button) => {
+        button.addEventListener("click", closeDrawers);
+    });
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeDrawers();
+    });
+    window.matchMedia("(max-width: 959px)").addEventListener("change", closeDrawers);
+    phoneQuery.addEventListener("change", closeDrawers);
 
     /* --- Start ------------------------------------------------------------------------------ */
 

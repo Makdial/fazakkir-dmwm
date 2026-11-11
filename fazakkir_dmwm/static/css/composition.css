@@ -23,7 +23,7 @@
     color: var(--comp-text);
     font-size: 14px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "top" "monitor" "timeline" "media" "inspector";
+    grid-template-areas: "top" "monitor" "timeline";
 }
 
 .comp *,
@@ -36,10 +36,10 @@
     display: none !important;
 }
 
-@media (min-width: 600px) {
+@media (min-width: 640px) {
     .comp {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        grid-template-areas: "top top" "monitor monitor" "timeline timeline" "media inspector";
+        grid-template-columns: 240px minmax(0, 1fr);
+        grid-template-areas: "top top" "media monitor" "timeline timeline";
     }
 }
 
@@ -902,4 +902,119 @@
     white-space: nowrap;
     pointer-events: none;
     transform: translate(-50%, -50%);
+}
+
+/* Phones and tablets: the same panels as the desktop editor. The monitor and
+   the timeline keep their place; the media library and the properties slide in
+   from the sides. */
+
+.comp-media-toggle,
+.comp-props-toggle,
+.comp-drawer-close {
+    display: none;
+}
+
+.comp-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.comp-drawer-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--comp-panel-2);
+    color: var(--comp-text);
+    font: inherit;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+@media (max-width: 959px) {
+    .comp-props-toggle {
+        display: inline-flex;
+    }
+
+    .comp-inspector {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 50;
+        width: min(88vw, 320px);
+        max-height: none;
+        overflow-y: auto;
+        border-radius: 14px 0 0 14px;
+        transform: translateX(105%);
+        visibility: hidden;
+        transition: transform 0.2s ease, visibility 0s linear 0.2s;
+    }
+
+    .comp-inspector.is-open {
+        transform: none;
+        visibility: visible;
+        transition: transform 0.2s ease, visibility 0s;
+    }
+
+    .comp-inspector .comp-drawer-close {
+        display: inline-flex;
+    }
+
+    .comp-inspector .comp-panel-title {
+        padding-right: 40px;
+    }
+}
+
+@media (max-width: 639px) {
+    .comp-media-toggle {
+        display: inline-flex;
+    }
+
+    .comp-media {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 50;
+        width: min(88vw, 320px);
+        max-height: none;
+        overflow-y: auto;
+        border-radius: 0 14px 14px 0;
+        transform: translateX(-105%);
+        visibility: hidden;
+        transition: transform 0.2s ease, visibility 0s linear 0.2s;
+    }
+
+    .comp-media.is-open {
+        transform: none;
+        visibility: visible;
+        transition: transform 0.2s ease, visibility 0s;
+    }
+
+    .comp-media .comp-drawer-close {
+        display: inline-flex;
+    }
+
+    .comp-media .comp-tabs {
+        margin-right: 40px;
+    }
+
+    .comp-library {
+        overflow: visible;
+    }
+
+    .comp-title {
+        flex: 1 1 140px;
+    }
 }

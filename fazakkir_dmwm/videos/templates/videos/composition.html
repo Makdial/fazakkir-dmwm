@@ -11,6 +11,7 @@
 <div class="comp" id="comp">
     <header class="comp-top">
         <a class="comp-back" href="{% url 'videos:list' %}" aria-label="{% trans 'Back to videos' %}">&larr;</a>
+        <button type="button" class="comp-iconbtn comp-media-toggle" id="compMediaToggle" aria-controls="compMediaPanel" aria-expanded="false" title="{% trans 'Media' %}" aria-label="{% trans 'Media' %}">&#9638;</button>
         <input type="text" class="comp-title" id="compTitle" maxlength="120"
                placeholder="{% trans 'Untitled project' %}" aria-label="{% trans 'Project name' %}">
         <div class="comp-top-group">
@@ -22,10 +23,12 @@
             <button type="button" class="comp-ratio-btn" data-ratio="9:16">9:16</button>
             <button type="button" class="comp-ratio-btn" data-ratio="1:1">1:1</button>
         </div>
+        <button type="button" class="comp-iconbtn comp-props-toggle" id="compPropsToggle" aria-controls="compInspPanel" aria-expanded="false" title="{% trans 'Properties' %}" aria-label="{% trans 'Properties' %}">&#9881;</button>
         <button type="button" class="comp-export" id="compExport">{% trans "Export" %}</button>
     </header>
 
-    <aside class="comp-panel comp-media" aria-label="{% trans 'Media' %}">
+    <aside class="comp-panel comp-media" id="compMediaPanel" aria-label="{% trans 'Media' %}">
+        <button type="button" class="comp-drawer-close" aria-label="{% trans 'Close' %}">&times;</button>
         <div class="comp-tabs" role="tablist">
             <button type="button" class="comp-tab is-active" role="tab" data-tab="media" aria-selected="true">{% trans "Media" %}<span class="comp-tab-count" data-count="media"></span></button>
             <button type="button" class="comp-tab" role="tab" data-tab="audio" aria-selected="false">{% trans "Audio" %}<span class="comp-tab-count" data-count="audio"></span></button>
@@ -64,7 +67,8 @@
         </div>
     </section>
 
-    <aside class="comp-panel comp-inspector" aria-label="{% trans 'Properties' %}">
+    <aside class="comp-panel comp-inspector" id="compInspPanel" aria-label="{% trans 'Properties' %}">
+        <button type="button" class="comp-drawer-close" aria-label="{% trans 'Close' %}">&times;</button>
         <h2 class="comp-panel-title">{% trans "Properties" %}</h2>
         <p class="comp-hint" id="compInspEmpty">{% trans "Select a clip on the timeline to edit it." %}</p>
         <div id="compInspBody" hidden>
@@ -115,6 +119,7 @@
         </div>
     </section>
 
+    <div class="comp-backdrop" id="compBackdrop" hidden></div>
     <div class="comp-toast" id="compToast" role="status" aria-live="polite" hidden></div>
 </div>
 
