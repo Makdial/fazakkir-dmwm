@@ -5,50 +5,64 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/videos.css' %}">
 <style>
-.comp-layout { display: grid; grid-template-columns: 260px 1fr; gap: 1rem; }
-.comp-library { max-height: 70vh; overflow: auto; }
-.comp-timeline { min-height: 120px; border: 2px dashed #555; padding: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: stretch; }
-.comp-clip { background: #222; color: #fff; padding: 0.5rem; border-radius: 6px; cursor: move; min-width: 160px; }
-.comp-clip.dragging { opacity: 0.5; }
-.comp-clip input { width: 60px; }
+.comp-app { background:#0f0f12; color:#eaeaea; border-radius:12px; padding:0.75rem; }
+.comp-toolbar { display:flex; gap:0.5rem; padding:0.5rem; border-bottom:1px solid #2a2a2e; margin-bottom:0.75rem; }
+.comp-toolbar button { background:#2a2a2e; color:#fff; border:none; padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; }
+.comp-toolbar button:hover { background:#3a3a3e; }
+.comp-main { display:grid; grid-template-columns: 240px 1fr; gap:0.75rem; }
+.comp-library { background:#18181c; border-radius:8px; padding:0.5rem; max-height:60vh; overflow:auto; }
+.comp-lib-item { background:#232329; padding:0.5rem; margin-bottom:0.5rem; border-radius:6px; cursor:grab; }
+.comp-lib-item:active { cursor:grabbing; }
+.comp-preview { background:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; min-height:320px; }
+.comp-preview video { max-width:100%; max-height:320px; }
+.comp-timeline-wrap { margin-top:0.75rem; background:#18181c; border-radius:8px; padding:0.5rem; }
+.comp-timeline { min-height:90px; border:1px solid #2a2a2e; border-radius:6px; padding:0.5rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:stretch; background:#101014; }
+.comp-clip { background:linear-gradient(135deg,#2d2d35,#1f1f25); color:#fff; padding:0.5rem; border-radius:6px; cursor:move; min-width:180px; border:1px solid #3a3a3e; }
+.comp-clip.dragging { opacity:0.4; }
+.comp-clip input { width:64px; background:#0f0f12; color:#fff; border:1px solid #3a3a3e; border-radius:4px; }
+.comp-actions { margin-top:0.75rem; display:flex; gap:0.5rem; align-items:center; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="composition-page">
     <h1>{% trans "Composition" %}</h1>
-    <p class="section-subtitle">{% trans "Drag videos into the timeline, trim them and compose a new video like CapCut." %}</p>
-
-    <div class="form-group">
-        <label for="compTitle">{% trans "New video title" %}</label>
-        <input type="text" id="compTitle" class="form-input" placeholder="{% trans 'Composed video' %}">
-    </div>
-
-    <div class="comp-layout">
-        <div class="comp-library">
-            <h3>{% trans "Library" %}</h3>
-            {% for video in videos %}
-            <div class="comp-lib-item" draggable="true" data-video-id="{{ video.id }}" data-duration="{{ video.duration_seconds }}" data-title="{{ video.title|escapejs }}">
-                <strong>{{ video.title }}</strong>
-                <small>{{ video.duration_formatted }}</small>
+    <div class="comp-app">
+        <div class="comp-toolbar">
+            <button type="button" id="toolSplit">{% trans "Split" %}</button>
+            <button type="button" id="toolDelete">{% trans "Delete" %}</button>
+            <button type="button" id="toolClear">{% trans "Clear" %}</button>
+        </div>
+        <div class="comp-main">
+            <div class="comp-library">
+                <h3>{% trans "Library" %}</h3>
+                {% for video in videos %}
+                <div class="comp-lib-item" draggable="true" data-video-id="{{ video.id }}" data-duration="{{ video.duration_seconds }}" data-title="{{ video.title|escapejs }}" data-preview-url="{% url 'videos:playback' video.id %}">
+                    <strong>{{ video.title }}</strong>
+                    <div><small>{{ video.duration_formatted }}</small></div>
+                </div>
+                {% empty %}
+                <p>{% trans "No videos available." %}</p>
+                {% endfor %}
             </div>
-            {% empty %}
-            <p>{% trans "No videos available." %}</p>
-            {% endfor %}
+            <div>
+                <div class="comp-preview">
+                    <video id="compPreview" controls></video>
+                </div>
+                <div class="comp-timeline-wrap">
+                    <h3>{% trans "Timeline" %}</h3>
+                    <div id="compTimeline" class="comp-timeline"></div>
+                </div>
+            </div>
         </div>
-        <div>
-            <h3>{% trans "Timeline" %}</h3>
-            <div id="compTimeline" class="comp-timeline"></div>
+        <div class="comp-actions">
+            <input type="text" id="compTitle" class="form-input" placeholder="{% trans 'Composed video' %}" style="max-width:260px;">
+            <button type="button" id="compComposeBtn" class="btn btn-primary">{% trans "Compose" %}</button>
+            <span id="compStatus" role="status"></span>
         </div>
-    </div>
-
-    <div class="comp-actions" style="margin-top:1rem;">
-        <button type="button" id="compComposeBtn" class="btn btn-primary">{% trans "Compose" %}</button>
-        <button type="button" id="compClearBtn" class="btn">{% trans "Clear" %}</button>
-        <span id="compStatus" role="status"></span>
-    </div>
-    <div id="compResult" hidden>
-        <a id="compResultLink" href="#">{% trans "Open composed video" %}</a>
+        <div id="compResult" hidden style="margin-top:0.5rem;">
+            <a id="compResultLink" href="#">{% trans "Open composed video" %}</a>
+        </div>
     </div>
 </div>
 
@@ -59,25 +73,32 @@
     const statusEl = document.getElementById("compStatus");
     const resultEl = document.getElementById("compResult");
     const resultLink = document.getElementById("compResultLink");
+    const preview = document.getElementById("compPreview");
 
-    function makeClip(videoId, title, duration) {
+    function makeClip(videoId, title) {
         const clip = document.createElement("div");
         clip.className = "comp-clip";
         clip.draggable = true;
         clip.dataset.videoId = videoId;
         clip.innerHTML =
             "<div><strong>" + title + "</strong></div>" +
-            "<label>S {% trans 'Start (s)' %}<input type='number' class='comp-start' min='0' step='0.1' value='0'></label> " +
-            "<label>E {% trans 'End (s)' %}<input type='number' class='comp-end' min='0' step='0.1' placeholder='{% trans 'Full length' %}'></label>";
+            "<div style='margin-top:0.3rem;'>" +
+            "<label>S <input type='number' class='comp-start' min='0' step='0.1' value='0'></label> " +
+            "<label>E <input type='number' class='comp-end' min='0' step='0.1' placeholder='{% trans 'Full length' %}'></label>" +
+            "</div>";
         addDragHandlers(clip);
+        clip.addEventListener("click", function () {
+            const item = document.querySelector('.comp-lib-item[data-video-id="' + videoId + '"]');
+            if (item && preview) preview.src = item.dataset.previewUrl;
+        });
         return clip;
     }
 
     function addDragHandlers(el) {
         el.addEventListener("dragstart", function (e) {
             el.classList.add("dragging");
-            e.dataTransfer.setData("text/plain", "move");
             window._draggingClip = el;
+            e.dataTransfer.effectAllowed = "move";
         });
         el.addEventListener("dragend", function () {
             el.classList.remove("dragging");
@@ -85,17 +106,17 @@
         });
     }
 
-    // Library drag
     document.querySelectorAll(".comp-lib-item").forEach(function (item) {
         item.draggable = true;
         item.addEventListener("dragstart", function (e) {
             e.dataTransfer.setData("application/x-video-id", item.dataset.videoId);
-            e.dataTransfer.setData("text/plain", item.dataset.title);
             e.dataTransfer.effectAllowed = "copy";
+        });
+        item.addEventListener("click", function () {
+            if (preview) preview.src = item.dataset.previewUrl;
         });
     });
 
-    // Timeline drop
     timeline.addEventListener("dragover", function (e) {
         e.preventDefault();
         e.dataTransfer.dropEffect = "copy";
@@ -106,11 +127,9 @@
         if (vid) {
             const item = document.querySelector('.comp-lib-item[data-video-id="' + vid + '"]');
             const title = item ? item.dataset.title : "Video";
-            const duration = item ? item.dataset.duration : "";
-            timeline.appendChild(makeClip(vid, title, duration));
+            timeline.appendChild(makeClip(vid, title));
             return;
         }
-        // reorder
         const dragging = window._draggingClip;
         if (dragging && dragging.parentNode === timeline) {
             const after = getDragAfterElement(timeline, e.clientX);
@@ -132,17 +151,26 @@
         }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
     }
 
-    // clip internal drag for reorder
-    timeline.addEventListener("dragstart", function (e) {
-        if (e.target.classList.contains("comp-clip")) {
-            e.target.classList.add("dragging");
-        }
+    document.getElementById("toolSplit").addEventListener("click", function () {
+        const selected = timeline.querySelector(".comp-clip:focus") || timeline.lastChild;
+        if (!selected) return;
+        const clone = selected.cloneNode(true);
+        // reset drag handlers
+        clone.classList.remove("dragging");
+        addDragHandlers(clone);
+        timeline.insertBefore(clone, selected.nextSibling);
     });
 
-    document.getElementById("compClearBtn").addEventListener("click", function () {
+    document.getElementById("toolDelete").addEventListener("click", function () {
+        const selected = document.activeElement && document.activeElement.closest ? document.activeElement.closest(".comp-clip") : null;
+        if (selected && selected.parentNode === timeline) selected.remove();
+    });
+
+    document.getElementById("toolClear").addEventListener("click", function () {
         timeline.innerHTML = "";
         statusEl.textContent = "";
         resultEl.setAttribute("hidden", "");
+        if (preview) preview.removeAttribute("src");
     });
 
     document.getElementById("compComposeBtn").addEventListener("click", function () {
