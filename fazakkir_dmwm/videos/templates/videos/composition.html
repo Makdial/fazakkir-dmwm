@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Composition" %} - Fazakkir{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/videos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="composition-page">
+    <h1>{% trans "Composition" %}</h1>
+    <p class="section-subtitle">{% trans "Select videos, trim them and compose a new video like CapCut." %}</p>
+
+    <div class="form-group">
+        <label for="compTitle">{% trans "New video title" %}</label>
+        <input type="text" id="compTitle" class="form-input" placeholder="{% trans 'Composed video' %}">
+    </div>
+
+    <div class="video-grid" id="compVideoGrid">
+        {% for video in videos %}
+        <div class="video-card-wrap comp-card" data-video-id="{{ video.id }}" data-duration="{{ video.duration_seconds }}">
+            <label class="comp-select">
+                <input type="checkbox" class="comp-check">
+                <span class="video-title">{{ video.title }}</span>
+            </label>
+            <div class="comp-trim" hidden>
+                <label>{% trans "Start (s)" %}</label>
+                <input type="number" class="comp-start" min="0" step="0.1" value="0">
+                <label>{% trans "End (s)" %}</label>
+                <input type="number" class="comp-end" min="0" step="0.1" placeholder="{% trans 'Full length' %}">
+            </div>
+        </div>
+        {% empty %}
+        <p>{% trans "No videos available." %}</p>
+        {% endfor %}
+    </div>
+
+    <div class="comp-actions">
+        <button type="button" id="compComposeBtn" class="btn btn-primary">{% trans "Compose" %}</button>
+        <span id="compStatus" role="status"></span>
+    </div>
+    <div id="compResult" hidden>
+        <a id="compResultLink" href="#">{% trans "Open composed video" %}</a>
+    </div>
+</div>
+
+<script data-fz-page>
+(function () {
+    "use strict";
+    const grid = document.getElementById("compVideoGrid");
+    const composeBtn = document.getElementById("compComposeBtn");
+    const statusEl = document.getElementById("compStatus");
+    const resultEl = document.getElementById("compResult");
+    const resultLink = document.getElementById("compResultLink");
+
+    grid.addEventListener("change", function (e) {
+        if (!e.target.classList.contains("comp-check")) return;
+        const card = e.target.closest(".comp-card");
+        const trim = card.querySelector(".comp-trim");
+        if (e.target.checked) trim.removeAttribute("hidden");
+        else trim.setAttribute("hidden", "");
+    });
+
+    composeBtn.addEventListener("click", function () {
+        const clips = [];
+        grid.querySelectorAll(".comp-card").forEach(function (card) {
+            const check = card.querySelector(".comp-check");
+            if (!check.checked) return;
+            clips.push({
+                video_id: parseInt(card.dataset.videoId, 10),
+                start: card.querySelector(".comp-start").value,
+                end: card.querySelector(".comp-end").value,
+            });
+        });
+        if (!clips.length) {
+            statusEl.textContent = "{% trans 'Choose at least one video.' %}";
+            return;
+        }
+        const title = document.getElementById("compTitle").value.trim();
+        statusEl.textContent = "{% trans 'Starting…' %}";
+        resultEl.setAttribute("hidden", "");
+        fetch("{% url 'videos:composition_start' %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({ title: title, clips: clips }),
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) { statusEl.textContent = data.error || "{% trans 'Failed.' %}"; return; }
+                poll(data.job_id);
+            })
+            .catch(() => { statusEl.textContent = "{% trans 'Failed.' %}"; });
+    });
+
+    function poll(jobId) {
+        fetch("{% url 'videos:composition_status' '00000000-0000-0000-0000-000000000000' %}".replace("00000000-0000-0000-0000-000000000000", jobId))
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === "ready") {
+                    statusEl.textContent = "{% trans 'Done.' %}";
+                    resultLink.href = "/videos/" + data.video_id + "/";
+                    resultEl.removeAttribute("hidden");
+                } else if (data.status === "failed") {
+                    statusEl.textContent = data.error || "{% trans 'Failed.' %}";
+                } else {
+                    statusEl.textContent = "{% trans 'Composing…' %}";
+                    setTimeout(function () { poll(jobId); }, 3000);
+                }
+            })
+            .catch(() => setTimeout(function () { poll(jobId); }, 5000));
+    }
+})();
+</script>
+{% endblock %}

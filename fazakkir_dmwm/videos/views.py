@@ -1,6 +1,7 @@
 import base64
 import binascii
 import hashlib
+import hashlib
 import logging
 import os
 import re
@@ -139,15 +140,6 @@ def _playback_payload(video):
 
 
 def _translate_description(text, target_language):
-    """Best-effort translation of a free-text description.
-
-    Video descriptions are written by administrators in whatever language they
-    choose, so switching the interface language cannot change them through the
-    usual gettext catalogue. When a translation back end is configured we ask it
-    to translate the text on demand, caching the result so a page view does not
-    trigger an API call every time. Any failure (no API key, network error, an
-    unsupported target language such as Wolof) leaves the original text in place.
-    """
     text = (text or "").strip()
     if not text:
         return text
@@ -182,7 +174,7 @@ def _translate_description(text, target_language):
                 candidate = (translated[0].text or "").strip()
                 if candidate:
                     result = candidate
-    except Exception:  # noqa: BLE001 - translation is best-effort
+    except Exception:  # noqa: BLE001
         result = text
 
     cache.set(cache_key, result, 60 * 60 * 24)
@@ -1323,3 +1315,175 @@ def playlist_remove_video(request, playlist_id, video_id):
     PlaylistItem.objects.filter(playlist=playlist, video_id=video_id).delete()
     playlist.save(update_fields=["updated_at"])
     return JsonResponse({"success": True, "message": _("Removed from playlist")})
+
+
+# --- Composition (CapCut-style) ---------------------------------------------
+
+import json as _json
+import os as _os
+import shutil as _shutil
+import subprocess as _subprocess
+import tempfile as _tempfile
+import threading as _threading
+import urllib.request as _urllib_request
+import uuid as _uuid
+
+_COMPOSITION_JOBS = {}
+_COMPOSITION_LOCK = _threading.Lock()
+
+
+def _composition_update(job_id, **fields):
+    with _COMPOSITION_LOCK:
+        if job_id in _COMPOSITION_JOBS:
+            _COMPOSITION_JOBS[job_id].update(fields)
+
+
+def composition_page(request):
+    videos = Video.objects.select_related("user").order_by("-created_at")
+    return render(request, "videos/composition.html", {"videos": videos})
+
+
+@require_POST
+def composition_start(request):
+    try:
+        payload = _json.loads(request.body or b"{}")
+    except ValueError:
+        return JsonResponse({"success": False, "error": _("Invalid request.")}, status=400)
+
+    title = (payload.get("title") or "Composed video").strip()[:120]
+    clips = payload.get("clips") or []
+    if not isinstance(clips, list) or not clips:
+        return JsonResponse(
+            {"success": False, "error": _("Choose at least one video.")}, status=400
+        )
+
+    job_id = str(_uuid.uuid4())
+    with _COMPOSITION_LOCK:
+        _COMPOSITION_JOBS[job_id] = {
+            "status": "queued",
+            "video_id": None,
+            "error": "",
+        }
+
+    _threading.Thread(
+        target=_composition_worker, args=(job_id, title, clips, request.user.id), daemon=True
+    ).start()
+    return JsonResponse({"success": True, "job_id": job_id})
+
+
+def composition_status(request, job_id):
+    with _COMPOSITION_LOCK:
+        state = dict(_COMPOSITION_JOBS.get(job_id, {}))
+    if not state:
+        return JsonResponse({"status": "unknown", "error": _("Unknown job.")}, status=404)
+    return JsonResponse(state)
+
+
+def _composition_worker(job_id, title, clips, user_id):
+    from django.contrib.auth import get_user_model
+    from django.db import close_old_connections
+
+    close_old_connections()
+    workdir = _tempfile.mkdtemp(prefix="fazakkir-comp-")
+    try:
+        _composition_update(job_id, status="processing")
+        User = get_user_model()
+        user = User.objects.filter(id=user_id).first()
+        if user is None:
+            user = User.objects.filter(is_superuser=True).first()
+
+        import imageio_ffmpeg
+
+        ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+        segment_paths = []
+        for index, clip in enumerate(clips):
+            try:
+                video_id = int(clip.get("video_id"))
+            except (TypeError, ValueError):
+                continue
+            video = Video.objects.filter(id=video_id).first()
+            if video is None:
+                continue
+
+            source_url = video.playback_url
+            if not source_url:
+                continue
+
+            input_path = _os.path.join(workdir, f"input_{index}.mp4")
+            try:
+                _urllib_request.urlretrieve(source_url, input_path)
+            except Exception:  # noqa: BLE001
+                continue
+
+            try:
+                start = float(clip.get("start") or 0)
+            except (TypeError, ValueError):
+                start = 0.0
+            if start < 0:
+                start = 0.0
+
+            raw_end = clip.get("end")
+            end = None
+            if raw_end not in (None, ""):
+                try:
+                    end = float(raw_end)
+                except (TypeError, ValueError):
+                    end = None
+            if end is None:
+                end = float(video.duration_seconds or 0) or None
+            if end is not None and end <= start:
+                end = None
+
+            segment_path = _os.path.join(workdir, f"segment_{index}.mp4")
+            command = [ffmpeg, "-y", "-ss", str(start), "-i", input_path]
+            if end is not None:
+                command += ["-t", str(max(0.1, end - start))]
+            command += [
+                "-c:v",
+                "libx264",
+                "-c:a",
+                "aac",
+                "-movflags",
+                "+faststart",
+                segment_path,
+            ]
+            try:
+                _subprocess.run(command, check=True, capture_output=True)
+            except _subprocess.CalledProcessError:
+                continue
+            if _os.path.exists(segment_path):
+                segment_paths.append(segment_path)
+
+        if not segment_paths:
+            raise RuntimeError("No clips could be prepared.")
+
+        concat_list = _os.path.join(workdir, "concat.txt")
+        with open(concat_list, "w", encoding="utf-8") as handle:
+            for path in segment_paths:
+                handle.write(f"file '{path}'\n")
+
+        output_path = _os.path.join(workdir, "composed.mp4")
+        _subprocess.run(
+            [ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", concat_list, "-c", "copy", output_path],
+            check=True,
+            capture_output=True,
+        )
+
+        with open(output_path, "rb") as handle:
+            result = upload_video(file_data=handle, file_name="composed.mp4")
+
+        video = Video()
+        video.user = user
+        video.title = title or "Composed video"
+        video.description = _("Composed from selected videos.")
+        video.media_type = "video"
+        video.file_id = result["path"]
+        video.video_url = result["url"]
+        video.save()
+
+        _composition_update(job_id, status="ready", video_id=video.id)
+    except Exception as exc:  # noqa: BLE001
+        _composition_update(job_id, status="failed", error=str(exc)[:500])
+    finally:
+        _shutil.rmtree(workdir, ignore_errors=True)
+        close_old_connections()
