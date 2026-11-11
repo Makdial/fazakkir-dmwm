@@ -93,6 +93,19 @@ def _register_play(request, video):
     if not video.has_audio and video.audio_status == "":
         schedule_audio_generation(video.id)
 
+    # Lyrics and captions are just as useful as the MP3: generate them on the
+    # first play when a back end is configured, so every video ends up with a
+    # lyrics track without a manual run.
+    try:
+        if (
+            video.has_audio
+            and subtitles_configured()
+            and not video.subtitle_tracks.exists()
+        ):
+            schedule_subtitle_generation(video.id)
+    except Exception:  # noqa: BLE001
+        pass
+
 
 def _playback_payload(video):
     """Everything the shared player needs to play ``video``.

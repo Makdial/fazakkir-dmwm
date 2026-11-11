@@ -120,6 +120,13 @@ def generate_audio(video_id: int) -> bool:
             audio_error="",
             job_started_at=None,
         )
+        try:
+            from .transcription import schedule_subtitle_generation, subtitles_configured
+
+            if subtitles_configured():
+                schedule_subtitle_generation(video_id)
+        except Exception:  # noqa: BLE001
+            pass
         return True
     except (AudioExtractionError, StorageError, OSError) as exc:
         logger.warning("MP3 generation failed for video %s", video_id, exc_info=True)
