@@ -1378,3 +1378,42 @@ msgstr "Regardez et écoutez des vidéos et de l'audio, en ligne ou hors ligne."
 
 msgid "Watch and listen to videos and audio, online or offline."
 msgstr "Regardez et écoutez des vidéos et de l'audio, en ligne ou hors ligne."
+
+msgid "Choose at least one video."
+msgstr ""
+
+msgid "Compose"
+msgstr ""
+
+msgid "Composed video"
+msgstr ""
+
+msgid "Composing…"
+msgstr ""
+
+msgid "Composition"
+msgstr ""
+
+msgid "Done."
+msgstr ""
+
+msgid "End (s)"
+msgstr ""
+
+msgid "Full length"
+msgstr ""
+
+msgid "New video title"
+msgstr ""
+
+msgid "No videos available."
+msgstr ""
+
+msgid "Open composed video"
+msgstr ""
+
+msgid "Select videos, trim them and compose a new video like CapCut."
+msgstr ""
+
+msgid "Start (s)"
+msgstr ""
