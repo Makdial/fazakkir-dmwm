@@ -1,0 +1,88 @@
+/* Daily usage: the world map of where visitors came from.
+   The land shape is the page's own SVG used as a mask, so it follows the light
+   and dark themes. Pins are placed by percentages of the map box. */
+
+.usage-map-card {
+    margin: 12px 0 24px;
+}
+
+.usage-map {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 360 / 142;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+}
+
+.usage-map-base {
+    position: absolute;
+    inset: 0;
+    /* The SVG (set per page as --map-src) is used as a mask, so the land
+       takes its colour from the theme. */
+    background: var(--border-color);
+    -webkit-mask-image: var(--map-src);
+    mask-image: var(--map-src);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+.usage-pin {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: var(--accent-red);
+    color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: default;
+}
+
+.usage-pin span {
+    padding: 0 2px;
+    white-space: nowrap;
+}
+
+.usage-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.usage-legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    background: var(--yt-chip);
+    font-size: 13px;
+}
+
+.usage-legend strong {
+    color: var(--accent-red);
+    font-variant-numeric: tabular-nums;
+}
+
+.usage-map-note {
+    margin: 10px 0 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+@media (max-width: 480px) {
+    .usage-pin {
+        font-size: 10px;
+    }
+}

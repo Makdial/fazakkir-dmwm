@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="{% static 'css/social.css' %}">
 <link rel="stylesheet" href="{% static 'css/manage.css' %}">
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/usage-map.css' %}">
 {% endblock %}
 {% block content %}
 <div class="section-header">
@@ -43,6 +44,27 @@
     </div>
 </div>
 
+<h2 class="dash-section-title">{% trans "Where people are using the app" %}</h2>
+<div class="usage-map-card">
+    {% if map_pins %}
+    <div class="usage-map" role="group" aria-label="{% trans 'World map of the countries visitors came from on the selected day.' %}">
+        <div class="usage-map-base" style="--map-src: url('{% static 'img/world-map.svg' %}')" aria-hidden="true"></div>
+        {% for pin in map_pins %}
+        <span class="usage-pin" style="left: {{ pin.left }}%; top: {{ pin.top }}%; width: {{ pin.size }}px; height: {{ pin.size }}px;" title="{{ pin.name }}: {{ pin.count }}"><span>{{ pin.count }}</span></span>
+        {% endfor %}
+    </div>
+    <ul class="usage-legend">
+        {% for pin in map_pins %}
+        <li><span>{{ pin.name }}</span><strong>{{ pin.count }}</strong></li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state"><p>{% trans "No map locations for this day." %}</p></div>
+    {% endif %}
+    {% if map_unplaced %}<p class="usage-map-note">{% trans "Some requests could not be placed on the map." %}</p>{% endif %}
+    <p class="usage-map-note">{% trans "Locations are estimated from each visitor's IP address, so each pin marks a country, not a street." %}</p>
+</div>
+
 <h2 class="dash-section-title">{% trans "Top viewed videos" %}</h2>
 {% if top_views %}
 <div class="manage-table-wrap">
@@ -51,7 +73,7 @@
         <tbody>
             {% for row in top_views %}
             <tr>
-                <td><a href="{% url 'videos:detail' row.video__id %}">{{ row.video__title }}</a></td>
+                <td>{% if row.video__id %}<a href="{% url 'videos:detail' row.video__id %}">{{ row.video__title }}</a>{% else %}{% trans "Deleted video" %}{% endif %}</td>
                 <td>{{ row.count }}</td>
             </tr>
             {% endfor %}
@@ -70,7 +92,7 @@
         <tbody>
             {% for row in top_audio %}
             <tr>
-                <td><a href="{% url 'videos:detail' row.video__id %}">{{ row.video__title }}</a></td>
+                <td>{% if row.video__id %}<a href="{% url 'videos:detail' row.video__id %}">{{ row.video__title }}</a>{% else %}{% trans "Deleted video" %}{% endif %}</td>
                 <td>{{ row.count }}</td>
             </tr>
             {% endfor %}
@@ -89,7 +111,7 @@
         <tbody>
         {% for row in video_locations %}
         <tr>
-            <td><a href="{% url 'videos:detail' row.video__id %}">{{ row.video__title }}</a></td>
+            <td>{% if row.video__id %}<a href="{% url 'videos:detail' row.video__id %}">{{ row.video__title }}</a>{% else %}{% trans "Deleted video" %}{% endif %}</td>
             <td>{{ row.country }}</td>
             <td>{{ row.continent }}</td>
             <td>{{ row.count }}</td>
@@ -110,7 +132,7 @@
         <tbody>
         {% for row in audio_locations %}
         <tr>
-            <td><a href="{% url 'videos:detail' row.video__id %}">{{ row.video__title }}</a></td>
+            <td>{% if row.video__id %}<a href="{% url 'videos:detail' row.video__id %}">{{ row.video__title }}</a>{% else %}{% trans "Deleted video" %}{% endif %}</td>
             <td>{{ row.country }}</td>
             <td>{{ row.continent }}</td>
             <td>{{ row.count }}</td>

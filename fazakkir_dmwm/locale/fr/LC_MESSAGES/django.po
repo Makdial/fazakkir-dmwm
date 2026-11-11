@@ -1618,3 +1618,21 @@ msgstr "Aucun résultat pour cette recherche."
 
 msgid "On timeline"
 msgstr "Sur la timeline"
+
+msgid "Where people are using the app"
+msgstr "Où l'application est utilisée"
+
+msgid "World map of the countries visitors came from on the selected day."
+msgstr "Carte du monde des pays d'où viennent les visiteurs ce jour-là."
+
+msgid "Some requests could not be placed on the map."
+msgstr "Certaines requêtes n'ont pas pu être placées sur la carte."
+
+msgid "No map locations for this day."
+msgstr "Aucun emplacement sur la carte pour ce jour."
+
+msgid "Locations are estimated from each visitor's IP address, so each pin marks a country, not a street."
+msgstr "Les emplacements sont estimés à partir de l'adresse IP de chaque visiteur : chaque repère indique un pays, pas une rue."
+
+msgid "Deleted video"
+msgstr "Vidéo supprimée"

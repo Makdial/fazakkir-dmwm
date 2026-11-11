@@ -1639,3 +1639,21 @@ msgstr "لا توجد نتائج لهذا البحث."
 
 msgid "On timeline"
 msgstr "على الخط الزمني"
+
+msgid "Where people are using the app"
+msgstr "أين يستخدم الناس التطبيق"
+
+msgid "World map of the countries visitors came from on the selected day."
+msgstr "خريطة العالم للدول التي جاء منها الزوار في اليوم المحدد."
+
+msgid "Some requests could not be placed on the map."
+msgstr "تعذّر وضع بعض الطلبات على الخريطة."
+
+msgid "No map locations for this day."
+msgstr "لا توجد مواقع على الخريطة لهذا اليوم."
+
+msgid "Locations are estimated from each visitor's IP address, so each pin marks a country, not a street."
+msgstr "تُقدَّر المواقع من عنوان IP لكل زائر، لذا تشير كل نقطة إلى بلد وليس إلى شارع."
+
+msgid "Deleted video"
+msgstr "فيديو محذوف"

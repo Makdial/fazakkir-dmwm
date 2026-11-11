@@ -38,6 +38,7 @@ from videos.transcription import (
 from .models import ActivityLog, StorageMonitor
 from accounts.models import Profile
 from .notifications import send_test_email
+from .worldmap import pins_for
 from .storage import build_report, check_and_notify, format_bytes
 
 logger = logging.getLogger(__name__)
@@ -437,7 +438,9 @@ def usage(request):
     day_end = day_start + datetime.timedelta(days=1)
     day_logs = ActivityLog.objects.filter(created_at__gte=day_start, created_at__lt=day_end)
 
-    user_ids = [uid for uid in day_logs.values_list("user_id", flat=True).distinct() if uid is not None]
+    # order_by() clears the model's default ordering, which DISTINCT would otherwise
+    # include, counting a visitor once per request instead of once per visitor.
+    user_ids = [uid for uid in day_logs.order_by().values_list("user_id", flat=True).distinct() if uid is not None]
     from accounts.models import Profile
 
     guest_user_ids = set(Profile.objects.filter(is_guest=True).values_list("user_id", flat=True))
@@ -460,7 +463,7 @@ def usage(request):
     # Where each recording is watched/played, broken down by visitor location.
     video_locations = []
     for row in (
-        day_logs.filter(kind=ActivityLog.KIND_VIEW, video__isnull=False)
+        day_logs.filter(kind=ActivityLog.KIND_VIEW)
         .values("video__id", "video__title", "country", "continent")
         .annotate(count=Count("id"))
         .order_by("-count")[:10]
@@ -477,7 +480,7 @@ def usage(request):
 
     audio_locations = []
     for row in (
-        day_logs.filter(kind=ActivityLog.KIND_AUDIO, video__isnull=False)
+        day_logs.filter(kind=ActivityLog.KIND_AUDIO)
         .values("video__id", "video__title", "country", "continent")
         .annotate(count=Count("id"))
         .order_by("-count")[:10]
@@ -514,6 +517,8 @@ def usage(request):
         name = (row["continent"] or "").strip() or "Unknown"
         continents.append({"continent": name, "count": row["count"]})
 
+    map_pins, map_unplaced = pins_for(countries)
+
     series = []
     for i in range(13, -1, -1):
         d = today - datetime.timedelta(days=i)
@@ -548,6 +553,8 @@ def usage(request):
             "audio_locations": audio_locations,
             "countries": countries,
             "continents": continents,
+            "map_pins": map_pins,
+            "map_unplaced": map_unplaced,
             "series": series,
         },
     )

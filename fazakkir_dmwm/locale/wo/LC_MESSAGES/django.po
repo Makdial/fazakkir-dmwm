@@ -1615,3 +1615,21 @@ msgstr ""
 
 msgid "On timeline"
 msgstr ""
+
+msgid "Where people are using the app"
+msgstr ""
+
+msgid "World map of the countries visitors came from on the selected day."
+msgstr ""
+
+msgid "Some requests could not be placed on the map."
+msgstr ""
+
+msgid "No map locations for this day."
+msgstr ""
+
+msgid "Locations are estimated from each visitor's IP address, so each pin marks a country, not a street."
+msgstr ""
+
+msgid "Deleted video"
+msgstr ""
