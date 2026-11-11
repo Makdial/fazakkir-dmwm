@@ -1,5 +1,6 @@
 import base64
 import binascii
+import hashlib
 import logging
 import os
 import re
@@ -124,8 +125,68 @@ def _playback_payload(video):
     }
 
 
+def _translate_description(text, target_language):
+    """Best-effort translation of a free-text description.
+
+    Video descriptions are written by administrators in whatever language they
+    choose, so switching the interface language cannot change them through the
+    usual gettext catalogue. When a translation back end is configured we ask it
+    to translate the text on demand, caching the result so a page view does not
+    trigger an API call every time. Any failure (no API key, network error, an
+    unsupported target language such as Wolof) leaves the original text in place.
+    """
+    text = (text or "").strip()
+    if not text:
+        return text
+    target_language = (target_language or "").strip()
+    if not target_language:
+        return text
+
+    from django.core.cache import cache
+
+    cache_key = "video_desc_tr:" + hashlib.sha256(
+        (text + "\x00" + target_language).encode("utf-8")
+    ).hexdigest()
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    result = text
+    try:
+        from .transcription import (
+            Segment,
+            get_provider,
+            get_translation_provider,
+        )
+
+        provider = get_provider()
+        translator = get_translation_provider(provider)
+        if translator is not None and getattr(translator, "supports_translation", True):
+            translated = translator.translate(
+                [Segment(0.0, 0.0, text)], target_language
+            )
+            if translated:
+                candidate = (translated[0].text or "").strip()
+                if candidate:
+                    result = candidate
+    except Exception:  # noqa: BLE001 - translation is best-effort
+        result = text
+
+    cache.set(cache_key, result, 60 * 60 * 24)
+    return result
+
+
 def video_detail(request, video_id):
     video = get_object_or_404(Video.objects, id=video_id)
+
+    # Show the description in the visitor's chosen language when a translation
+    # back end is available, falling back to the original text otherwise.
+    try:
+        from django.utils.translation import get_language
+
+        video.description = _translate_description(video.description, get_language())
+    except Exception:  # noqa: BLE001
+        pass
 
     if not video.duration_seconds:
         schedule_missing_durations(Video.objects.filter(id=video.id))
@@ -1154,6 +1215,12 @@ def playlist_detail(request, playlist_id):
         return render(request, "videos/playlist_not_found.html", status=403)
 
     items = playlist.items.all()
+    try:
+        from django.utils.translation import get_language
+
+        playlist.description = _translate_description(playlist.description, get_language())
+    except Exception:  # noqa: BLE001
+        pass
     return render(
         request,
         "videos/playlist_detail.html",
