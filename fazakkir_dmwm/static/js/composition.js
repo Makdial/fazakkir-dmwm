@@ -208,6 +208,7 @@
     const searchInput = $("compSearch");
     let previewCard = null;
     let previewVideo = null;
+    let previewAudio = null;
     let lastPointerType = "mouse";
 
     function libraryItems() {
@@ -302,11 +303,26 @@
     }
 
     function showPreview(card) {
-        if (card === previewCard || libTab !== "media") return;
+        if (card === previewCard) return;
         const item = LIBRARY.find((v) => String(v.id) === card.dataset.vid);
         const thumb = card.querySelector(".comp-card-thumb");
-        if (!item || !item.videoUrl || !thumb) return;
+        const isAudio = libTab === "audio";
+        const url = item ? (isAudio ? item.audioUrl : item.videoUrl) : "";
+        if (!url || !thumb) return;
         hidePreview();
+        previewCard = card;
+        card.classList.add("is-previewing");
+        if (isAudio) {
+            if (!previewAudio) {
+                previewAudio = new Audio();
+                previewAudio.preload = "auto";
+                previewAudio.addEventListener("ended", hidePreview);
+            }
+            previewAudio.src = url;
+            pause();
+            previewAudio.play().catch(() => {});
+            return;
+        }
         if (!previewVideo) {
             previewVideo = document.createElement("video");
             previewVideo.className = "comp-card-preview";
@@ -315,9 +331,7 @@
             previewVideo.playsInline = true;
             previewVideo.preload = "auto";
         }
-        previewCard = card;
-        card.classList.add("is-previewing");
-        previewVideo.src = item.videoUrl;
+        previewVideo.src = url;
         thumb.insertBefore(previewVideo, thumb.firstChild);
         previewVideo.play().catch(() => {});
     }
@@ -328,6 +342,11 @@
             previewVideo.removeAttribute("src");
             previewVideo.load();
             previewVideo.remove();
+        }
+        if (previewAudio) {
+            previewAudio.pause();
+            previewAudio.removeAttribute("src");
+            previewAudio.load();
         }
         if (previewCard) previewCard.classList.remove("is-previewing");
         previewCard = null;
@@ -728,6 +747,7 @@
             if (!g.active) {
                 if (Math.hypot(dx, dy) < 6) return;
                 g.active = true;
+                if (phoneQuery.matches) closeDrawers();
                 ghost = document.createElement("div");
                 ghost.className = "comp-ghost";
                 ghost.textContent = g.item.title;
@@ -774,7 +794,7 @@
 
     el.library.addEventListener("pointerdown", (e) => {
         lastPointerType = e.pointerType;
-        if (e.pointerType === "mouse" && e.button !== 0) return;
+        if (e.pointerType === "touch" || e.button !== 0) return;
         if (e.target.closest(".comp-add")) return;
         const card = e.target.closest(".comp-card");
         if (!card) return;
@@ -789,13 +809,13 @@
     });
 
     el.library.addEventListener("pointerover", (e) => {
-        if (e.pointerType !== "mouse") return;
+        if (e.pointerType !== "mouse" || libTab !== "media") return;
         const card = e.target.closest(".comp-card");
         if (card) showPreview(card);
     });
 
     el.library.addEventListener("pointerout", (e) => {
-        if (e.pointerType !== "mouse") return;
+        if (e.pointerType !== "mouse" || libTab !== "media") return;
         const card = e.target.closest(".comp-card");
         if (card && card === previewCard && !card.contains(e.relatedTarget)) hidePreview();
     });
@@ -810,8 +830,9 @@
         const item = LIBRARY.find((v) => String(v.id) === card.dataset.vid);
         if (!item) return;
         if (e.target.closest(".comp-add")) {
+            hidePreview();
             addItem(item, libTab === "audio" ? "audio" : "video", null);
-        } else if (lastPointerType === "touch" && e.target.closest(".comp-card-thumb")) {
+        } else if (e.target.closest(".comp-card-thumb") && (lastPointerType === "touch" || libTab === "audio")) {
             if (previewCard === card) hidePreview();
             else showPreview(card);
         }

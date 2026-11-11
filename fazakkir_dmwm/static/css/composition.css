@@ -302,7 +302,7 @@
     aspect-ratio: 16 / 9;
     overflow: hidden;
     background: #000;
-    touch-action: none;
+    touch-action: pan-y;
     cursor: grab;
 }
 
@@ -970,5 +970,47 @@
 
     .comp-title {
         flex: 1 1 140px;
+    }
+}
+
+/* Touch screens: larger targets, no zoom when a field is focused, and the
+   library scrolls under a finger instead of starting a drag. */
+
+@media (hover: none) {
+    .comp-tab {
+        min-height: 42px;
+        font-size: 15px;
+    }
+
+    .comp-search {
+        min-height: 42px;
+        font-size: 16px;
+    }
+
+    .comp-add {
+        width: 36px;
+        height: 36px;
+        font-size: 22px;
+    }
+
+    .comp-media .comp-hint {
+        display: none;
+    }
+}
+
+@media (max-width: 767px) {
+    .comp-title {
+        font-size: 16px;
+    }
+
+    .comp-media {
+        width: min(100vw, 480px);
+        border-radius: 0;
+    }
+}
+
+@media (max-width: 959px) {
+    .comp-field input[type="number"] {
+        font-size: 16px;
     }
 }
