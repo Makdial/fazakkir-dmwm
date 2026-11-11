@@ -213,7 +213,7 @@
 }
 
 /* Media panel: the videos and sounds the editor can add to the timeline.
-   Videos are a grid of thumbnails; the title appears when the card is hovered. */
+   Every item is a card: a picture (or a sound tile) with its title below. */
 
 .comp-media {
     display: flex;
@@ -273,7 +273,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     align-content: start;
-    gap: 10px;
+    gap: 12px 10px;
     min-height: 0;
     overflow-y: auto;
     padding: 2px;
@@ -281,6 +281,8 @@
 
 .comp-card {
     position: relative;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     border-radius: 10px;
     background: var(--comp-panel-2);
@@ -330,6 +332,17 @@
     font-weight: 700;
 }
 
+.comp-card-thumb.is-sound {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--comp-audio), #0a3d33);
+    color: #ffffff;
+    font-size: 40px;
+    font-weight: 700;
+    cursor: grab;
+}
+
 .comp-card-dur {
     position: absolute;
     right: 6px;
@@ -358,35 +371,16 @@
     pointer-events: none;
 }
 
-.comp-card-caption {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 2;
-    padding: 24px 56px 7px 8px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0));
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    pointer-events: none;
-}
-
 .comp-card-title {
     display: -webkit-box;
     overflow: hidden;
-    color: #ffffff;
-    font-size: 12px;
+    padding: 8px 10px 10px;
+    color: var(--comp-text);
+    font-size: 13px;
     font-weight: 600;
     line-height: 1.3;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-}
-
-.comp-card:hover .comp-card-caption,
-.comp-card:focus-within .comp-card-caption,
-.comp-card.is-previewing .comp-card-caption {
-    opacity: 1;
 }
 
 .comp-add {
@@ -420,28 +414,6 @@
         opacity: 1;
     }
 }
-
-/* Sounds share the card of the videos; their picture is a gradient tile. */
-
-.comp-card-thumb.is-sound {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, var(--comp-audio), #0a3d33);
-    color: #ffffff;
-    font-size: 40px;
-    font-weight: 700;
-    cursor: grab;
-}
-
-/* Touch screens have no hover, so the titles stay visible on the cards. */
-
-@media (hover: none) {
-    .comp-card-caption {
-        opacity: 1;
-    }
-}
-
 
 /* Monitor */
 

@@ -291,14 +291,11 @@
         const length = document.createElement("span");
         length.className = "comp-card-dur";
         length.textContent = fmtShort(item.duration);
-        const caption = document.createElement("span");
-        caption.className = "comp-card-caption";
-        const name = document.createElement("span");
+        thumb.append(length, used, add);
+        const name = document.createElement("div");
         name.className = "comp-card-title";
         name.textContent = item.title;
-        caption.appendChild(name);
-        thumb.append(length, used, caption, add);
-        card.appendChild(thumb);
+        card.append(thumb, name);
         return card;
     }
 
