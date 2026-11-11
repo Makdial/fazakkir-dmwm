@@ -209,7 +209,9 @@
             .then(data => {
                 if (data.status === "ready") {
                     statusEl.textContent = "{% trans 'Done.' %}";
-                    resultLink.href = "/videos/" + data.video_id + "/";
+                    const previewUrl = data.download_url + "?inline=1";
+                    if (preview) preview.src = previewUrl;
+                    resultLink.href = previewUrl;
                     const dl = document.getElementById("compDownloadLink");
                     if (data.download_url) { dl.href = data.download_url; dl.removeAttribute("hidden"); }
                     else { dl.setAttribute("hidden", ""); }

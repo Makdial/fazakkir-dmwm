@@ -7,6 +7,7 @@ urlpatterns = [
     path("composition/", views.composition_page, name="composition"),
     path("composition/start/", views.composition_start, name="composition_start"),
     path("composition/status/<str:job_id>/", views.composition_status, name="composition_status"),
+    path("composition/download/<str:job_id>/", views.composition_download, name="composition_download"),
     path("", views.video_list, name="list"),
     path("search/", views.video_search, name="search"),
     path("offline/", views.offline_library, name="offline"),

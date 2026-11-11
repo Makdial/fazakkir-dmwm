@@ -1362,6 +1362,7 @@ def composition_start(request):
         _COMPOSITION_JOBS[job_id] = {
             "status": "queued",
             "video_id": None,
+            "file_path": None,
             "download_url": "",
             "error": "",
         }
@@ -1370,6 +1371,34 @@ def composition_start(request):
         target=_composition_worker, args=(job_id, title, clips, request.user.id), daemon=True
     ).start()
     return JsonResponse({"success": True, "job_id": job_id})
+
+
+from django.http import FileResponse as _FileResponse
+from django.views.decorators.http import require_GET as _require_GET
+
+
+@_require_GET
+def composition_download(request, job_id):
+    with _COMPOSITION_LOCK:
+        state = dict(_COMPOSITION_JOBS.get(job_id, {}))
+    path = state.get("file_path")
+    if not path or not _os.path.exists(path):
+        return JsonResponse({"success": False, "error": _("File not found.")}, status=404)
+
+    class _DeletingFileResponse(_FileResponse):
+        def close(self):
+            super().close()
+            try:
+                _os.remove(path)
+            except OSError:
+                pass
+            with _COMPOSITION_LOCK:
+                _COMPOSITION_JOBS.pop(job_id, None)
+
+    as_attachment = request.GET.get("download", "1") == "1"
+    response = _DeletingFileResponse(open(path, "rb"), as_attachment=as_attachment, filename="composed.mp4")
+    response["Content-Type"] = "video/mp4"
+    return response
 
 
 def composition_status(request, job_id):
@@ -1470,19 +1499,23 @@ def _composition_worker(job_id, title, clips, user_id):
             capture_output=True,
         )
 
-        with open(output_path, "rb") as handle:
-            result = upload_video(file_data=handle, file_name="composed.mp4")
+        # Store the result only temporarily on the server so the visitor can
+        # preview and download it. Nothing is uploaded to Cloudflare R2 and no
+        # Video row is created.
+        from django.conf import settings
 
-        video = Video()
-        video.user = user
-        video.title = title or "Composed video"
-        video.description = _("Composed from selected videos.")
-        video.media_type = "video"
-        video.file_id = result["path"]
-        video.video_url = result["url"]
-        video.save()
+        compositions_dir = _os.path.join(str(settings.MEDIA_ROOT), "compositions")
+        _os.makedirs(compositions_dir, exist_ok=True)
+        final_path = _os.path.join(compositions_dir, f"{job_id}.mp4")
+        _shutil.move(output_path, final_path)
 
-        _composition_update(job_id, status="ready", video_id=video.id, download_url=video.video_download_url)
+        _composition_update(
+            job_id,
+            status="ready",
+            video_id=None,
+            file_path=final_path,
+            download_url=reverse("videos:composition_download", args=[job_id]),
+        )
     except Exception as exc:  # noqa: BLE001
         _composition_update(job_id, status="failed", error=str(exc)[:500])
     finally:
