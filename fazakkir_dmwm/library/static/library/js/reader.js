@@ -72,6 +72,7 @@
   var viewMode = document.getElementById("viewMode");
 
   function applyViewMode(){
+    if (!translationBox) return;
     var mode = viewMode ? viewMode.value : "sidebyside";
     translationBox.classList.remove("mode-original","mode-translated","mode-sidebyside");
     translationBox.classList.add("mode-" + mode);
@@ -216,11 +217,16 @@
   }
 
   // ---------- Controls ----------
-  document.getElementById("prevPage").addEventListener("click", onPrevPage);
-  document.getElementById("nextPage").addEventListener("click", onNextPage);
-  document.getElementById("zoomIn").addEventListener("click", function(){ zoom(0.2); });
-  document.getElementById("zoomOut").addEventListener("click", function(){ zoom(-0.2); });
-  document.getElementById("fitWidth").addEventListener("click", function(){
+  var prevBtn = document.getElementById("prevPage");
+  var nextBtn = document.getElementById("nextPage");
+  if (prevBtn) prevBtn.addEventListener("click", onPrevPage);
+  if (nextBtn) nextBtn.addEventListener("click", onNextPage);
+  var zoomInBtn = document.getElementById("zoomIn");
+  var zoomOutBtn = document.getElementById("zoomOut");
+  var fitBtn = document.getElementById("fitWidth");
+  if (zoomInBtn) zoomInBtn.addEventListener("click", function(){ zoom(0.2); });
+  if (zoomOutBtn) zoomOutBtn.addEventListener("click", function(){ zoom(-0.2); });
+  if (fitBtn) fitBtn.addEventListener("click", function(){
     var container = document.getElementById("readerMain");
     if (useNative) return;
     if (pdfDoc) {
@@ -246,7 +252,8 @@
   var toggleSidebar = document.getElementById("toggleSidebar");
   if (toggleSidebar) toggleSidebar.addEventListener("click", function(){ sidebar.classList.toggle("open"); });
 
-  document.getElementById("addBookmark").addEventListener("click", function(){
+  var addBookmarkBtn = document.getElementById("addBookmark");
+  if (addBookmarkBtn) addBookmarkBtn.addEventListener("click", function(){
     fetch(bookmarkUrl, {
       method: "POST",
       headers: {"Content-Type":"application/json","X-CSRFToken": csrf},
