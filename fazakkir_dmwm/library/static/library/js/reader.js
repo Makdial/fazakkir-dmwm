@@ -33,6 +33,7 @@
   var currentPageText = "";
   var useNative = false;
   var loadedOk = false;
+  var firstRenderDone = false;
 
   function setStatus(msg){ if (statusEl) statusEl.textContent = msg; }
   function fail(msg){ console.error("[reader]", msg); setStatus(msg); }
@@ -144,6 +145,7 @@
         pageRendering = false;
         setStatus("");
         if (pageNumPending !== null){ renderPage(pageNumPending); pageNumPending = null; }
+        if (!firstRenderDone) { firstRenderDone = true; autoFitIfSmall(); }
       }).catch(function(err){
         pageRendering = false;
         fail("Render failed: " + (err && err.message ? err.message : err));
@@ -226,18 +228,27 @@
   var fitBtn = document.getElementById("fitWidth");
   if (zoomInBtn) zoomInBtn.addEventListener("click", function(){ zoom(0.2); });
   if (zoomOutBtn) zoomOutBtn.addEventListener("click", function(){ zoom(-0.2); });
-  if (fitBtn) fitBtn.addEventListener("click", function(){
+  if (fitBtn) fitBtn.addEventListener("click", fitToWidth);
+
+  function fitToWidth(){
     var container = document.getElementById("readerMain");
-    if (useNative) return;
-    if (pdfDoc) {
-      pdfDoc.getPage(pageNum).then(function(page){
-        var vp = page.getViewport({scale:1});
-        scale = (container.clientWidth - 40) / vp.width;
-        if (zoomLevel) zoomLevel.textContent = Math.round(scale*100) + "%";
-        queueRenderPage(pageNum);
-      });
-    }
-  });
+    if (useNative || !pdfDoc || !container) return;
+    pdfDoc.getPage(pageNum).then(function(page){
+      var vp = page.getViewport({scale:1});
+      var target = Math.min(container.clientWidth - 24, 1400);
+      scale = Math.max(0.4, target / vp.width);
+      if (zoomLevel) zoomLevel.textContent = Math.round(scale*100) + "%";
+      queueRenderPage(pageNum);
+    });
+  }
+
+  // Auto-fit width on small screens and when the window is resized.
+  function autoFitIfSmall(){
+    if (useNative || !pdfDoc) return;
+    var container = document.getElementById("readerMain");
+    if (container && container.clientWidth < 820) fitToWidth();
+  }
+  window.addEventListener("resize", function(){ autoFitIfSmall(); });
 
   var darkToggle = document.getElementById("darkMode");
   var readerEl = document.getElementById("reader");
@@ -250,7 +261,24 @@
 
   var sidebar = document.getElementById("readerSidebar");
   var toggleSidebar = document.getElementById("toggleSidebar");
-  if (toggleSidebar) toggleSidebar.addEventListener("click", function(){ sidebar.classList.toggle("open"); });
+  var backdrop = null;
+  function openDrawer(){
+    if (!sidebar) return;
+    sidebar.classList.add("open");
+    if (!backdrop) {
+      backdrop = document.createElement("div");
+      backdrop.className = "reader-backdrop";
+      backdrop.addEventListener("click", closeDrawer);
+      document.body.appendChild(backdrop);
+    }
+  }
+  function closeDrawer(){
+    if (sidebar) sidebar.classList.remove("open");
+    if (backdrop) { backdrop.remove(); backdrop = null; }
+  }
+  if (toggleSidebar) toggleSidebar.addEventListener("click", function(){
+    if (sidebar && sidebar.classList.contains("open")) closeDrawer(); else openDrawer();
+  });
 
   var addBookmarkBtn = document.getElementById("addBookmark");
   if (addBookmarkBtn) addBookmarkBtn.addEventListener("click", function(){
