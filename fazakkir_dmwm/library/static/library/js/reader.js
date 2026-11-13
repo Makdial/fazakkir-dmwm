@@ -230,6 +230,7 @@
     updatePageInfo();
     renderPage(pageNum);
   }).catch(function(err){
-    setStatus("Failed to load PDF: " + (err && err.message ? err.message : err));
+    console.error("PDF load error:", err);
+    setStatus("Failed to load PDF: " + (err && err.message ? err.message : err) + ". Try downloading the PDF instead.");
   });
 })();

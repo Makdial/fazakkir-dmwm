@@ -53,6 +53,7 @@
       {% if allow_download %}
       <a href="{% url 'library:download_book' book.slug %}" class="btn btn-outline btn-block">{% trans "Download" %}</a>
       {% endif %}
+      <a href="{{ pdf_url }}" target="_blank" class="btn btn-outline btn-block">{% trans "Open PDF directly" %}</a>
       <button id="addBookmark" class="btn btn-outline btn-block">{% trans "Bookmark this page" %}</button>
       <button id="fullscreenBtn" class="btn btn-outline btn-block">{% trans "Fullscreen" %}</button>
     </div>
