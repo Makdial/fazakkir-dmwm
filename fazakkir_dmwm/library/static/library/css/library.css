@@ -104,3 +104,5 @@
 @media (max-width:900px){.lib-admin-grid{grid-template-columns:1fr;}}
 .translation-box.mode-sidebyside{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
 .translation-box.mode-sidebyside .tr-original,.translation-box.mode-sidebyside .tr-result{border:1px solid var(--lib-border);padding:.8rem;border-radius:8px;}
+.native-frame{width:100%;height:100%;border:none;background:#fff;min-height:600px;}
+.reader-canvas-wrap.native{width:100%;height:calc(100vh - 120px);}

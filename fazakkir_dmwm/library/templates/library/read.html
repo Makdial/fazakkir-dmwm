@@ -56,6 +56,7 @@
       <a href="{{ pdf_url }}" target="_blank" class="btn btn-outline btn-block">{% trans "Open PDF directly" %}</a>
       <button id="addBookmark" class="btn btn-outline btn-block">{% trans "Bookmark this page" %}</button>
       <button id="fullscreenBtn" class="btn btn-outline btn-block">{% trans "Fullscreen" %}</button>
+      <button id="nativeToggle" class="btn btn-outline btn-block">{% trans "Use native viewer" %}</button>
     </div>
     <div id="translationBox" class="translation-box" hidden>
       <h4>{% trans "Translation" %}</h4>
@@ -72,6 +73,7 @@
     <div class="reader-canvas-wrap" id="canvasWrap">
       <canvas id="pdfCanvas"></canvas>
       <div id="textLayer" class="text-layer"></div>
+      <iframe id="nativeFrame" class="native-frame" hidden title="PDF viewer"></iframe>
     </div>
     <div id="readerStatus" class="reader-status">{% trans "Loading..." %}</div>
   </main>
