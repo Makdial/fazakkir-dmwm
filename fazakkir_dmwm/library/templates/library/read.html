@@ -23,7 +23,7 @@
         <button id="nextPage" class="btn btn-outline">{% trans "Next" %}</button>
       </div>
       <div class="reader-zoom">
-        <button id="zoomOut" class="btn btn-outline">-</button>
+        <button id="zoomOut" class="btn btn-outline">−</button>
         <span id="zoomLevel">100%</span>
         <button id="zoomIn" class="btn btn-outline">+</button>
         <button id="fitWidth" class="btn btn-outline">{% trans "Fit" %}</button>
@@ -70,11 +70,8 @@
       <button id="toggleSidebar" class="btn btn-outline">{% trans "Menu" %}</button>
       <span id="pageInfoMobile">1 / 1</span>
     </div>
-    <div class="reader-canvas-wrap" id="canvasWrap">
-      <canvas id="pdfCanvas"></canvas>
-      <div id="textLayer" class="text-layer"></div>
-      <iframe id="nativeFrame" class="native-frame" hidden title="PDF viewer"></iframe>
-    </div>
+    <div id="pdfPages" class="pdf-pages"></div>
+    <iframe id="nativeFrame" class="native-frame" hidden title="PDF viewer"></iframe>
     <div id="readerStatus" class="reader-status">{% trans "Loading..." %}</div>
   </main>
 </div>
