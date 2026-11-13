@@ -119,10 +119,15 @@
                     </button>
                 </li>
                 <li><a href="{% url 'shorts:list' %}" class="nav-link">{% trans "Shorts" %}</a></li>
+<li><a href="{% url 'library:book_list' %}" class="nav-link">{% trans "Library" %}</a></li>
+<li><a href="{% url 'library:user_dashboard' %}" class="nav-link">{% trans "Dashboard" %}</a></li>
+<li><a href="{% url 'library:my_library' %}" class="nav-link">{% trans "My Library" %}</a></li>
 <li><a href="{% url 'videos:composition' %}" class="nav-link">{% trans "Composition" %}</a></li>
                 <li><a href="{% url 'videos:offline' %}" class="nav-link">{% trans "Offline" %}</a></li>
                 {% if can_read %}
                     <li><a href="{% url 'dashboard:home' %}" class="nav-link">{% trans "Dashboard" %}</a></li>
+                    <li><a href="{% url 'library:admin_dashboard' %}" class="nav-link">{% trans "Library Admin" %}</a></li>
+                    <li><a href="{% url 'library:manage_books' %}" class="nav-link">{% trans "Manage Books" %}</a></li>
                     <li><a href="{% url 'accounts:manage_users' %}" class="nav-link">{% trans "Users" %}</a></li>
                 {% endif %}
                 {% if user.is_authenticated and not is_guest %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Saved Highlights" %}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-container">
+  <h1>{% trans "Saved Highlights" %}</h1>
+  <ul class="lib-highlight-list">
+    {% for h in highlights %}
+    <li>
+      <strong>{{ h.book.title }}</strong> (p.{{ h.page }}): {{ h.text }}
+      {% if h.note %}<em>- {{ h.note }}</em>{% endif %}
+      <button type="button" class="btn btn-danger btn-sm del-hl" data-id="{{ h.id }}">{% trans "Delete" %}</button>
+    </li>
+    {% empty %}<li class="lib-empty">{% trans "No highlights." %}</li>{% endfor %}
+  </ul>
+</div>
+<script>
+(function(){
+  function getCookie(name){var v=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');return v?v.pop():'';}
+  document.querySelectorAll('.del-hl').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      fetch('/library/api/highlight/'+btn.dataset.id+'/delete/', {method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}})
+        .then(function(){ location.reload(); });
+    });
+  });
+})();
+</script>
+{% endblock %}

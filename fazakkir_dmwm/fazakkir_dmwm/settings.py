@@ -109,6 +109,7 @@ INSTALLED_APPS = [
     'shorts',
     'dashboard',
     'core',
+    'library',
 ]
 
 MIDDLEWARE = [

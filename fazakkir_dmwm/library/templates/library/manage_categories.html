@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Manage categories" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-container">
+  <h1>{% trans "Categories" %}</h1>
+  <form method="post" class="lib-inline-form">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">{% trans "Add" %}</button>
+  </form>
+  <ul class="lib-cat-list">
+    {% for c in categories %}
+    <li>
+      <span>{{ c.name }}</span>
+      <a href="{% url 'library:delete_category' c.pk %}" class="btn btn-danger btn-sm">{% trans "Delete" %}</a>
+    </li>
+    {% empty %}
+    <li>{% trans "No categories." %}</li>
+    {% endfor %}
+  </ul>
+  <a href="{% url 'library:manage_books' %}" class="btn btn-outline">{% trans "Back to books" %}</a>
+</div>
+{% endblock %}

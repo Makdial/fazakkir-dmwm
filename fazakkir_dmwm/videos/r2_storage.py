@@ -40,7 +40,7 @@ ALLOWED_AUDIO_EXTENSIONS = {".mp3"}
 
 # Object keys created by this app. Used to tell R2 objects apart from legacy
 # records (e.g. old ImageKit paths) that should keep their stored URL.
-OBJECT_PREFIXES = ("videos/", "thumbnails/", "audio/", "playlist-covers/")
+OBJECT_PREFIXES = ("videos/", "thumbnails/", "audio/", "playlist-covers/", "books/", "covers/")
 
 # Anything larger than this is uploaded as a multipart upload, which is what R2
 # recommends for files over a few megabytes. 16 MB parts keep memory use low

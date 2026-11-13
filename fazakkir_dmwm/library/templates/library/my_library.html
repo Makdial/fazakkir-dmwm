@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "My library" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-container">
+  <h1>{% trans "My library" %}</h1>
+  <h2>{% trans "Continue reading" %}</h2>
+  <div class="lib-grid">
+    {% for p in progress %}
+    <article class="lib-card">
+      <a href="{% url 'library:read_book' p.book.slug %}" class="lib-cover-link">
+        <div class="lib-cover">
+          {% if p.book.cover_image_url %}<img src="{{ p.book.cover_image_url }}" alt="{{ p.book.title }}" loading="lazy">{% else %}<div class="lib-cover-placeholder">book</div>{% endif %}
+        </div>
+      </a>
+      <div class="lib-card-body">
+        <h3><a href="{% url 'library:read_book' p.book.slug %}">{{ p.book.title }}</a></h3>
+        <div class="lib-progress-bar"><span style="width: {{ p.percent }}%"></span></div>
+        <small>p. {{ p.page }} · {{ p.percent|floatformat:0 }}%</small>
+      </div>
+    </article>
+    {% empty %}
+    <p class="lib-empty">{% trans "No reading in progress." %}</p>
+    {% endfor %}
+  </div>
+
+  <h2>{% trans "Favorites" %}</h2>
+  <div class="lib-grid">
+    {% for f in favorites %}
+    <article class="lib-card">
+      <a href="{% url 'library:book_detail' f.book.slug %}" class="lib-cover-link">
+        <div class="lib-cover">
+          {% if f.book.cover_image_url %}<img src="{{ f.book.cover_image_url }}" alt="{{ f.book.title }}" loading="lazy">{% else %}<div class="lib-cover-placeholder">book</div>{% endif %}
+        </div>
+      </a>
+      <div class="lib-card-body">
+        <h3><a href="{% url 'library:book_detail' f.book.slug %}">{{ f.book.title }}</a></h3>
+        <p class="lib-author">{{ f.book.author }}</p>
+      </div>
+    </article>
+    {% empty %}
+    <p class="lib-empty">{% trans "No favorites yet." %}</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

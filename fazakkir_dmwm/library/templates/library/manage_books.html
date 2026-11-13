@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Manage books" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-container">
+  <div class="lib-results-head">
+    <h1>{% trans "Manage books" %}</h1>
+    <div>
+      <a href="{% url 'library:manage_categories' %}" class="btn btn-outline">{% trans "Categories" %}</a>
+      <a href="{% url 'library:upload_book' %}" class="btn btn-primary">{% trans "Upload book" %}</a>
+    </div>
+  </div>
+  <form method="get" class="lib-search lib-search-compact">
+    <input type="search" name="q" value="{{ q }}" placeholder="{% trans 'Search...' %}">
+    <select name="status">
+      <option value="">{% trans "All statuses" %}</option>
+      <option value="draft" {% if status == "draft" %}selected{% endif %}>{% trans "Draft" %}</option>
+      <option value="published" {% if status == "published" %}selected{% endif %}>{% trans "Published" %}</option>
+      <option value="archived" {% if status == "archived" %}selected{% endif %}>{% trans "Archived" %}</option>
+    </select>
+    <button type="submit">{% trans "Filter" %}</button>
+  </form>
+
+  <table class="lib-table">
+    <thead>
+      <tr>
+        <th>{% trans "Title" %}</th>
+        <th>{% trans "Author" %}</th>
+        <th>{% trans "Status" %}</th>
+        <th>{% trans "Language" %}</th>
+        <th>{% trans "Views" %}</th>
+        <th>{% trans "Downloads" %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in books %}
+      <tr>
+        <td><a href="{% url 'library:book_detail' b.slug %}">{{ b.title }}</a></td>
+        <td>{{ b.author }}</td>
+        <td>{{ b.get_status_display }}</td>
+        <td>{{ b.get_language_display }}</td>
+        <td>{{ b.views }}</td>
+        <td>{{ b.downloads }}</td>
+        <td>
+          <a href="{% url 'library:edit_book' b.slug %}" class="btn btn-outline btn-sm">{% trans "Edit" %}</a>
+          <a href="{% url 'library:delete_book' b.slug %}" class="btn btn-danger btn-sm">{% trans "Delete" %}</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">{% trans "No books." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if page.has_other_pages %}
+  <nav class="lib-pagination">
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">{% trans "Previous" %}</a>{% endif %}
+    <span>{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}">{% trans "Next" %}</a>{% endif %}
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ book.title }} - {% trans "Library" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-detail">
+  <div class="lib-detail-grid">
+    <div class="lib-detail-cover">
+      {% if book.cover_image_url %}
+      <img src="{{ book.cover_image_url }}" alt="{{ book.title }}">
+      {% else %}
+      <div class="lib-cover-placeholder lib-cover-large">book</div>
+      {% endif %}
+      <div class="lib-detail-actions">
+        <a href="{% url 'library:read_book' book.slug %}" class="btn btn-primary btn-block">{% trans "Read now" %}</a>
+        {% if book.allow_download %}
+        <a href="{% url 'library:download_book' book.slug %}" class="btn btn-outline btn-block">{% trans "Download PDF" %}</a>
+        {% endif %}
+        {% if user.is_authenticated %}
+        <button type="button" id="favBtn" class="btn btn-outline btn-block" data-slug="{{ book.slug }}" data-fav="{{ is_favorite|yesno:'1,0' }}">
+          {% if is_favorite %}{% trans "Remove from favorites" %}{% else %}{% trans "Add to favorites" %}{% endif %}
+        </button>
+        {% endif %}
+      </div>
+      {% if progress %}
+      <div class="lib-progress">
+        <div class="lib-progress-bar"><span style="width: {{ progress.percent }}%"></span></div>
+        <small>{% trans "Progress" %}: {{ progress.percent|floatformat:0 }}% (p. {{ progress.page }})</small>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="lib-detail-info">
+      <h1>{{ book.title }}</h1>
+      <p class="lib-author-lg">{{ book.author|default:"—" }}</p>
+      <div class="lib-badges">
+        <span class="lib-pill">{{ book.get_language_display }}</span>
+        {% if book.category %}<span class="lib-pill">{{ book.category.name }}</span>{% endif %}
+        {% if book.is_featured %}<span class="lib-pill lib-pill-featured">{% trans "Featured" %}</span>{% endif %}
+        <span class="lib-pill">{{ book.get_status_display }}</span>
+      </div>
+      <dl class="lib-meta-list">
+        {% if book.publisher %}<dt>{% trans "Publisher" %}</dt><dd>{{ book.publisher }}</dd>{% endif %}
+        {% if book.published_year %}<dt>{% trans "Year" %}</dt><dd>{{ book.published_year }}</dd>{% endif %}
+        {% if book.page_count %}<dt>{% trans "Pages" %}</dt><dd>{{ book.page_count }}</dd>{% endif %}
+        {% if book.isbn %}<dt>ISBN</dt><dd>{{ book.isbn }}</dd>{% endif %}
+        <dt>{% trans "Reads" %}</dt><dd>{{ book.views }}</dd>
+        <dt>{% trans "Downloads" %}</dt><dd>{{ book.downloads }}</dd>
+        {% if book.rating_count %}<dt>{% trans "Rating" %}</dt><dd>★ {{ book.rating }} / 5 ({{ book.rating_count }})</dd>{% endif %}
+      </dl>
+      {% if book.description %}
+      <div class="lib-description">
+        <h3>{% trans "Description" %}</h3>
+        <p>{{ book.description|linebreaks }}</p>
+      </div>
+      {% endif %}
+      {% if book.tags %}
+      <div class="lib-tags">
+        {% for t in book.tag_list %}<span class="lib-tag">{{ t }}</span>{% endfor %}
+      </div>
+      {% endif %}
+
+      {% if can_write %}
+      <div class="lib-admin-actions">
+        <a href="{% url 'library:edit_book' book.slug %}" class="btn btn-outline">{% trans "Edit" %}</a>
+        <a href="{% url 'library:delete_book' book.slug %}" class="btn btn-danger">{% trans "Delete" %}</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if bookmarks %}
+  <section class="lib-section">
+    <h3>{% trans "Your bookmarks" %}</h3>
+    <ul class="lib-bookmark-list">
+      {% for bm in bookmarks %}
+      <li>
+        <a href="{% url 'library:read_book' book.slug %}?page={{ bm.page }}">{{ bm.page }}</a>
+        {% if bm.note %} - {{ bm.note }}{% endif %}
+        <button type="button" class="btn-link" data-delete-bookmark="{{ bm.id }}">{% trans "Remove" %}</button>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section class="lib-section">
+    <h3>{% trans "Reviews" %}</h3>
+    {% if user.is_authenticated %}
+    <form method="post" action="{% url 'library:submit_review' book.slug %}" class="lib-review-form">
+      {% csrf_token %}
+      <label>{% trans "Rating (1-5)" %}</label>
+      <input type="number" name="rating" min="1" max="5" value="{{ user_review.rating|default:5 }}">
+      <label>{% trans "Comment" %}</label>
+      <textarea name="comment" rows="3">{{ user_review.comment|default:"" }}</textarea>
+      <button type="submit" class="btn btn-primary">{% trans "Save review" %}</button>
+    </form>
+    {% endif %}
+    <div class="lib-reviews">
+      {% for r in reviews %}
+      <div class="lib-review">
+        <strong>{{ r.user.username }}</strong> <span>★ {{ r.rating }}</span>
+        <p>{{ r.comment }}</p>
+        <small>{{ r.created_at|date:"SHORT_DATE_FORMAT" }}</small>
+      </div>
+      {% empty %}
+      <p class="lib-empty">{% trans "No reviews yet." %}</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if related %}
+  <section class="lib-section">
+    <h3>{% trans "Related books" %}</h3>
+    <div class="lib-grid">
+      {% for b in related %}
+      <article class="lib-card">
+        <a href="{% url 'library:book_detail' b.slug %}" class="lib-cover-link">
+          <div class="lib-cover">
+            {% if b.cover_image_url %}<img src="{{ b.cover_image_url }}" alt="{{ b.title }}" loading="lazy">{% else %}<div class="lib-cover-placeholder">book</div>{% endif %}
+          </div>
+        </a>
+        <div class="lib-card-body">
+          <h3><a href="{% url 'library:book_detail' b.slug %}">{{ b.title }}</a></h3>
+          <p class="lib-author">{{ b.author }}</p>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+
+<script>
+(function(){
+  var favBtn = document.getElementById('favBtn');
+  if (favBtn) {
+    favBtn.addEventListener('click', function(){
+      var slug = favBtn.dataset.slug;
+      fetch('{% url "library:toggle_favorite" book.slug %}', {method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}});
+      // reload simple
+      location.reload();
+    });
+  }
+  function getCookie(name){var v=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');return v?v.pop():'';}
+  document.querySelectorAll('[data-delete-bookmark]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = btn.dataset.deleteBookmark;
+      fetch('/library/api/bookmark/'+id+'/delete/', {method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}}).then(function(){location.reload();});
+    });
+  });
+})();
+</script>
+{% endblock %}

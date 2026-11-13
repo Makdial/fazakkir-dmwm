@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "My Collections" %}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-container">
+  <h1>{% trans "My Collections" %}</h1>
+  <form id="newCollectionForm" class="lib-inline-form">
+    <input type="text" id="newCollectionName" placeholder="{% trans 'New collection name' %}" required>
+    <button type="submit" class="btn btn-primary">{% trans "Create" %}</button>
+  </form>
+
+  <div class="lib-collections">
+    {% for c in collections %}
+    <div class="lib-collection-card">
+      <h3>{{ c.name }}</h3>
+      <p>{{ c.description }}</p>
+      <small>{{ c.books.count }} {% trans "books" %}</small>
+      <ul>
+        {% for b in c.books.all %}
+        <li>{{ b.title }} <button type="button" class="btn-link remove-book" data-col="{{ c.id }}" data-book="{{ b.slug }}">{% trans "remove" %}</button></li>
+        {% endfor %}
+      </ul>
+      <button type="button" class="btn btn-danger btn-sm del-col" data-id="{{ c.id }}">{% trans "Delete collection" %}</button>
+    </div>
+    {% empty %}<p class="lib-empty">{% trans "No collections yet." %}</p>{% endfor %}
+  </div>
+</div>
+
+<script>
+(function(){
+  function getCookie(name){var v=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');return v?v.pop():'';}
+  document.getElementById('newCollectionForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var name = document.getElementById('newCollectionName').value;
+    fetch('/library/api/collection/', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')}, body: JSON.stringify({name:name})})
+      .then(function(r){return r.json();}).then(function(d){ if(d.ok) location.reload(); else alert(d.error||'Error'); });
+  });
+  document.querySelectorAll('.del-col').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if(!confirm('Delete?')) return;
+      fetch('/library/api/collection/'+btn.dataset.id+'/delete/', {method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}})
+        .then(function(){ location.reload(); });
+    });
+  });
+  document.querySelectorAll('.remove-book').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      fetch('/library/api/collection/'+btn.dataset.col+'/remove/', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')}, body: JSON.stringify({book: btn.dataset.book})})
+        .then(function(){ location.reload(); });
+    });
+  });
+})();
+</script>
+{% endblock %}

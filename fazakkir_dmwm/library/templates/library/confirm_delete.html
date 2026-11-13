@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Delete book" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-container lib-form-page">
+  <h1>{% trans "Delete book" %}</h1>
+  <p>{% trans "Are you sure you want to delete" %} <strong>{{ book.title }}</strong>?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">{% trans "Yes, delete" %}</button>
+    <a href="{% url 'library:book_detail' book.slug %}" class="btn btn-outline">{% trans "Cancel" %}</a>
+  </form>
+</div>
+{% endblock %}

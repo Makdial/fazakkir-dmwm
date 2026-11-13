@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ book.title }} - {% trans "Read" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+<link rel="stylesheet" href="{% static 'library/css/reader.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="reader" id="reader">
+  <aside class="reader-sidebar" id="readerSidebar">
+    <div class="reader-sidebar-head">
+      <h2>{{ book.title }}</h2>
+      <p>{{ book.author }}</p>
+      <a href="{% url 'library:book_detail' book.slug %}" class="btn btn-outline btn-sm">{% trans "Back" %}</a>
+    </div>
+    <div class="reader-controls">
+      <div class="reader-nav">
+        <button id="prevPage" class="btn btn-outline">{% trans "Prev" %}</button>
+        <span id="pageInfo">1 / 1</span>
+        <button id="nextPage" class="btn btn-outline">{% trans "Next" %}</button>
+      </div>
+      <div class="reader-zoom">
+        <button id="zoomOut" class="btn btn-outline">-</button>
+        <span id="zoomLevel">100%</span>
+        <button id="zoomIn" class="btn btn-outline">+</button>
+        <button id="fitWidth" class="btn btn-outline">{% trans "Fit" %}</button>
+      </div>
+      <label class="reader-toggle">
+        <input type="checkbox" id="darkMode"> {% trans "Dark reading" %}
+      </label>
+      <label class="reader-toggle">
+        <input type="checkbox" id="translateToggle" checked> {% trans "Translate on select" %}
+      </label>
+      <div class="reader-lang">
+        <label>{% trans "View mode" %}</label>
+        <select id="viewMode">
+          <option value="original">{% trans "Original only" %}</option>
+          <option value="translated">{% trans "Translated only" %}</option>
+          <option value="sidebyside">{% trans "Side by side" %}</option>
+        </select>
+      </div>
+      <div class="reader-lang">
+        <label>{% trans "Translate to" %}</label>
+        <select id="targetLang">
+          {% for code, name in languages_list %}
+          <option value="{{ code }}">{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% if allow_download %}
+      <a href="{% url 'library:download_book' book.slug %}" class="btn btn-outline btn-block">{% trans "Download" %}</a>
+      {% endif %}
+      <button id="addBookmark" class="btn btn-outline btn-block">{% trans "Bookmark this page" %}</button>
+      <button id="fullscreenBtn" class="btn btn-outline btn-block">{% trans "Fullscreen" %}</button>
+    </div>
+    <div id="translationBox" class="translation-box" hidden>
+      <h4>{% trans "Translation" %}</h4>
+      <div id="translationOriginal" class="tr-original"></div>
+      <div id="translationResult" class="tr-result"></div>
+    </div>
+  </aside>
+
+  <main class="reader-main" id="readerMain">
+    <div class="reader-toolbar-mobile">
+      <button id="toggleSidebar" class="btn btn-outline">{% trans "Menu" %}</button>
+      <span id="pageInfoMobile">1 / 1</span>
+    </div>
+    <div class="reader-canvas-wrap" id="canvasWrap">
+      <canvas id="pdfCanvas"></canvas>
+      <div id="textLayer" class="text-layer"></div>
+    </div>
+    <div id="readerStatus" class="reader-status">{% trans "Loading..." %}</div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js"></script>
+<script>
+  window.LIBRARY_PDF_URL = "{{ pdf_url|escapejs }}";
+  window.LIBRARY_START_PAGE = {{ start_page|default:1 }};
+  window.LIBRARY_SLUG = "{{ book.slug|escapejs }}";
+  window.LIBRARY_TRANSLATE_URL = "{% url 'library:translate_text' %}";
+  window.LIBRARY_PROGRESS_URL = "{% url 'library:save_progress' book.slug %}";
+  window.LIBRARY_BOOKMARK_URL = "{% url 'library:add_bookmark' book.slug %}";
+  window.LIBRARY_CSRF = "{{ csrf_token }}";
+  window.LIBRARY_SOURCE_LANG = "{{ book.language }}";
+</script>
+<script src="{% static 'library/js/reader.js' %}"></script>
+{% endblock %}

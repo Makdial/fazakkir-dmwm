@@ -1,0 +1,25 @@
+.reader{display:grid;grid-template-columns:300px 1fr;gap:0;height:calc(100vh - 80px);min-height:500px;}
+@media (max-width:900px){.reader{grid-template-columns:1fr;}.reader-sidebar{position:fixed;left:-320px;top:60px;bottom:0;width:300px;z-index:50;transition:left .2s;background:var(--lib-card);overflow:auto;}.reader-sidebar.open{left:0;}}
+.reader-sidebar{background:var(--lib-card);border-right:1px solid var(--lib-border);padding:1rem;overflow:auto;}
+.reader-sidebar-head h2{font-size:1.1rem;margin:0 0 .3rem;}
+.reader-sidebar-head p{color:var(--lib-muted);margin:0 0 .8rem;}
+.reader-controls{display:flex;flex-direction:column;gap:.8rem;margin-top:1rem;}
+.reader-nav,.reader-zoom{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+.reader-nav button,.reader-zoom button{padding:.4rem .7rem;}
+#pageInfo,#zoomLevel{font-weight:600;min-width:60px;text-align:center;}
+.reader-toggle{display:flex;align-items:center;gap:.5rem;cursor:pointer;}
+.reader-lang select{width:100%;padding:.5rem;border-radius:8px;border:1px solid var(--lib-border);background:var(--lib-card);color:var(--lib-text);}
+.reader-main{position:relative;overflow:auto;background:#525659;display:flex;flex-direction:column;align-items:center;padding:1rem;}
+.reader.dark .reader-main{background:#1a1a1a;}
+.reader-toolbar-mobile{display:none;}
+@media (max-width:900px){.reader-toolbar-mobile{display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;width:100%;}}
+.reader-canvas-wrap{position:relative;display:inline-block;}
+#pdfCanvas{box-shadow:0 4px 20px rgba(0,0,0,.4);background:#fff;}
+.text-layer{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;line-height:1;pointer-events:auto;}
+.text-layer span{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0% 0%;}
+.text-layer span::selection{background:rgba(62,166,255,.4);color:transparent;}
+.reader-status{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;padding:.5rem 1rem;border-radius:8px;font-size:.85rem;}
+.translation-box{margin-top:1rem;padding:1rem;background:var(--lib-bg);border:1px solid var(--lib-border);border-radius:8px;}
+.translation-box h4{margin:0 0 .5rem;}
+.tr-original{font-size:.85rem;color:var(--lib-muted);margin-bottom:.5rem;max-height:80px;overflow:auto;}
+.tr-result{font-size:1rem;line-height:1.5;}

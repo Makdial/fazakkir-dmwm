@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Translation History" %}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-container">
+  <div class="lib-results-head">
+    <h1>{% trans "Translation History" %}</h1>
+    <div>
+      <a href="{% url 'library:export_translations' %}" class="btn btn-outline">{% trans "Export saved" %}</a>
+    </div>
+  </div>
+
+  <form method="get" class="lib-search lib-search-compact">
+    <select name="book">
+      <option value="">{% trans "All books" %}</option>
+      {% for b in books %}
+      <option value="{{ b.slug }}" {% if book_slug == b.slug %}selected{% endif %}>{{ b.title }}</option>
+      {% endfor %}
+    </select>
+    <label><input type="checkbox" name="saved" value="1" {% if saved_only %}checked{% endif %}> {% trans "Saved only" %}</label>
+    <button type="submit">{% trans "Filter" %}</button>
+  </form>
+
+  <div class="lib-trans-list">
+    {% for t in translations %}
+    <div class="lib-trans-item" data-id="{{ t.id }}">
+      <div class="tr-original">{{ t.original_text }}</div>
+      <div class="tr-result">{{ t.translated_text }}</div>
+      <div class="lib-trans-meta">
+        <small>{% if t.book %}{{ t.book.title }}{% endif %} · p.{{ t.page }} · {{ t.source_lang }}→{{ t.target_lang }} · {{ t.created_at|date:"SHORT_DATETIME_FORMAT" }}</small>
+        <div class="lib-trans-actions">
+          <button type="button" class="btn btn-outline btn-sm toggle-save" data-id="{{ t.id }}" data-saved="{{ t.is_saved|yesno:'1,0' }}">
+            {% if t.is_saved %}{% trans "Unsave" %}{% else %}{% trans "Save" %}{% endif %}
+          </button>
+          <button type="button" class="btn btn-danger btn-sm delete-tr" data-id="{{ t.id }}">{% trans "Delete" %}</button>
+        </div>
+      </div>
+    </div>
+    {% empty %}<p class="lib-empty">{% trans "No translations." %}</p>{% endfor %}
+  </div>
+
+  {% if page.has_other_pages %}
+  <nav class="lib-pagination">
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">{% trans "Previous" %}</a>{% endif %}
+    <span>{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}">{% trans "Next" %}</a>{% endif %}
+  </nav>
+  {% endif %}
+</div>
+
+<script>
+(function(){
+  function getCookie(name){var v=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');return v?v.pop():'';}
+  document.querySelectorAll('.toggle-save').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      fetch('/library/translations/'+btn.dataset.id+'/save/', {method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}})
+        .then(function(r){return r.json();}).then(function(){ location.reload(); });
+    });
+  });
+  document.querySelectorAll('.delete-tr').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if(!confirm('Delete?')) return;
+      fetch('/library/translations/'+btn.dataset.id+'/delete/', {method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}})
+        .then(function(r){return r.json();}).then(function(){ location.reload(); });
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Digital Library" %} - Fazakkir{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-container">
+  <header class="lib-hero">
+    <h1>{% trans "Digital Library" %}</h1>
+    <p>{% trans "Browse, read and translate books from around the world." %}</p>
+    <form method="get" class="lib-search">
+      <input type="search" name="q" value="{{ q }}" placeholder="{% trans 'Search books, authors, tags...' %}" aria-label="{% trans 'Search' %}">
+      <select name="category">
+        <option value="">{% trans "All categories" %}</option>
+        {% for c in categories %}
+        <option value="{{ c.slug }}" {% if category == c.slug %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="language">
+        <option value="">{% trans "All languages" %}</option>
+        {% for code, name in languages %}
+        <option value="{{ code }}" {% if language == code %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+      <select name="sort">
+        <option value="newest" {% if sort == "newest" %}selected{% endif %}>{% trans "Newest" %}</option>
+        <option value="popular" {% if sort == "popular" %}selected{% endif %}>{% trans "Most read" %}</option>
+        <option value="rating" {% if sort == "rating" %}selected{% endif %}>{% trans "Top rated" %}</option>
+        <option value="title" {% if sort == "title" %}selected{% endif %}>{% trans "Title A-Z" %}</option>
+      </select>
+      <button type="submit">{% trans "Search" %}</button>
+    </form>
+  </header>
+
+  {% if featured %}
+  <section class="lib-featured">
+    <h2>{% trans "Featured" %}</h2>
+    <div class="lib-grid lib-grid-featured">
+      {% for b in featured %}
+      <a class="lib-card lib-card-featured" href="{% url 'library:book_detail' b.slug %}">
+        <div class="lib-cover">
+          {% if b.cover_image_url %}<img src="{{ b.cover_image_url }}" alt="{{ b.title }}" loading="lazy">{% else %}<div class="lib-cover-placeholder">book</div>{% endif %}
+        </div>
+        <div class="lib-card-body">
+          <h3>{{ b.title }}</h3>
+          <p class="lib-author">{{ b.author }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="lib-results">
+    <div class="lib-results-head">
+      <h2>{% trans "Books" %} <span class="lib-count">({{ page.paginator.count }})</span></h2>
+      {% if can_write %}
+      <a href="{% url 'library:upload_book' %}" class="btn btn-primary">{% trans "Upload book" %}</a>
+      {% endif %}
+    </div>
+
+    <div class="lib-grid">
+      {% for b in books %}
+      <article class="lib-card">
+        <a href="{% url 'library:book_detail' b.slug %}" class="lib-cover-link">
+          <div class="lib-cover">
+            {% if b.cover_image_url %}<img src="{{ b.cover_image_url }}" alt="{{ b.title }}" loading="lazy">{% else %}<div class="lib-cover-placeholder">book</div>{% endif %}
+            {% if b.is_featured %}<span class="lib-badge">{% trans "Featured" %}</span>{% endif %}
+          </div>
+        </a>
+        <div class="lib-card-body">
+          <h3><a href="{% url 'library:book_detail' b.slug %}">{{ b.title }}</a></h3>
+          <p class="lib-author">{{ b.author|default:"—" }}</p>
+          <div class="lib-meta">
+            <span>{{ b.get_language_display }}</span>
+            {% if b.page_count %}<span>{{ b.page_count }} {% trans "pages" %}</span>{% endif %}
+            <span>{{ b.views }} {% trans "reads" %}</span>
+          </div>
+          {% if b.rating_count %}<div class="lib-rating">★ {{ b.rating }} ({{ b.rating_count }})</div>{% endif %}
+        </div>
+      </article>
+      {% empty %}
+      <p class="lib-empty">{% trans "No books found." %}</p>
+      {% endfor %}
+    </div>
+
+    {% if page.has_other_pages %}
+    <nav class="lib-pagination">
+      {% if page.has_previous %}<a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page.previous_page_number }}">{% trans "Previous" %}</a>{% endif %}
+      <span>{% trans "Page" %} {{ page.number }} / {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page.next_page_number }}">{% trans "Next" %}</a>{% endif %}
+    </nav>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

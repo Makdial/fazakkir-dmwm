@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% if editing %}{% trans "Edit book" %}{% else %}{% trans "Upload book" %}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-container lib-form-page">
+  <h1>{% if editing %}{% trans "Edit book" %}{% else %}{% trans "Upload a new book" %}{% endif %}</h1>
+  <form method="post" enctype="multipart/form-data" class="lib-form">
+    {% csrf_token %}
+    <div class="lib-form-grid">
+      <div class="lib-form-col">
+        <label>{% trans "Title" %} *</label>
+        {{ form.title }}
+        {% if form.title.errors %}<div class="form-error">{{ form.title.errors }}</div>{% endif %}
+
+        <label>{% trans "Author" %}</label>
+        {{ form.author }}
+
+        <label>{% trans "Category" %}</label>
+        {{ form.category }}
+
+        <label>{% trans "Language" %}</label>
+        {{ form.language }}
+
+        <label>{% trans "Tags" %}</label>
+        {{ form.tags }}
+
+        <label>{% trans "ISBN" %}</label>
+        {{ form.isbn }}
+
+        <label>{% trans "Publisher" %}</label>
+        {{ form.publisher }}
+
+        <label>{% trans "Published year" %}</label>
+        {{ form.published_year }}
+
+        <label>{% trans "Page count" %}</label>
+        {{ form.page_count }}
+      </div>
+      <div class="lib-form-col">
+        <label>{% trans "Description" %}</label>
+        {{ form.description }}
+
+        <label>{% trans "Status" %}</label>
+        {{ form.status }}
+
+        <div class="lib-checkboxes">
+          <label>{{ form.is_featured }} {% trans "Featured" %}</label>
+          <label>{{ form.allow_download }} {% trans "Allow download" %}</label>
+          <label>{{ form.is_public }} {% trans "Public" %}</label>
+        </div>
+
+        <label>{% trans "PDF file" %} {% if not editing %}*{% endif %}</label>
+        <input type="file" name="pdf_file" accept="application/pdf">
+        {% if form.pdf_file.errors %}<div class="form-error">{{ form.pdf_file.errors }}</div>{% endif %}
+        {% if editing and book.pdf_file_id %}<small>{% trans "Current PDF kept unless a new one is uploaded." %}</small>{% endif %}
+
+        <label>{% trans "Cover image" %}</label>
+        <input type="file" name="cover_file" accept="image/*">
+        {% if editing and book.cover_file_id %}<small>{% trans "Current cover kept unless a new one is uploaded." %}</small>{% endif %}
+      </div>
+    </div>
+    <div class="lib-form-actions">
+      <button type="submit" class="btn btn-primary">{% if editing %}{% trans "Save changes" %}{% else %}{% trans "Upload" %}{% endif %}</button>
+      <a href="{% if editing %}{% url 'library:book_detail' book.slug %}{% else %}{% url 'library:book_list' %}{% endif %}" class="btn btn-outline">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

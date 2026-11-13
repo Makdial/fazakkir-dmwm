@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Admin Dashboard" %}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-container">
+  <h1>{% trans "Admin Dashboard" %}</h1>
+  <div class="lib-stats-grid">
+    <div class="lib-stat"><span>{{ total_books }}</span><small>{% trans "Total books" %}</small></div>
+    <div class="lib-stat"><span>{{ published_books }}</span><small>{% trans "Published" %}</small></div>
+    <div class="lib-stat"><span>{{ total_users }}</span><small>{% trans "Registered users" %}</small></div>
+    <div class="lib-stat"><span>{{ total_sessions }}</span><small>{% trans "Reading sessions" %}</small></div>
+    <div class="lib-stat"><span>{{ total_translations }}</span><small>{% trans "Translations" %}</small></div>
+  </div>
+
+  <div class="lib-admin-grid">
+    <section class="lib-section">
+      <h2>{% trans "Most popular books" %}</h2>
+      <table class="lib-table">
+        <thead><tr><th>{% trans "Title" %}</th><th>{% trans "Views" %}</th><th>{% trans "Downloads" %}</th></tr></thead>
+        <tbody>
+        {% for b in popular_books %}
+        <tr><td><a href="{% url 'library:book_detail' b.slug %}">{{ b.title }}</a></td><td>{{ b.views }}</td><td>{{ b.downloads }}</td></tr>
+        {% empty %}<tr><td colspan="3">{% trans "No books." %}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="lib-section">
+      <h2>{% trans "Recently uploaded" %}</h2>
+      <table class="lib-table">
+        <thead><tr><th>{% trans "Title" %}</th><th>{% trans "Status" %}</th><th>{% trans "Date" %}</th></tr></thead>
+        <tbody>
+        {% for b in recent_books %}
+        <tr><td><a href="{% url 'library:book_detail' b.slug %}">{{ b.title }}</a></td><td>{{ b.get_status_display }}</td><td>{{ b.created_at|date:"SHORT_DATE_FORMAT" }}</td></tr>
+        {% empty %}<tr><td colspan="3">{% trans "No books." %}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <section class="lib-section">
+    <h2>{% trans "Most active readers" %}</h2>
+    <table class="lib-table">
+      <thead><tr><th>{% trans "User" %}</th><th>{% trans "Books" %}</th></tr></thead>
+      <tbody>
+      {% for r in active_readers %}
+      <tr><td>{{ r.user__username }}</td><td>{{ r.c }}</td></tr>
+      {% empty %}<tr><td colspan="2">{% trans "No data." %}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="lib-form-actions">
+    <a href="{% url 'library:manage_books' %}" class="btn btn-primary">{% trans "Manage books" %}</a>
+    <a href="{% url 'library:manage_categories' %}" class="btn btn-outline">{% trans "Categories" %}</a>
+  </div>
+</div>
+{% endblock %}

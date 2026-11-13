@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "My Dashboard" %}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'library/css/library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lib-container">
+  <h1>{% trans "Welcome back" %}</h1>
+
+  <div class="lib-stats-grid">
+    <div class="lib-stat"><span>{{ total_books_read }}</span><small>{% trans "Books in progress" %}</small></div>
+    <div class="lib-stat"><span>{{ total_translations }}</span><small>{% trans "Translations" %}</small></div>
+    <div class="lib-stat"><span>{{ total_highlights }}</span><small>{% trans "Highlights" %}</small></div>
+    <div class="lib-stat"><span>{{ favorites|length }}</span><small>{% trans "Favorites" %}</small></div>
+  </div>
+
+  <section class="lib-section">
+    <h2>{% trans "Continue reading" %}</h2>
+    <div class="lib-grid">
+      {% for p in progress %}
+      <article class="lib-card">
+        <a href="{% url 'library:read_book' p.book.slug %}" class="lib-cover-link">
+          <div class="lib-cover">{% if p.book.cover_image_url %}<img src="{{ p.book.cover_image_url }}" loading="lazy">{% else %}<div class="lib-cover-placeholder">book</div>{% endif %}</div>
+        </a>
+        <div class="lib-card-body">
+          <h3><a href="{% url 'library:read_book' p.book.slug %}">{{ p.book.title }}</a></h3>
+          <div class="lib-progress-bar"><span style="width: {{ p.percent }}%"></span></div>
+          <small>p. {{ p.page }} · {{ p.percent|floatformat:0 }}%</small>
+        </div>
+      </article>
+      {% empty %}<p class="lib-empty">{% trans "No reading in progress." %}</p>{% endfor %}
+    </div>
+  </section>
+
+  <section class="lib-section">
+    <h2>{% trans "Favorites" %}</h2>
+    <div class="lib-grid">
+      {% for f in favorites %}
+      <article class="lib-card">
+        <a href="{% url 'library:book_detail' f.book.slug %}" class="lib-cover-link">
+          <div class="lib-cover">{% if f.book.cover_image_url %}<img src="{{ f.book.cover_image_url }}" loading="lazy">{% else %}<div class="lib-cover-placeholder">book</div>{% endif %}</div>
+        </a>
+        <div class="lib-card-body"><h3><a href="{% url 'library:book_detail' f.book.slug %}">{{ f.book.title }}</a></h3></div>
+      </article>
+      {% empty %}<p class="lib-empty">{% trans "No favorites yet." %}</p>{% endfor %}
+    </div>
+  </section>
+
+  <section class="lib-section">
+    <h2>{% trans "Recent translations" %}</h2>
+    <div class="lib-trans-list">
+      {% for t in history %}
+      <div class="lib-trans-item">
+        <div class="tr-original">{{ t.original_text }}</div>
+        <div class="tr-result">{{ t.translated_text }}</div>
+        <small>{{ t.target_lang }} · {% if t.book %}{{ t.book.title }}{% endif %} · {{ t.created_at|date:"SHORT_DATETIME_FORMAT" }}</small>
+      </div>
+      {% empty %}<p class="lib-empty">{% trans "No translations yet." %}</p>{% endfor %}
+    </div>
+    <a href="{% url 'library:translation_history' %}" class="btn btn-outline">{% trans "View all" %}</a>
+  </section>
+
+  <section class="lib-section">
+    <h2>{% trans "Saved translations" %}</h2>
+    <div class="lib-trans-list">
+      {% for t in saved_translations %}
+      <div class="lib-trans-item">
+        <div class="tr-original">{{ t.original_text }}</div>
+        <div class="tr-result">{{ t.translated_text }}</div>
+      </div>
+      {% empty %}<p class="lib-empty">{% trans "No saved translations." %}</p>{% endfor %}
+    </div>
+  </section>
+
+  <section class="lib-section">
+    <h2>{% trans "Saved highlights" %}</h2>
+    <ul class="lib-highlight-list">
+      {% for h in highlights %}
+      <li><strong>{{ h.book.title }}</strong> (p.{{ h.page }}): {{ h.text }} {% if h.note %}- {{ h.note }}{% endif %}</li>
+      {% empty %}<li class="lib-empty">{% trans "No highlights." %}</li>{% endfor %}
+    </ul>
+  </section>
+
+  <section class="lib-section">
+    <h2>{% trans "Collections" %}</h2>
+    <div class="lib-collections">
+      {% for c in collections %}
+      <div class="lib-collection"><strong>{{ c.name }}</strong> ({{ c.books.count }} {% trans "books" %})</div>
+      {% empty %}<p class="lib-empty">{% trans "No collections yet." %}</p>{% endfor %}
+    </div>
+    <a href="{% url 'library:collections_list' %}" class="btn btn-outline">{% trans "Manage collections" %}</a>
+  </section>
+
+  <section class="lib-section">
+    <h2>{% trans "Recommended reading" %}</h2>
+    <div class="lib-grid">
+      {% for b in recommended %}
+      <article class="lib-card">
+        <a href="{% url 'library:book_detail' b.slug %}" class="lib-cover-link">
+          <div class="lib-cover">{% if b.cover_image_url %}<img src="{{ b.cover_image_url }}" loading="lazy">{% else %}<div class="lib-cover-placeholder">book</div>{% endif %}</div>
+        </a>
+        <div class="lib-card-body"><h3><a href="{% url 'library:book_detail' b.slug %}">{{ b.title }}</a></h3><p class="lib-author">{{ b.author }}</p></div>
+      </article>
+      {% empty %}<p class="lib-empty">{% trans "No recommendations yet." %}</p>{% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}
