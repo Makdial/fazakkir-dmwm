@@ -76,7 +76,12 @@
   </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js"></script>
+<script src="{% static 'library/js/pdf.min.js' %}"></script>
+<script>
+  if (typeof pdfjsLib !== "undefined") {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'library/js/pdf.worker.min.js' %}";
+  }
+</script>
 <script>
   window.LIBRARY_PDF_URL = "{{ pdf_url|escapejs }}";
   window.LIBRARY_START_PAGE = {{ start_page|default:1 }};

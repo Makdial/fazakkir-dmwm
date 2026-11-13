@@ -4,7 +4,9 @@
     document.getElementById("readerStatus").textContent = "PDF.js failed to load.";
     return;
   }
-  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js";
+  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "/static/library/js/pdf.worker.min.js";
+  }
 
   var pdfUrl = window.LIBRARY_PDF_URL;
   var startPage = window.LIBRARY_START_PAGE || 1;
