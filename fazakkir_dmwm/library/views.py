@@ -16,6 +16,7 @@ from django.http import (
     HttpResponse,
     HttpResponseBadRequest,
     JsonResponse,
+    StreamingHttpResponse,
 )
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
@@ -152,7 +153,7 @@ def read_book(request: HttpRequest, slug: str) -> HttpResponse:
         "library/read.html",
         {
             "book": book,
-            "pdf_url": book.pdf_view_url,
+            "pdf_url": f"/library/pdf/{book.slug}/",
             "start_page": start_page,
             "allow_download": book.allow_download,
             "languages_list": Book.LANGUAGE_CHOICES,
@@ -373,6 +374,46 @@ def submit_review(request: HttpRequest, slug: str) -> HttpResponse:
     else:
         messages.error(request, _("Invalid review."))
     return redirect("library:book_detail", slug=slug)
+
+
+def serve_pdf(request: HttpRequest, slug: str) -> HttpResponse:
+    """Stream the book's PDF through Django (same origin, no CORS issues)."""
+    book = get_object_or_404(Book, slug=slug)
+    # permission check
+    if not (book.status == "published" and book.is_public):
+        if not (request.user.is_authenticated and (request.user.is_superuser or (hasattr(request.user, "profile") and request.user.profile.can_write))):
+            return redirect("library:book_list")
+
+    if not book.pdf_file_id:
+        return HttpResponseBadRequest("No PDF")
+
+    range_header = request.META.get("HTTP_RANGE")
+    try:
+        obj = r2_storage.get_object(book.pdf_file_id, range_header=range_header)
+    except Exception as exc:
+        logger.warning("R2 get failed: %s", exc)
+        return HttpResponseBadRequest("Could not load PDF")
+
+    body = obj["Body"]
+    content_type = obj.get("ContentType") or "application/pdf"
+    content_length = obj.get("ContentLength")
+    status_code = 206 if range_header and obj.get("ContentRange") else 200
+
+    def stream():
+        try:
+            for chunk in body.iter_chunks(chunk_size=64 * 1024):
+                yield chunk
+        finally:
+            body.close()
+
+    resp = StreamingHttpResponse(stream(), content_type=content_type, status=status_code)
+    if content_length is not None:
+        resp["Content-Length"] = str(content_length)
+    if obj.get("ContentRange"):
+        resp["Content-Range"] = obj["ContentRange"]
+    resp["Accept-Ranges"] = "bytes"
+    resp["Cache-Control"] = "private, max-age=3600"
+    return resp
 
 
 def download_book(request: HttpRequest, slug: str) -> HttpResponse:

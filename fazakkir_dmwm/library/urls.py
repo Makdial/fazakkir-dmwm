@@ -8,6 +8,7 @@ urlpatterns = [
     path("", views.book_list, name="book_list"),
     path("book/<slug:slug>/", views.book_detail, name="book_detail"),
     path("read/<slug:slug>/", views.read_book, name="read_book"),
+    path("pdf/<slug:slug>/", views.serve_pdf, name="serve_pdf"),
     path("download/<slug:slug>/", views.download_book, name="download_book"),
     path("upload/", views.upload_book, name="upload_book"),
     path("edit/<slug:slug>/", views.edit_book, name="edit_book"),
