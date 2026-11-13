@@ -223,7 +223,7 @@
 
   // load pdf
   setStatus("Loading document...");
-  pdfjsLib.getDocument(pdfUrl).promise.then(function(doc){
+  pdfjsLib.getDocument({url: pdfUrl, disableRange: true, disableStream: true}).promise.then(function(doc){
     pdfDoc = doc;
     if (startPage < 1 || startPage > doc.numPages) startPage = 1;
     pageNum = startPage;
