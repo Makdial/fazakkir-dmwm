@@ -397,7 +397,10 @@ def serve_pdf(request: HttpRequest, slug: str) -> HttpResponse:
         return HttpResponseBadRequest("Could not load PDF")
 
     body = obj["Body"]
-    content_type = obj.get("ContentType") or "application/pdf"
+    # Force a PDF content type and inline disposition: R2 objects are sometimes
+    # stored as application/octet-stream, which makes browsers download the
+    # file instead of displaying it in the native viewer / iframe fallback.
+    content_type = "application/pdf"
     content_length = obj.get("ContentLength")
     status_code = 206 if range_header and obj.get("ContentRange") else 200
 
@@ -414,6 +417,8 @@ def serve_pdf(request: HttpRequest, slug: str) -> HttpResponse:
     if obj.get("ContentRange"):
         resp["Content-Range"] = obj["ContentRange"]
     resp["Accept-Ranges"] = "bytes"
+    resp["Content-Disposition"] = "inline"
+    resp["X-Content-Type-Options"] = "nosniff"
     resp["Cache-Control"] = "private, max-age=3600"
     return resp
 

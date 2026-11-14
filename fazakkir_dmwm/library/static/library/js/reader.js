@@ -160,7 +160,6 @@
     if (s) s.remove();
   }
 
-  var openedFallback = false;
   /* ---------------- Native viewer fallback ---------------- */
   function enableNativeMode(){
     if (useNative) return;
@@ -234,94 +233,34 @@
   }
 
   /* ---------------- Rendering ---------------- */
-  function renderPage(num){
-    if (!pdfDoc || useNative) return;
-    var el = buildShell(num);
-    var canvas = el.querySelector("canvas");
-    var want = Math.round(scale * 100);
-    if (renderedAt[num] === want && !inflight[num]) return;
+  var renderTokens = {};
+  var renderingAt = {};
 
-    if (inflight[num]) {
-      try { inflight[num].cancel(); } catch (e) { /* ignore */ }
-      delete inflight[num];
-    }
+  /* Create a brand-new canvas for every render. This guarantees PDF.js can
+     never see the same canvas reused while another render() is in progress
+     (the cause of "Cannot use the same canvas during multiple render()
+     operations"), and it releases the old backing store right away. */
+  function freshCanvas(el){
+    var old = el.querySelector("canvas");
+    var c = document.createElement("canvas");
+    if (old && old.parentNode) old.parentNode.replaceChild(c, old);
+    else el.insertBefore(c, el.firstChild);
+    return c;
+  }
 
-    var localWant = want;
-    showSkeleton(el);
+  function renderTextLayer(num, token){
     getPage(num).then(function(page){
-      if (localWant !== Math.round(scale * 100)) return;
-      var vpCss = page.getViewport({scale: scale});
-      var f = pixelFactor(vpCss);
-      pageDims[num] = {width: vpCss.width, height: vpCss.height};
-      sizeShell(num, pageDims[num]);
-      var vpPix = page.getViewport({scale: scale * f});
-      canvas.width = Math.round(vpPix.width);
-      canvas.height = Math.round(vpPix.height);
-      canvas.style.width = Math.round(vpCss.width) + "px";
-      canvas.style.height = Math.round(vpCss.height) + "px";
-      var task = page.render({canvasContext: canvas.getContext("2d"), viewport: vpPix});
-      inflight[num] = task;
-      task.promise.then(function(){
-        if (localWant !== Math.round(scale * 100)) return;
-        renderedAt[num] = want;
-        hideSkeleton(el);
-        loadedOk = true;
-        setStatus("");
-      }).catch(function(err){
-        if (err && err.name === "RenderingCancelledException") return;
-        console.error("[reader] render p" + num + " failed:", err);
-        // Retry once with annotations disabled (some PDFs have malformed
-        // annotations that make the normal render throw).
-        if (inflight[num]) {
-          try { inflight[num].cancel(); } catch (e) { /* ignore */ }
-          delete inflight[num];
-        }
-        getPage(num).then(function(page2){
-          if (localWant !== Math.round(scale * 100)) return;
-          var vp2 = page2.getViewport({scale: scale});
-          var c2 = el.querySelector("canvas");
-          c2.width = 0; c2.height = 0;
-          c2.width = Math.round(vp2.width);
-          c2.height = Math.round(vp2.height);
-          c2.style.width = Math.round(vp2.width) + "px";
-          c2.style.height = Math.round(vp2.height) + "px";
-          var t2 = page2.render({canvasContext: c2.getContext("2d"), viewport: vp2, annotationMode: 0});
-          inflight[num] = t2;
-          t2.promise.then(function(){
-            if (localWant !== Math.round(scale * 100)) return;
-            renderedAt[num] = want;
-            hideSkeleton(el);
-            loadedOk = true;
-            setStatus("");
-          }).catch(function(err2){
-            if (err2 && err2.name === "RenderingCancelledException") return;
-            console.error("[reader] render p" + num + " retry failed:", err2);
-            failPage(num, err2);
-          }).finally(function(){
-            if (inflight[num] === t2) delete inflight[num];
-          });
-          var tl = el.querySelector(".text-layer");
-          if (!tl.hasChildNodes()) {
-            page2.getTextContent().then(function(tc){
-              if (localWant !== Math.round(scale * 100)) return;
-              try {
-                if (typeof pdfjsLib.renderTextLayer === "function") {
-                  pdfjsLib.renderTextLayer({textContent: tc, container: tl, viewport: vp2, textDivs: []});
-                }
-              } catch (e) { console.warn("[reader] text layer", e); }
-            }).catch(function(){});
-          }
-        }).catch(function(err2){
-          console.error("[reader] getPage retry " + num, err2);
-          failPage(num, err2);
-        });
-      }).finally(function(){
-        if (inflight[num] === task) delete inflight[num];
-      });
+      if (token !== renderTokens[num] || useNative) return;
+      var el = shell(num);
+      if (!el) return;
       var tl = el.querySelector(".text-layer");
+      if (!tl) return;
+      updateScaleVar();
+      var vpCss = page.getViewport({scale: scale});
+      var textPromise = page.getTextContent();
       tl.innerHTML = "";
-      page.getTextContent().then(function(textContent){
-        if (localWant !== Math.round(scale * 100)) return;
+      textPromise.then(function(textContent){
+        if (token !== renderTokens[num] || useNative) return;
         try {
           if (typeof pdfjsLib.renderTextLayer === "function") {
             pdfjsLib.renderTextLayer({textContent: textContent, container: tl, viewport: vpCss, textDivs: []});
@@ -338,10 +277,80 @@
           }
         } catch (e) { console.warn("[reader] text layer", e); }
       }).catch(function(err){ console.warn("[reader] text content", err); });
-    }).catch(function(err){
-      console.error("[reader] getPage " + num, err);
+    }).catch(function(err){ console.warn("[reader] getPage text", err); });
+  }
+
+  function renderPage(num){
+    if (!pdfDoc || useNative) return;
+    var el = buildShell(num);
+    var want = Math.round(scale * 100);
+    // Already rendered, or already being painted at this exact scale: don't
+    // cancel and restart it (that caused endless re-rendering while scrolling).
+    if (renderedAt[num] === want || renderingAt[num] === want) return;
+
+    // Invalidate any in-progress render for this page and stop it early.
+    if (inflight[num]) {
+      try { inflight[num].cancel(); } catch (e) { /* ignore */ }
+      delete inflight[num];
+    }
+    renderTokens[num] = (renderTokens[num] || 0) + 1;
+    var token = renderTokens[num];
+    renderingAt[num] = want;
+
+    function isCurrent(){ return token === renderTokens[num] && !useNative; }
+
+    function attempt(withAnnotations){
+      if (!isCurrent()) return Promise.resolve();
+      return getPage(num).then(function(page){
+        if (!isCurrent()) return;
+        var vpCss = page.getViewport({scale: scale});
+        var f = pixelFactor(vpCss);
+        pageDims[num] = {width: vpCss.width, height: vpCss.height};
+        sizeShell(num, pageDims[num]);
+
+        var vpPix = page.getViewport({scale: scale * f});
+        var canvas = freshCanvas(el);
+        canvas.width = Math.round(vpPix.width);
+        canvas.height = Math.round(vpPix.height);
+        canvas.style.width = Math.round(vpCss.width) + "px";
+        canvas.style.height = Math.round(vpCss.height) + "px";
+
+        var opts = {canvasContext: canvas.getContext("2d"), viewport: vpPix};
+        if (!withAnnotations) opts.annotationMode = 0; // AnnotationMode.DISABLE
+        var task = page.render(opts);
+        inflight[num] = task;
+        return task.promise.then(function(){
+          if (!isCurrent()) return;
+          renderedAt[num] = want;
+          delete renderingAt[num];
+          hideSkeleton(el);
+          setStatus("");
+        }).catch(function(err){
+          if (err && err.name === "RenderingCancelledException") return;
+          if (!isCurrent()) return;
+          if (withAnnotations) {
+            // Some PDFs contain malformed annotations. Retry once with them
+            // disabled, on a fresh canvas.
+            console.warn("[reader] p" + num + " retry without annotations:", err);
+            return attempt(false);
+          }
+          throw err;
+        }).finally(function(){
+          if (inflight[num] === task) delete inflight[num];
+        });
+      });
+    }
+
+    showSkeleton(el);
+    attempt(true).catch(function(err){
+      if (!isCurrent()) return;
+      console.error("[reader] render p" + num + " failed:", err);
       failPage(num, err);
+    }).finally(function(){
+      if (renderingAt[num] === want && renderedAt[num] !== want) delete renderingAt[num];
     });
+
+    renderTextLayer(num, token);
   }
 
   function clearPage(num){
@@ -351,8 +360,9 @@
       try { inflight[num].cancel(); } catch (e) { /* ignore */ }
       delete inflight[num];
     }
-    var canvas = el.querySelector("canvas");
-    canvas.width = 0; canvas.height = 0;
+    renderTokens[num] = (renderTokens[num] || 0) + 1; // invalidate pending work
+    delete renderingAt[num];
+    freshCanvas(el);
     delete renderedAt[num];
     showSkeleton(el);
   }
@@ -370,8 +380,24 @@
   }
 
   var observer = null;
+  var resizeTimer = null;
+
+  /* On desktop readerMain is the scroll container; on phones the whole
+     document scrolls instead (readerMain grows to fit its content). Using a
+     non-scrolling element as IntersectionObserver root makes every page count
+     as visible, which renders the entire book at once and exhausts memory.
+     Pick the real scroller, or null (= viewport). */
+  function scrollRoot(){
+    if (!readerMain) return null;
+    var style = window.getComputedStyle(readerMain);
+    if (style.overflowY === "visible") return null;
+    if (readerMain.scrollHeight <= readerMain.clientHeight + 2) return null;
+    return readerMain;
+  }
+
   function setupObserver(){
     if (observer) observer.disconnect();
+    visibleRatios = {};
     observer = new IntersectionObserver(function(entries){
       entries.forEach(function(en){
         var num = parseInt(en.target.dataset.page, 10);
@@ -389,7 +415,7 @@
         scheduleSave();
       }
       renderVisible();
-    }, {root: readerMain, rootMargin: "900px 0px", threshold: [0, 0.1, 0.3, 0.6, 0.9, 1]});
+    }, {root: scrollRoot(), rootMargin: "900px 0px", threshold: [0, 0.1, 0.3, 0.6, 0.9, 1]});
     pagesContainer.querySelectorAll(".pdf-page").forEach(function(el){ observer.observe(el); });
   }
 
@@ -551,7 +577,11 @@
     else if (e.key === "-") applyScale(scale - 0.2, {keepPage: true});
   });
 
-  window.addEventListener("resize", function(){ autoFitIfSmall(); });
+  window.addEventListener("resize", function(){
+    autoFitIfSmall();
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(setupObserver, 250);
+  });
 
   /* ---------------- Load ---------------- */
   if (typeof pdfjsLib === "undefined") {
@@ -561,11 +591,11 @@
   }
 
   setStatus("Loading document...");
+  updateScaleVar();
   pdfjsLib.getDocument({url: pdfUrl, disableRange: true, disableStream: true}).promise.then(function(doc){
     pdfDoc = doc;
     numPages = doc.numPages;
     for (var n = 1; n <= numPages; n++) buildShell(n);
-    setupObserver();
     updatePageInfo();
     getPage(1).then(function(page){
       var vp = page.getViewport({scale: 1});
@@ -576,6 +606,10 @@
       });
       updateScaleVar();
       if (window.innerWidth < 1024) fitToWidth();
+      // Start observing only after every page has its real aspect ratio.
+      // Otherwise the initially tiny shells all count as visible and the
+      // whole book gets rendered at once (an out-of-memory risk on phones).
+      setupObserver();
       requestAnimationFrame(function(){
         goToPage(startPage);
         renderVisible();
