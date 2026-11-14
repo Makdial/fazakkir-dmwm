@@ -167,6 +167,7 @@
     s.className = "pdf-skeleton";
     el.appendChild(s);
   }
+  var openedFallback = false;
   function failPage(num, err){
     var el = shell(num);
     if (!el) return;
@@ -185,6 +186,12 @@
     box.appendChild(a);
     el.appendChild(box);
     console.error("[reader] page " + num + " failed:", err);
+    // Open the whole PDF in a new tab once, so the user can still read it.
+    if (pdfUrl && !openedFallback) {
+      openedFallback = true;
+      try { window.open(pdfUrl, "_blank", "noopener"); } catch (e) { /* ignore */ }
+      setStatus("Some pages could not be rendered. The PDF was opened in a new tab.");
+    }
   }
 
   function buildShell(num){
