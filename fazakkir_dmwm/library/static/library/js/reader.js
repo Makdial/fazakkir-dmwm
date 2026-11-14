@@ -167,6 +167,15 @@
     box.className = "page-failed";
     var p = document.createElement("p");
     p.textContent = "Page " + num + " could not be rendered.";
+    if (err && err.message) {
+      var small = document.createElement("small");
+      small.textContent = err.message;
+      small.style.display = "block";
+      small.style.opacity = "0.7";
+      small.style.fontSize = ".75rem";
+      small.style.marginTop = ".25rem";
+      box.appendChild(small);
+    }
     var a = document.createElement("a");
     a.href = pdfUrl || "#";
     a.target = "_blank";
@@ -237,7 +246,51 @@
       }).catch(function(err){
         if (err && err.name === "RenderingCancelledException") return;
         console.error("[reader] render p" + num + " failed:", err);
-        failPage(num, err);
+        // Retry once with annotations disabled (some PDFs have malformed
+        // annotations that make the normal render throw).
+        if (inflight[num]) {
+          try { inflight[num].cancel(); } catch (e) { /* ignore */ }
+          delete inflight[num];
+        }
+        getPage(num).then(function(page2){
+          if (localWant !== Math.round(scale * 100)) return;
+          var vp2 = page2.getViewport({scale: scale});
+          var c2 = el.querySelector("canvas");
+          c2.width = 0; c2.height = 0;
+          c2.width = Math.round(vp2.width);
+          c2.height = Math.round(vp2.height);
+          c2.style.width = Math.round(vp2.width) + "px";
+          c2.style.height = Math.round(vp2.height) + "px";
+          var t2 = page2.render({canvasContext: c2.getContext("2d"), viewport: vp2, annotationMode: 0});
+          inflight[num] = t2;
+          t2.promise.then(function(){
+            if (localWant !== Math.round(scale * 100)) return;
+            renderedAt[num] = want;
+            hideSkeleton(el);
+            loadedOk = true;
+            setStatus("");
+          }).catch(function(err2){
+            if (err2 && err2.name === "RenderingCancelledException") return;
+            console.error("[reader] render p" + num + " retry failed:", err2);
+            failPage(num, err2);
+          }).finally(function(){
+            if (inflight[num] === t2) delete inflight[num];
+          });
+          var tl = el.querySelector(".text-layer");
+          if (!tl.hasChildNodes()) {
+            page2.getTextContent().then(function(tc){
+              if (localWant !== Math.round(scale * 100)) return;
+              try {
+                if (typeof pdfjsLib.renderTextLayer === "function") {
+                  pdfjsLib.renderTextLayer({textContent: tc, container: tl, viewport: vp2, textDivs: []});
+                }
+              } catch (e) { console.warn("[reader] text layer", e); }
+            }).catch(function(){});
+          }
+        }).catch(function(err2){
+          console.error("[reader] getPage retry " + num, err2);
+          failPage(num, err2);
+        });
       }).finally(function(){
         if (inflight[num] === task) delete inflight[num];
       });
