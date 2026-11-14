@@ -20,6 +20,7 @@
 
 /* Continuous pages */
 .pdf-pages{display:flex;flex-direction:column;align-items:center;gap:18px;padding:16px;width:100%;}
+.pdf-pages[hidden],.native-frame[hidden],.translation-box[hidden]{display:none!important;}
 .pdf-page{position:relative;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.4);flex:0 0 auto;border-radius:2px;overflow:hidden;scroll-margin-top:72px;}
 .pdf-page canvas{display:block;}
 .pdf-skeleton{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(100deg,#f0f0f0 30%,#fafafa 50%,#f0f0f0 70%);background-size:200% 100%;animation:pdfSkel 1.2s ease-in-out infinite;}
@@ -39,6 +40,7 @@
 .native-frame{width:100%;height:calc(100vh - 120px);border:none;background:#fff;}
 
 .reader-status{position:sticky;bottom:.75rem;margin:0 auto .75rem;background:rgba(0,0,0,.78);color:#fff;padding:.55rem 1rem;border-radius:999px;font-size:.85rem;max-width:min(90%,560px);text-align:center;z-index:7;width:max-content;}
+.reader-status:empty{display:none;}
 
 /* Translation panel */
 .translation-box{margin-top:1rem;padding:1rem;background:var(--lib-bg);border:1px solid var(--lib-border);border-radius:8px;}
