@@ -57,6 +57,13 @@
   var translateToggle = document.getElementById("translateToggle");
   var targetLang = document.getElementById("targetLang");
   var viewMode = document.getElementById("viewMode");
+  var translationToast = document.getElementById("translationToast");
+  var lastTranslatedText = "";
+  var lastTranslatedPage = pageNum;
+  var lastTranslationFailed = false;
+  var selectionTimer = null;
+  var toastTimer = null;
+  var translateToken = 0;
 
   function applyViewMode(){
     if (!translationBox) return;
@@ -70,50 +77,185 @@
 
   var translateEnabled = translateToggle ? translateToggle.checked : false;
   if (translateToggle) {
-    translateToggle.addEventListener("change", function(){ translateEnabled = translateToggle.checked; });
+    translateToggle.addEventListener("change", function(){
+      translateEnabled = translateToggle.checked;
+      if (!translateEnabled) clearSelectionHighlight();
+    });
   }
 
-  function doTranslate(text, pageForContext){
+  /* Keep the translated sentence visibly marked in the PDF. The CSS Custom
+     Highlight API survives the native selection disappearing (clicking the
+     target-language dropdown, tapping elsewhere, etc.); browsers without it
+     fall back to a class on the text-layer spans. */
+  function clearSelectionHighlight(){
+    if (window.CSS && CSS.highlights) {
+      try { CSS.highlights.delete("library-translation"); } catch (e) { /* ignore */ }
+    }
+    pagesContainer.querySelectorAll(".text-layer span.translation-selected").forEach(function(span){
+      span.classList.remove("translation-selected");
+    });
+  }
+
+  function markSelection(sel){
+    clearSelectionHighlight();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+    var range = sel.getRangeAt(0);
+    try {
+      if (window.CSS && CSS.highlights && typeof window.Highlight === "function") {
+        CSS.highlights.set("library-translation", new Highlight(range.cloneRange()));
+        return;
+      }
+    } catch (e) { /* fall through to the class-based highlight */ }
+    var anchor = sel.anchorNode;
+    var el = anchor && (anchor.nodeType === 1 ? anchor : anchor.parentElement);
+    var pageEl = el && el.closest ? el.closest(".pdf-page") : null;
+    if (!pageEl) return;
+    pageEl.querySelectorAll(".text-layer span").forEach(function(span){
+      try {
+        if (range.intersectsNode(span)) span.classList.add("translation-selected");
+      } catch (e) { /* ignore */ }
+    });
+  }
+
+  function pageForNode(node){
+    var el = node && (node.nodeType === 1 ? node : node.parentElement);
+    while (el && el !== pagesContainer) {
+      if (el.dataset && el.dataset.page) return parseInt(el.dataset.page, 10) || pageNum;
+      el = el.parentElement;
+    }
+    return pageNum;
+  }
+
+  function selectionInsideReader(sel){
+    if (!sel || !sel.rangeCount) return false;
+    return !!(sel.anchorNode && sel.focusNode &&
+      pagesContainer.contains(sel.anchorNode) && pagesContainer.contains(sel.focusNode));
+  }
+
+  function translationTarget(){
+    var target = targetLang ? targetLang.value : "";
+    if (!target || target === "auto") target = "en";
+    return target;
+  }
+
+  function showToast(original, translated){
+    if (!translationToast || !window.matchMedia("(max-width: 900px)").matches) return;
+    var o = translationToast.querySelector(".tt-original");
+    var t = translationToast.querySelector(".tt-result");
+    if (o) o.textContent = original;
+    if (t) t.textContent = translated;
+    translationToast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, 12000);
+  }
+
+  function hideToast(){
+    if (!translationToast) return;
+    translationToast.hidden = true;
+    clearTimeout(toastTimer);
+  }
+
+  if (translationToast) {
+    var toastClose = document.getElementById("closeTranslationToast");
+    if (toastClose) toastClose.addEventListener("click", hideToast);
+  }
+
+  function doTranslate(text, pageForContext, sel, force){
     if (!text || text.length < 2 || !translationBox) return;
+    if (!force && text === lastTranslatedText && !lastTranslationFailed) return;
+    lastTranslatedText = text;
+    lastTranslatedPage = pageForContext || pageNum;
+    lastTranslationFailed = false;
+    if (sel) markSelection(sel);
     trOriginal.textContent = text;
     trResult.textContent = "...";
     translationBox.hidden = false;
-    var ctx = useNative ? fullDocText : pageText(pageForContext);
+    hideToast();
+    var token = ++translateToken;
+    var ctx = useNative ? fullDocText : pageText(lastTranslatedPage);
     fetch(translateUrl, {
       method: "POST",
       headers: {"Content-Type":"application/json","X-CSRFToken": csrf},
       body: JSON.stringify({
         text: text,
         source: sourceLang,
-        target: targetLang.value,
+        target: translationTarget(),
         context: ctx,
         book: slug,
-        page: pageForContext
+        page: lastTranslatedPage
       })
     }).then(function(r){return r.json();}).then(function(data){
-      trResult.textContent = data.translated || data.error || "Translation unavailable";
-    }).catch(function(){ trResult.textContent = "Translation unavailable"; });
+      if (token !== translateToken) return;
+      if (data.translated) {
+        trResult.textContent = data.translated;
+        showToast(text, data.translated);
+      } else {
+        lastTranslationFailed = true;
+        trResult.textContent = data.error || "Translation unavailable";
+        showToast(text, data.error || "Translation unavailable");
+      }
+    }).catch(function(){
+      if (token !== translateToken) return;
+      lastTranslationFailed = true;
+      trResult.textContent = "Translation unavailable";
+      showToast(text, "Translation unavailable");
+    });
   }
 
-  function maybeTranslate(win){
+  function maybeTranslate(win, sel){
     if (!translateEnabled) return;
-    var sel = win.getSelection ? win.getSelection() : null;
+    sel = sel || (win.getSelection ? win.getSelection() : null);
     if (!sel || sel.isCollapsed) return;
     var text = sel.toString().trim();
     if (!text) return;
-    var page = pageNum;
-    try {
-      var el = sel.anchorNode;
-      el = el && (el.nodeType === 1 ? el : el.parentElement);
-      while (el && el !== pagesContainer) {
-        if (el.dataset && el.dataset.page) { page = parseInt(el.dataset.page, 10) || page; break; }
-        el = el.parentElement;
-      }
-    } catch (e) { /* ignore */ }
-    doTranslate(text, page);
+    doTranslate(text, pageForNode(sel.anchorNode), sel);
   }
 
   pagesContainer.addEventListener("mouseup", function(){ maybeTranslate(window); });
+  pagesContainer.addEventListener("touchend", function(){
+    clearTimeout(selectionTimer);
+    selectionTimer = setTimeout(function(){ maybeTranslate(window); }, 300);
+  }, {passive: true});
+
+  // Mobile browsers often show selection handles without firing mouseup.
+  // Wait until the selection stops changing, then translate it.
+  document.addEventListener("selectionchange", function(){
+    if (!translateEnabled) return;
+    var sel = window.getSelection ? window.getSelection() : null;
+    if (!sel || sel.isCollapsed || !selectionInsideReader(sel)) return;
+    clearTimeout(selectionTimer);
+    selectionTimer = setTimeout(function(){
+      var current = window.getSelection ? window.getSelection() : null;
+      if (current && !current.isCollapsed && selectionInsideReader(current)) {
+        maybeTranslate(window, current);
+      }
+    }, 750);
+  });
+
+  if (targetLang) {
+    targetLang.addEventListener("change", function(){
+      // Re-translate the current selection immediately when the target
+      // language changes, even if the browser has collapsed the selection.
+      var sel = window.getSelection ? window.getSelection() : null;
+      if (sel && !sel.isCollapsed && selectionInsideReader(sel)) {
+        doTranslate(sel.toString().trim(), pageForNode(sel.anchorNode), sel, true);
+      } else if (lastTranslatedText) {
+        doTranslate(lastTranslatedText, lastTranslatedPage, null, true);
+      }
+    });
+  }
+
+  var closeTranslation = document.getElementById("closeTranslation");
+  if (closeTranslation) {
+    closeTranslation.addEventListener("click", function(){
+      if (translationBox) translationBox.hidden = true;
+      clearSelectionHighlight();
+      hideToast();
+      lastTranslatedText = "";
+      lastTranslationFailed = false;
+    });
+  }
+
   if (nativeFrame) {
     nativeFrame.addEventListener("load", function(){
       try {
@@ -258,6 +400,9 @@
       updateScaleVar();
       var vpCss = page.getViewport({scale: scale});
       var textPromise = page.getTextContent();
+      // The old spans are about to be discarded, so any highlight range that
+      // pointed into them would be stale.
+      if (lastTranslatedPage === num) clearSelectionHighlight();
       tl.innerHTML = "";
       textPromise.then(function(textContent){
         if (token !== renderTokens[num] || useNative) return;

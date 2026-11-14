@@ -16,6 +16,14 @@
       <p>{{ book.author }}</p>
       <a href="{% url 'library:book_detail' book.slug %}" class="btn btn-outline btn-sm">{% trans "Back" %}</a>
     </div>
+    <div id="translationBox" class="translation-box" hidden>
+      <div class="translation-box-head">
+        <h4>{% trans "Translation" %}</h4>
+        <button type="button" id="closeTranslation" class="tr-close" aria-label="{% trans 'Close' %}">&times;</button>
+      </div>
+      <div id="translationOriginal" class="tr-original"></div>
+      <div id="translationResult" class="tr-result"></div>
+    </div>
     <div class="reader-controls">
       <div class="reader-nav">
         <button id="prevPage" class="btn btn-outline">{% trans "Prev" %}</button>
@@ -37,16 +45,18 @@
       <div class="reader-lang">
         <label>{% trans "View mode" %}</label>
         <select id="viewMode">
+          <option value="sidebyside" selected>{% trans "Side by side" %}</option>
           <option value="original">{% trans "Original only" %}</option>
           <option value="translated">{% trans "Translated only" %}</option>
-          <option value="sidebyside">{% trans "Side by side" %}</option>
         </select>
       </div>
       <div class="reader-lang">
         <label>{% trans "Translate to" %}</label>
         <select id="targetLang">
           {% for code, name in languages_list %}
-          <option value="{{ code }}">{{ name }}</option>
+          {% if code != "auto" %}
+          <option value="{{ code }}"{% if code == default_target %} selected{% endif %}>{{ name }}</option>
+          {% endif %}
           {% endfor %}
         </select>
       </div>
@@ -58,11 +68,6 @@
       <button id="fullscreenBtn" class="btn btn-outline btn-block">{% trans "Fullscreen" %}</button>
       <button id="nativeToggle" class="btn btn-outline btn-block">{% trans "Use native viewer" %}</button>
     </div>
-    <div id="translationBox" class="translation-box" hidden>
-      <h4>{% trans "Translation" %}</h4>
-      <div id="translationOriginal" class="tr-original"></div>
-      <div id="translationResult" class="tr-result"></div>
-    </div>
   </aside>
 
   <main class="reader-main" id="readerMain">
@@ -72,6 +77,11 @@
     </div>
     <div id="pdfPages" class="pdf-pages"></div>
     <iframe id="nativeFrame" class="native-frame" hidden title="PDF viewer"></iframe>
+    <div id="translationToast" class="translation-toast" hidden>
+      <button type="button" id="closeTranslationToast" class="tt-close" aria-label="{% trans 'Close' %}">&times;</button>
+      <div class="tt-original"></div>
+      <div class="tt-result"></div>
+    </div>
     <div id="readerStatus" class="reader-status">{% trans "Loading..." %}</div>
   </main>
 </div>

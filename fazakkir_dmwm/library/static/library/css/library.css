@@ -1,10 +1,13 @@
 :root{
-  --lib-bg: var(--bg, #0f0f0f);
-  --lib-card: var(--card, #1a1a1a);
-  --lib-text: var(--text, #f1f1f1);
-  --lib-muted: var(--muted, #aaa);
-  --lib-accent: var(--accent, #3ea6ff);
-  --lib-border: var(--border, #2a2a2a);
+  /* Map the library palette onto the real theme tokens. The old aliases
+     (--bg, --text, …) do not exist, which left the library permanently dark
+     with theme-inherited text that could become invisible. */
+  --lib-bg: var(--bg-primary, #0f0f0f);
+  --lib-card: var(--bg-secondary, #1a1a1a);
+  --lib-text: var(--text-primary, #f1f1f1);
+  --lib-muted: var(--text-secondary, #aaa);
+  --lib-accent: var(--info-blue, #3ea6ff);
+  --lib-border: var(--border-color, #2a2a2a);
 }
 .lib-container{max-width:1200px;margin:0 auto;padding:1.5rem 1rem;}
 .lib-hero{text-align:center;margin-bottom:2rem;}
@@ -102,8 +105,6 @@
 .lib-collection-card ul{padding-left:1.2rem;}
 .lib-admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;}
 @media (max-width:900px){.lib-admin-grid{grid-template-columns:1fr;}}
-.translation-box.mode-sidebyside{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
-.translation-box.mode-sidebyside .tr-original,.translation-box.mode-sidebyside .tr-result{border:1px solid var(--lib-border);padding:.8rem;border-radius:8px;}
 .native-frame{width:100%;height:100%;border:none;background:#fff;min-height:600px;}
 .reader-canvas-wrap.native{width:100%;height:calc(100vh - 120px);}
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -149,6 +150,15 @@ def read_book(request: HttpRequest, slug: str) -> HttpResponse:
     progress = ReadingProgress.objects.filter(user=request.user, book=book).first()
     start_page = progress.page if progress else 1
 
+    # The translation target must be a real language ("auto" only makes sense
+    # for the source). Prefer the visitor's UI language, then English/French.
+    source_lang = (book.language or "").split("-")[0]
+    valid_targets = [code for code, _name in Book.LANGUAGE_CHOICES if code != "auto"]
+    preferred = (getattr(request, "LANGUAGE_CODE", "") or "").split("-")[0]
+    default_target = preferred if preferred in valid_targets else "en"
+    if default_target == source_lang:
+        default_target = "fr" if source_lang != "fr" else "en"
+
     return render(
         request,
         "library/read.html",
@@ -158,6 +168,7 @@ def read_book(request: HttpRequest, slug: str) -> HttpResponse:
             "start_page": start_page,
             "allow_download": book.allow_download,
             "languages_list": Book.LANGUAGE_CHOICES,
+            "default_target": default_target,
         },
     )
 
@@ -450,13 +461,26 @@ def translate_text(request: HttpRequest) -> JsonResponse:
     except Exception:
         data = request.POST
     text = (data.get("text") or "").strip()
-    source = (data.get("source") or "auto").strip()
-    target = (data.get("target") or "").strip()
+    source = (data.get("source") or "auto").strip()[:12]
+    target = (data.get("target") or "").strip()[:12]
     context = (data.get("context") or "").strip()
     book_slug = (data.get("book") or "").strip()
-    page = int(data.get("page") or 0)
+    try:
+        page = int(data.get("page") or 0)
+    except (TypeError, ValueError):
+        page = 0
     if not text or not target:
         return JsonResponse({"error": "missing text or target"}, status=400)
+    # "auto" is only valid for the source. A target must be a real language.
+    if target == "auto":
+        return JsonResponse({"error": "choose a target language"}, status=400)
+    lang_re = re.compile(r"^[A-Za-z]{2,3}(?:-[A-Za-z]{2,4})?$")
+    if not lang_re.match(target):
+        return JsonResponse({"error": "invalid target language"}, status=400)
+    if source != "auto" and not lang_re.match(source):
+        source = "auto"
+    if source == target:
+        return JsonResponse({"translated": text})
     # cap size
     if len(text) > 5000:
         text = text[:5000]
@@ -527,14 +551,20 @@ def _translate(text: str, source: str, target: str, context: str = "") -> str | 
             logger.warning("OpenAI translate failed: %s", exc)
 
     # 2. Google Cloud Translate
-    google_key = os.environ.get("GOOGLE_TRANSLATE_API_KEY", "").strip()
+    google_key = (
+        os.environ.get("GOOGLE_TRANSLATE_API_KEY", "").strip()
+        or os.environ.get("GOOGLE_API_KEY", "").strip()
+    )
     if google_key:
         try:
             import httpx
 
+            payload = {"q": text, "target": target, "format": "text"}
+            if source != "auto":
+                payload["source"] = source
             resp = httpx.post(
                 f"https://translation.googleapis.com/language/translate/v2?key={google_key}",
-                json={"q": text, "source": source if source != "auto" else None, "target": target, "format": "text"},
+                json=payload,
                 timeout=30.0,
             )
             if resp.status_code == 200:
@@ -543,21 +573,27 @@ def _translate(text: str, source: str, target: str, context: str = "") -> str | 
         except Exception as exc:
             logger.warning("Google translate failed: %s", exc)
 
-    # 3. LibreTranslate public instance
-    try:
-        import httpx
+    # 3. LibreTranslate — only when a self-hosted URL or an API key is
+    # configured; the old public instance now rejects unauthenticated calls.
+    libre_url = os.environ.get("LIBRETRANSLATE_URL", "").strip()
+    libre_key = os.environ.get("LIBRETRANSLATE_API_KEY", "").strip()
+    if libre_url or libre_key:
+        try:
+            import httpx
 
-        payload = {"q": text, "source": source if source != "auto" else "auto", "target": target, "format": "text"}
-        api_url = os.environ.get("LIBRETRANSLATE_URL", "https://libretranslate.com/translate").strip()
-        resp = httpx.post(api_url, json=payload, timeout=30.0)
-        if resp.status_code == 200:
-            data = resp.json()
-            if isinstance(data, dict) and "translatedText" in data:
-                candidate = data["translatedText"]
-                if candidate and candidate.strip().lower() not in ("", text.lower()) and "PLAINTEST" not in candidate.upper():
-                    return candidate
-    except Exception as exc:
-        logger.warning("LibreTranslate failed: %s", exc)
+            payload = {"q": text, "source": source if source != "auto" else "auto", "target": target, "format": "text"}
+            if libre_key:
+                payload["api_key"] = libre_key
+            api_url = libre_url or "https://libretranslate.com/translate"
+            resp = httpx.post(api_url, json=payload, timeout=30.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, dict) and "translatedText" in data:
+                    candidate = data["translatedText"]
+                    if candidate and candidate.strip().lower() not in ("", text.lower()) and "PLAINTEST" not in candidate.upper():
+                        return candidate
+        except Exception as exc:
+            logger.warning("LibreTranslate failed: %s", exc)
 
     # 4. MyMemory (free, no key)
     try:
@@ -569,8 +605,10 @@ def _translate(text: str, source: str, target: str, context: str = "") -> str | 
         resp = httpx.get(url, timeout=20.0)
         if resp.status_code == 200:
             data = resp.json()
-            if data.get("responseStatus") == 200:
-                return data["responseData"]["translatedText"]
+            if str(data.get("responseStatus")) == "200":
+                candidate = (data.get("responseData") or {}).get("translatedText") or ""
+                if candidate and "MYMEMORY WARNING" not in candidate.upper():
+                    return candidate
     except Exception as exc:
         logger.warning("MyMemory failed: %s", exc)
 
