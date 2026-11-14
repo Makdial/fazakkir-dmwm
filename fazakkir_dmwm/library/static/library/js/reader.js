@@ -36,6 +36,8 @@
   var inflight = {};
   var visibleRatios = {};
   var useNative = false;
+  var nativeSwitched = false;
+  var fullDocText = "";
   var zoomTimer = null;
   var saveTimer = null;
   var dimsCursor = 2;
@@ -76,6 +78,7 @@
     trOriginal.textContent = text;
     trResult.textContent = "...";
     translationBox.hidden = false;
+    var ctx = useNative ? fullDocText : pageText(pageForContext);
     fetch(translateUrl, {
       method: "POST",
       headers: {"Content-Type":"application/json","X-CSRFToken": csrf},
@@ -83,7 +86,7 @@
         text: text,
         source: sourceLang,
         target: targetLang.value,
-        context: pageText(pageForContext),
+        context: ctx,
         book: slug,
         page: pageForContext
       })
@@ -158,6 +161,31 @@
   }
 
   var openedFallback = false;
+  /* ---------------- Native viewer fallback ---------------- */
+  function enableNativeMode(){
+    if (useNative) return;
+    useNative = true;
+    nativeSwitched = true;
+    pagesContainer.hidden = true;
+    nativeFrame.hidden = false;
+    if (pdfUrl) nativeFrame.src = pdfUrl;
+    setStatus("Some pages could not be rendered in-app. Using the browser's PDF viewer.");
+    if (pdfDoc && !fullDocText) {
+      var parts = [];
+      var chain = Promise.resolve();
+      for (var n = 1; n <= numPages; n++) {
+        (function(pageNum){
+          chain = chain.then(function(){
+            return pdfDoc.getPage(pageNum).then(function(p){ return p.getTextContent(); });
+          }).then(function(tc){
+            parts[pageNum - 1] = (tc.items || []).map(function(i){return i.str;}).join(" ");
+          }).catch(function(){ parts[pageNum - 1] = ""; });
+        })(n);
+      }
+      chain.then(function(){ fullDocText = parts.join("\n\n"); });
+    }
+  }
+
   function failPage(num, err){
     var el = shell(num);
     if (!el) return;
@@ -185,11 +213,7 @@
     box.appendChild(a);
     el.appendChild(box);
     console.error("[reader] page " + num + " failed:", err);
-    if (pdfUrl && !openedFallback) {
-      openedFallback = true;
-      try { window.open(pdfUrl, "_blank", "noopener"); } catch (e) { /* ignore */ }
-      setStatus("Some pages could not be rendered. The PDF was opened in a new tab.");
-    }
+    if (!nativeSwitched) enableNativeMode();
   }
 
   function buildShell(num){
