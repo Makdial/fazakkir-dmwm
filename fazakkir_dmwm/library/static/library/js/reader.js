@@ -33,6 +33,7 @@
   var baseDims = null;        // {width, height} at scale 1 (first page)
   var pagePromises = {};      // num -> Promise<pdfPage>
   var renderedAt = {};        // num -> scale*100 the canvas was painted at
+  var inflight = {};          // num -> in-flight render task (must not double-render)
   var visibleRatios = {};     // num -> intersectionRatio
   var useNative = false;
   var renderToken = 0;
@@ -54,7 +55,7 @@
     useNative = true;
     pagesContainer.hidden = true;
     nativeFrame.hidden = false;
-    nativeFrame.src = pdfUrl;
+    if (pdfUrl) nativeFrame.src = pdfUrl;
     setStatus("");
   }
   var nativeToggle = document.getElementById("nativeToggle");
@@ -201,7 +202,14 @@
     var el = buildShell(num);
     var canvas = el.querySelector("canvas");
     var want = Math.round(scale * 100);
-    if (renderedAt[num] === want) return;
+    if (renderedAt[num] === want && !inflight[num]) return;
+
+    // Never run two render() operations on the same canvas: cancel any
+    // in-flight task for this page first (e.g. a zoom while it was painting).
+    if (inflight[num]) {
+      try { inflight[num].cancel(); } catch (e) { /* already done */ }
+      delete inflight[num];
+    }
 
     var token = ++renderToken;
     showSkeleton(el);
@@ -216,16 +224,21 @@
       canvas.height = Math.round(vpPix.height);
       canvas.style.width = Math.round(vpCss.width) + "px";
       canvas.style.height = Math.round(vpCss.height) + "px";
-      page.render({canvasContext: canvas.getContext("2d"), viewport: vpPix}).promise.then(function(){
+      var task = page.render({canvasContext: canvas.getContext("2d"), viewport: vpPix});
+      inflight[num] = task;
+      task.promise.then(function(){
         if (token !== renderToken) return;
         renderedAt[num] = want;
         hideSkeleton(el);
         loadedOk = true;
         setStatus("");
       }).catch(function(err){
+        if (err && err.name === "RenderingCancelledException") return;
         console.error("[reader] render p" + num, err);
         fail("Render failed on page " + num + ". Switching to native viewer.");
         enableNativeMode();
+      }).finally(function(){
+        delete inflight[num];
       });
       var tl = el.querySelector(".text-layer");
       tl.innerHTML = "";
@@ -257,6 +270,10 @@
   function clearPage(num){
     var el = shell(num);
     if (!el) return;
+    if (inflight[num]) {
+      try { inflight[num].cancel(); } catch (e) { /* already done */ }
+      delete inflight[num];
+    }
     var canvas = el.querySelector("canvas");
     canvas.width = 0; canvas.height = 0;
     delete renderedAt[num];
@@ -356,6 +373,11 @@
   }
 
   /* ---------------- Zoom / fit ---------------- */
+  function updateScaleVar(){
+    // PDF.js >= 3 requires --scale-factor on the container to position the
+    // text layer correctly.
+    if (pagesContainer) pagesContainer.style.setProperty("--scale-factor", String(scale));
+  }
   function scheduleZoomRender(delay){
     clearTimeout(zoomTimer);
     zoomTimer = setTimeout(renderVisible, delay);
@@ -363,6 +385,7 @@
   function applyScale(next, opts){
     if (useNative || !pdfDoc) return;
     scale = Math.max(0.4, Math.min(3, next));
+    updateScaleVar();
     if (zoomLevel) zoomLevel.textContent = Math.round(scale * 100) + "%";
     // resize shells now (placeholders), re-render after a short debounce
     pagesContainer.querySelectorAll(".pdf-page").forEach(function(el){
@@ -471,6 +494,7 @@
     getPage(1).then(function(page){
       var vp = page.getViewport({scale: 1});
       baseDims = {width: vp.width, height: vp.height};
+      updateScaleVar();
       pagesContainer.querySelectorAll(".pdf-page").forEach(function(el){
         var n = parseInt(el.dataset.page, 10);
         sizeShell(n, {width: baseDims.width * scale, height: baseDims.height * scale});

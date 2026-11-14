@@ -20,6 +20,7 @@ from django.http import (
 )
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_POST
 
 from core.permissions import write_required, read_required
@@ -376,6 +377,7 @@ def submit_review(request: HttpRequest, slug: str) -> HttpResponse:
     return redirect("library:book_detail", slug=slug)
 
 
+@xframe_options_exempt
 def serve_pdf(request: HttpRequest, slug: str) -> HttpResponse:
     """Stream the book's PDF through Django (same origin, no CORS issues)."""
     book = get_object_or_404(Book, slug=slug)
