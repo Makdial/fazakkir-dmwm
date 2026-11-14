@@ -170,7 +170,15 @@
     trOriginal.textContent = text;
     trResult.textContent = "...";
     translationBox.hidden = false;
+    // If the sidebar was scrolled down to the controls, bring the newly
+    // populated panel back into view.
+    if (window.matchMedia("(min-width: 901px)").matches && translationBox.scrollIntoView) {
+      translationBox.scrollIntoView({block: "nearest"});
+    }
     hideToast();
+    // On phones the panel lives in the off-canvas sidebar, so show the wait
+    // state in the toast immediately.
+    if (window.matchMedia("(max-width: 900px)").matches) showToast(text, "Translating...");
     var token = ++translateToken;
     var ctx = useNative ? fullDocText : pageText(lastTranslatedPage);
     fetch(translateUrl, {
