@@ -12,22 +12,30 @@
 .reader-lang select{width:100%;padding:.6rem;min-height:44px;border-radius:8px;border:1px solid var(--lib-border);background:var(--lib-card);color:var(--lib-text);}
 .reader-controls .btn-block{min-height:44px;}
 
-.reader-main{position:relative;overflow:auto;background:#525659;display:block;padding:0;}
-.reader.dark .reader-main{background:#141414;}
-.reader-toolbar-mobile{display:none;gap:.5rem;align-items:center;margin:.6rem;padding:0 .6rem;width:calc(100% - 1.2rem);justify-content:space-between;}
+.reader-main{position:relative;overflow:auto;background:#3c3f42;display:block;padding:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+.reader.dark .reader-main{background:#101010;}
+.reader-toolbar-mobile{display:none;position:sticky;top:0;z-index:6;gap:.5rem;align-items:center;margin:0;padding:.5rem .6rem;width:100%;justify-content:space-between;background:rgba(20,20,20,.92);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,.08);}
 .reader-toolbar-mobile .btn{min-height:44px;}
+.reader-toolbar-mobile span{color:#fff;font-weight:600;}
 
 /* Continuous pages */
-.pdf-pages{display:flex;flex-direction:column;align-items:center;gap:18px;padding:1rem;}
-.pdf-page{position:relative;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.35);flex:0 0 auto;}
-.pdf-page-canvas{display:block;width:100%;height:auto;}
+.pdf-pages{display:flex;flex-direction:column;align-items:center;gap:18px;padding:16px;width:100%;}
+.pdf-page{position:relative;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.4);flex:0 0 auto;border-radius:2px;overflow:hidden;}
+.pdf-page canvas{display:block;}
+.pdf-skeleton{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(100deg,#f0f0f0 30%,#fafafa 50%,#f0f0f0 70%);background-size:200% 100%;animation:pdfSkel 1.2s ease-in-out infinite;}
+@keyframes pdfSkel{from{background-position:200% 0}to{background-position:-200% 0}}
+.pdf-skeleton::after{content:"";width:34px;height:34px;border:3px solid rgba(0,0,0,.15);border-top-color:#888;border-radius:50%;animation:pdfSpin .8s linear infinite;}
+@keyframes pdfSpin{to{transform:rotate(360deg)}}
+.reader.dark .pdf-skeleton{background:linear-gradient(100deg,#1c1c1c 30%,#242424 50%,#1c1c1c 70%);background-size:200% 100%;}
+.reader.dark .pdf-skeleton::after{border-color:rgba(255,255,255,.15);border-top-color:#aaa;}
+
 .text-layer{position:absolute;inset:0;overflow:hidden;line-height:1;pointer-events:auto;}
 .text-layer span{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0% 0%;}
 .text-layer span::selection{background:rgba(62,166,255,.4);color:transparent;}
 
 .native-frame{width:100%;height:calc(100vh - 120px);border:none;background:#fff;}
 
-.reader-status{position:sticky;bottom:.75rem;align-self:center;background:rgba(0,0,0,.75);color:#fff;padding:.55rem 1rem;border-radius:999px;font-size:.85rem;max-width:90%;text-align:center;z-index:5;}
+.reader-status{position:sticky;bottom:.75rem;margin:0 auto .75rem;background:rgba(0,0,0,.78);color:#fff;padding:.55rem 1rem;border-radius:999px;font-size:.85rem;max-width:min(90%,560px);text-align:center;z-index:7;width:max-content;}
 
 /* Translation panel */
 .translation-box{margin-top:1rem;padding:1rem;background:var(--lib-bg);border:1px solid var(--lib-border);border-radius:8px;}
@@ -49,8 +57,7 @@
   .reader-sidebar{position:fixed;z-index:60;top:0;bottom:0;width:min(86vw,320px);left:0;transform:translateX(-105%);transition:transform .25s ease;box-shadow:0 8px 30px rgba(0,0,0,.45);border-right:1px solid var(--lib-border);}
   .reader-sidebar.open{transform:translateX(0);}
   .reader-toolbar-mobile{display:flex;}
-  .reader-main{padding:0;}
-  .pdf-pages{padding:.6rem;gap:12px;}
+  .pdf-pages{padding:10px;gap:12px;}
   .translation-box.mode-sidebyside{grid-template-columns:1fr;}
   .reader-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55;}
 }
@@ -61,5 +68,5 @@
   .reader-toolbar-mobile .btn{flex:1 1 auto;}
   .reader-nav button,.reader-zoom button{min-width:48px;min-height:48px;}
   .reader-sidebar{width:92vw;}
-  .pdf-pages{gap:10px;padding:.5rem;}
+  .pdf-pages{gap:10px;padding:8px;}
 }
