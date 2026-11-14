@@ -33,10 +33,9 @@
   var baseDims = null;        // {width, height} at scale 1 (first page)
   var pagePromises = {};      // num -> Promise<pdfPage>
   var renderedAt = {};        // num -> scale*100 the canvas was painted at
-  var inflight = {};          // num -> in-flight render task (must not double-render)
+  var inflight = {};          // num -> in-flight render task
   var visibleRatios = {};     // num -> intersectionRatio
   var useNative = false;
-  var renderToken = 0;
   var zoomTimer = null;
   var saveTimer = null;
   var dimsCursor = 2;         // progressive dims preload cursor
@@ -211,10 +210,10 @@
       delete inflight[num];
     }
 
-    var token = ++renderToken;
+    var localWant = want;
     showSkeleton(el);
     getPage(num).then(function(page){
-      if (token !== renderToken) return;
+      if (localWant !== Math.round(scale * 100)) return;
       var vpCss = page.getViewport({scale: scale});
       var f = pixelFactor(vpCss);
       pageDims[num] = {width: vpCss.width, height: vpCss.height};
@@ -227,7 +226,7 @@
       var task = page.render({canvasContext: canvas.getContext("2d"), viewport: vpPix});
       inflight[num] = task;
       task.promise.then(function(){
-        if (token !== renderToken) return;
+        if (localWant !== Math.round(scale * 100)) return;
         renderedAt[num] = want;
         hideSkeleton(el);
         loadedOk = true;
@@ -243,7 +242,7 @@
       var tl = el.querySelector(".text-layer");
       tl.innerHTML = "";
       page.getTextContent().then(function(textContent){
-        if (token !== renderToken) return;
+        if (localWant !== Math.round(scale * 100)) return;
         try {
           if (typeof pdfjsLib.renderTextLayer === "function") {
             pdfjsLib.renderTextLayer({textContent: textContent, container: tl, viewport: vpCss, textDivs: []});
