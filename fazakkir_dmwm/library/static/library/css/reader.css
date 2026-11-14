@@ -26,8 +26,11 @@
 @keyframes pdfSkel{from{background-position:200% 0}to{background-position:-200% 0}}
 .pdf-skeleton::after{content:"";width:34px;height:34px;border:3px solid rgba(0,0,0,.15);border-top-color:#888;border-radius:50%;animation:pdfSpin .8s linear infinite;}
 @keyframes pdfSpin{to{transform:rotate(360deg)}}
-.reader.dark .pdf-skeleton{background:linear-gradient(100deg,#1c1c1c 30%,#242424 50%,#1c1c1c 70%);background-size:200% 100%;}
-.reader.dark .pdf-skeleton::after{border-color:rgba(255,255,255,.15);border-top-color:#aaa;}
+.page-failed{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;padding:1rem;text-align:center;background:#f5f5f5;color:#333;}
+.page-failed p{margin:0;font-weight:600;}
+.page-failed a{color:#1a73e8;text-decoration:underline;}
+.reader.dark .page-failed{background:#1c1c1c;color:#ddd;}
+.reader.dark .page-failed a{color:#6bb0ff;}
 
 .text-layer{position:absolute;inset:0;overflow:hidden;line-height:1;pointer-events:auto;}
 .text-layer span{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0% 0%;}

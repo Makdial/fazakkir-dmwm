@@ -60,15 +60,7 @@
   var nativeToggle = document.getElementById("nativeToggle");
   if (nativeToggle) {
     nativeToggle.addEventListener("click", function(){
-      if (useNative) {
-        useNative = false;
-        pagesContainer.hidden = false;
-        nativeFrame.hidden = true;
-        nativeFrame.src = "about:blank";
-        scheduleZoomRender(0);
-      } else {
-        enableNativeMode();
-      }
+      if (pdfUrl) window.open(pdfUrl, "_blank", "noopener");
     });
   }
 
@@ -175,9 +167,24 @@
     s.className = "pdf-skeleton";
     el.appendChild(s);
   }
-  function hideSkeleton(el){
-    var s = el.querySelector(".pdf-skeleton");
-    if (s) s.remove();
+  function failPage(num, err){
+    var el = shell(num);
+    if (!el) return;
+    hideSkeleton(el);
+    if (el.querySelector(".page-failed")) return;
+    var box = document.createElement("div");
+    box.className = "page-failed";
+    var p = document.createElement("p");
+    p.textContent = "Page " + num + " could not be rendered.";
+    var a = document.createElement("a");
+    a.href = pdfUrl || "#";
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = "Open the PDF directly";
+    box.appendChild(p);
+    box.appendChild(a);
+    el.appendChild(box);
+    console.error("[reader] page " + num + " failed:", err);
   }
 
   function buildShell(num){
@@ -233,11 +240,38 @@
         setStatus("");
       }).catch(function(err){
         if (err && err.name === "RenderingCancelledException") return;
-        console.error("[reader] render p" + num, err);
-        fail("Render failed on page " + num + ". Switching to native viewer.");
-        enableNativeMode();
-      }).finally(function(){
+        // Retry once at a lower pixel density (helps on memory-constrained
+        // devices and with unusual pages).
+        try { task.cancel(); } catch (e) { /* ignore */ }
         delete inflight[num];
+        getPage(num).then(function(page2){
+          if (localWant !== Math.round(scale * 100)) return;
+          var vp2 = page2.getViewport({scale: scale});
+          var c2 = el.querySelector("canvas");
+          c2.width = Math.round(vp2.width);
+          c2.height = Math.round(vp2.height);
+          c2.style.width = Math.round(vp2.width) + "px";
+          c2.style.height = Math.round(vp2.height) + "px";
+          var t2 = page2.render({canvasContext: c2.getContext("2d"), viewport: vp2});
+          inflight[num] = t2;
+          t2.promise.then(function(){
+            if (localWant !== Math.round(scale * 100)) return;
+            renderedAt[num] = want;
+            hideSkeleton(el);
+            loadedOk = true;
+            setStatus("");
+          }).catch(function(err2){
+            if (err2 && err2.name === "RenderingCancelledException") return;
+            console.error("[reader] render p" + num + " retry failed:", err2);
+            failPage(num, err2);
+          }).finally(function(){ delete inflight[num]; });
+        }).catch(function(err2){
+          console.error("[reader] getPage retry " + num, err2);
+          failPage(num, err2);
+        });
+      }).finally(function(){
+        // Only delete if this task is still the tracked one.
+        if (inflight[num] === task) delete inflight[num];
       });
       var tl = el.querySelector(".text-layer");
       tl.innerHTML = "";
@@ -261,8 +295,7 @@
       }).catch(function(err){ console.warn("[reader] text content", err); });
     }).catch(function(err){
       console.error("[reader] getPage " + num, err);
-      fail("Could not load page " + num + ". Switching to native viewer.");
-      enableNativeMode();
+      failPage(num, err);
     });
   }
 
@@ -507,7 +540,7 @@
     });
   }).catch(function(err){
     console.error("[reader] PDF load error:", err);
-    fail("Failed to load PDF: " + (err && err.message ? err.message : err) + ". Switching to native viewer.");
-    enableNativeMode();
+    if (pdfUrl) { window.open(pdfUrl, "_blank", "noopener"); }
+    fail("Failed to load PDF: " + (err && err.message ? err.message : err) + ". Opened the PDF in a new tab.");
   });
 })();
