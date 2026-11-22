@@ -192,6 +192,17 @@
 .activity-title { font-weight: 500; }
 .activity-detail { color: var(--text-secondary); font-size: 0.9rem; }
 .activity-date { color: var(--text-secondary); font-size: 0.8rem; margin-left: auto; width: 100%; }
+
+/* Mobile: stack the note form and tighten cards so every feature is usable on
+   a phone, matching the rest of the site's responsive behaviour. */
+@media (max-width: 640px) {
+    .note-form .note-row { flex-direction: column; }
+    .note-time { width: 100%; }
+    .note-date { margin-left: 0; }
+    .activity-date { margin-left: 0; }
+    .youtube-player-container { margin: 0 -4px 16px; }
+    .notes-section, .notes-page, .activity-page { margin-top: 16px; }
+}
 @media (hover: none) {
     .play-icon {
         display: none;

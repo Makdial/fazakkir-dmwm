@@ -19,7 +19,7 @@ from django.conf import settings
 from django.db import close_old_connections
 from django.utils import timezone
 
-from .audio import AudioExtractionError, extract_mp3_from_url
+from .audio import AudioExtractionError, extract_mp3, extract_mp3_from_url
 from .models import Video
 from .r2_storage import StorageError, upload_audio
 
@@ -101,7 +101,29 @@ def generate_audio(video_id: int) -> bool:
         handle_fd, mp3_path = tempfile.mkstemp(suffix=".mp3")
         os.close(handle_fd)
 
-        if not extract_mp3_from_url(source, mp3_path):
+        produced = False
+        try:
+            produced = extract_mp3_from_url(source, mp3_path)
+        except (AudioExtractionError, OSError):
+            produced = False
+
+        # Fall back to downloading the whole file and extracting locally. This is
+        # slower but sidesteps ffmpeg's flakiness when reading straight from a
+        # URL (expired presigned links, R2 hiccups, the bundled binary).
+        if not produced or not os.path.exists(mp3_path) or os.path.getsize(mp3_path) == 0:
+            try:
+                import urllib.request
+
+                local_path = mp3_path + ".src"
+                try:
+                    urllib.request.urlretrieve(source, local_path)
+                    produced = extract_mp3(local_path, mp3_path)
+                finally:
+                    _remove(local_path)
+            except Exception:  # noqa: BLE001
+                produced = False
+
+        if not produced or not os.path.exists(mp3_path) or os.path.getsize(mp3_path) == 0:
             # The video genuinely has no audio stream; remember that so we do
             # not try again on every page view.
             Video.objects.filter(id=video_id).update(
