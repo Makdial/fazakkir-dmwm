@@ -70,6 +70,171 @@ def _remove(path: str) -> None:
         pass
 
 
+def generate_youtube_audio(video_id: int) -> bool:
+    """Download and store the MP3 for a YouTube-sourced video."""
+    video = Video.objects.filter(id=video_id).first()
+    if video is None or not video.youtube_url:
+        return False
+    if video.has_audio:
+        Video.objects.filter(id=video_id).update(
+            audio_status="ready", audio_error="", job_started_at=None
+        )
+        return True
+
+    Video.objects.filter(id=video_id).update(
+        audio_status="processing", audio_error="", job_started_at=timezone.now()
+    )
+
+    import os
+    import shutil
+    import tempfile
+
+    tmpdir = tempfile.mkdtemp()
+    outtmpl = os.path.join(tmpdir, "audio.%(ext)s")
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "outtmpl": outtmpl,
+        "quiet": True,
+        "no_warnings": True,
+    }
+    try:
+        import imageio_ffmpeg
+
+        if not shutil.which("ffmpeg"):
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+            ffmpeg_dir = os.path.join(tmpdir, "ffmpeg-bin")
+            os.makedirs(ffmpeg_dir, exist_ok=True)
+            target = os.path.join(ffmpeg_dir, "ffmpeg.exe")
+            if not os.path.exists(target):
+                shutil.copyfile(ffmpeg_exe, target)
+            ydl_opts["ffmpeg_location"] = ffmpeg_dir
+    except Exception:  # noqa: BLE001
+        pass
+
+    downloaded = ""
+    try:
+        import yt_dlp
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video.youtube_url, download=True)
+            downloaded = ydl.prepare_filename(info)
+            if not os.path.exists(downloaded):
+                candidates = [
+                    os.path.join(tmpdir, f)
+                    for f in os.listdir(tmpdir)
+                    if f.startswith("audio.")
+                ]
+                if candidates:
+                    downloaded = candidates[0]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("YouTube audio download failed for %s", video_id, exc_info=True)
+        Video.objects.filter(id=video_id).update(
+            audio_status="failed",
+            audio_error=str(exc)[:500],
+            job_started_at=None,
+        )
+        return False
+
+    if not downloaded or not os.path.exists(downloaded):
+        Video.objects.filter(id=video_id).update(
+            audio_status="failed",
+            audio_error="The download did not produce a file.",
+            job_started_at=None,
+        )
+        return False
+
+    mp3_path = os.path.join(tmpdir, "audio.mp3")
+    try:
+        if downloaded.lower().endswith(".mp3"):
+            shutil.copyfile(downloaded, mp3_path)
+        else:
+            from .audio import extract_mp3
+
+            if not extract_mp3(downloaded, mp3_path):
+                Video.objects.filter(id=video_id).update(
+                    audio_status="none", audio_error="", job_started_at=None
+                )
+                return False
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("YouTube audio conversion failed for %s", video_id, exc_info=True)
+        Video.objects.filter(id=video_id).update(
+            audio_status="failed",
+            audio_error=str(exc)[:500],
+            job_started_at=None,
+        )
+        return False
+
+    if not os.path.exists(mp3_path) or os.path.getsize(mp3_path) == 0:
+        Video.objects.filter(id=video_id).update(
+            audio_status="failed",
+            audio_error="The audio could not be produced.",
+            job_started_at=None,
+        )
+        return False
+
+    try:
+        with open(mp3_path, "rb") as mp3_file:
+            result = upload_audio(mp3_file, video.title + ".mp3")
+    except StorageError as exc:
+        Video.objects.filter(id=video_id).update(
+            audio_status="failed",
+            audio_error=str(exc)[:500],
+            job_started_at=None,
+        )
+        return False
+
+    Video.objects.filter(id=video_id).update(
+        audio_file_id=result["path"],
+        audio_url=result["url"],
+        audio_status="ready",
+        audio_error="",
+        job_started_at=None,
+    )
+    try:
+        from .transcription import schedule_subtitle_generation, subtitles_configured
+
+        if subtitles_configured():
+            schedule_subtitle_generation(video_id)
+    except Exception:  # noqa: BLE001
+        pass
+
+    for f in os.listdir(tmpdir):
+        _remove(os.path.join(tmpdir, f))
+    try:
+        os.rmdir(tmpdir)
+    except OSError:
+        pass
+    return True
+
+
+def schedule_youtube_audio(video_id: int, retry: bool = False) -> bool:
+    video = Video.objects.filter(id=video_id).first()
+    if video is None or not video.youtube_url:
+        return False
+    if video.has_audio:
+        return False
+    if video.audio_status == "processing":
+        return False
+    if video.audio_status == "failed" and not retry:
+        return False
+
+    Video.objects.filter(id=video_id).update(
+        audio_status="processing",
+        audio_error="",
+        job_started_at=timezone.now(),
+    )
+
+    def _worker():
+        close_old_connections()
+        try:
+            generate_youtube_audio(video_id)
+        finally:
+            close_old_connections()
+
+    threading.Thread(target=_worker, daemon=True).start()
+    return True
+
+
 def generate_audio(video_id: int) -> bool:
     """Create the MP3 for ``video_id`` and store it in R2.
 

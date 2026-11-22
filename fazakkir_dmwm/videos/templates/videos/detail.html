@@ -494,11 +494,18 @@
         })
             .then(r => r.json())
             .then(data => {
-                if (data.success) nav.reload();
-                else alert(data.error || "{% trans 'Failed.' %}");
+                if (!data.success) { alert(data.error || "{% trans 'Failed.' %}"); if (btn) btn.disabled = false; return; }
+                const statusUrl = `/${videoId}/audio-status/`;
+                const poll = () => {
+                    if (!onThisPage) return;
+                    fetch(statusUrl).then(r => r.json()).then(s => {
+                        if (s.has_audio || !s.pending) nav.reload();
+                        else setTimeout(poll, 4000);
+                    }).catch(() => setTimeout(poll, 8000));
+                };
+                setTimeout(poll, 2000);
             })
-            .catch(() => alert("{% trans 'Failed.' %}"))
-            .finally(() => { if (btn) btn.disabled = false; });
+            .catch(() => { alert("{% trans 'Failed.' %}"); if (btn) btn.disabled = false; });
     };
 
     function deleteVideo(id) {

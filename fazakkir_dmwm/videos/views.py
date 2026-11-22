@@ -1566,7 +1566,7 @@ def playlist_remove_video(request, playlist_id, video_id):
 @write_required
 @require_POST
 def youtube_audio(request, video_id):
-    """Extract an MP3 from a YouTube link and store it in R2."""
+    """Start extracting an MP3 from a YouTube link in the background."""
     video = get_object_or_404(Video.objects, id=video_id)
     if not video.youtube_url:
         return JsonResponse(
@@ -1589,114 +1589,11 @@ def youtube_audio(request, video_id):
             status=400,
         )
 
-    import os
-    import shutil
-    import tempfile
+    from .audio_tasks import schedule_youtube_audio
 
-    tmpdir = tempfile.mkdtemp()
-    outtmpl = os.path.join(tmpdir, "audio.%(ext)s")
-    ydl_opts = {
-        "format": "bestaudio/best",
-        "outtmpl": outtmpl,
-        "quiet": True,
-        "no_warnings": True,
-    }
-    try:
-        import imageio_ffmpeg
-
-        if not shutil.which("ffmpeg"):
-            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
-            ffmpeg_dir = os.path.join(tmpdir, "ffmpeg-bin")
-            os.makedirs(ffmpeg_dir, exist_ok=True)
-            target = os.path.join(ffmpeg_dir, "ffmpeg.exe")
-            if not os.path.exists(target):
-                shutil.copyfile(ffmpeg_exe, target)
-            ydl_opts["ffmpeg_location"] = ffmpeg_dir
-    except Exception:  # noqa: BLE001
-        pass
-
-    downloaded = ""
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video.youtube_url, download=True)
-            downloaded = ydl.prepare_filename(info)
-            if not os.path.exists(downloaded):
-                candidates = [
-                    os.path.join(tmpdir, f)
-                    for f in os.listdir(tmpdir)
-                    if f.startswith("audio.")
-                ]
-                if candidates:
-                    downloaded = candidates[0]
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("YouTube audio download failed", exc_info=True)
-        return JsonResponse(
-            {"success": False, "error": _("Could not download the audio: %(err)s")
-             % {"err": str(exc)[:200]}},
-            status=400,
-        )
-
-    if not downloaded or not os.path.exists(downloaded):
-        return JsonResponse(
-            {"success": False, "error": _("The download did not produce a file.")},
-            status=400,
-        )
-
-    mp3_path = os.path.join(tmpdir, "audio.mp3")
-    try:
-        if downloaded.lower().endswith(".mp3"):
-            import shutil as _sh
-
-            _sh.copyfile(downloaded, mp3_path)
-        else:
-            from .audio import extract_mp3
-
-            if not extract_mp3(downloaded, mp3_path):
-                return JsonResponse(
-                    {"success": False, "error": _("This video has no audio track.")},
-                    status=400,
-                )
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("YouTube audio conversion failed", exc_info=True)
-        return JsonResponse(
-            {"success": False, "error": _("Could not convert the audio: %(err)s")
-             % {"err": str(exc)[:200]}},
-            status=400,
-        )
-
-    if not os.path.exists(mp3_path) or os.path.getsize(mp3_path) == 0:
-        return JsonResponse(
-            {"success": False, "error": _("The audio could not be produced.")},
-            status=400,
-        )
-
-    try:
-        with open(mp3_path, "rb") as mp3_file:
-            result = upload_audio(mp3_file, video.title + ".mp3")
-    except StorageError as exc:
-        return JsonResponse({"success": False, "error": str(exc)}, status=400)
-
-    Video.objects.filter(id=video_id).update(
-        audio_file_id=result["path"],
-        audio_url=result["url"],
-        audio_status="ready",
-        audio_error="",
-    )
-
-    try:
-        for f in os.listdir(tmpdir):
-            _remove_path(os.path.join(tmpdir, f))
-        os.rmdir(tmpdir)
-    except OSError:
-        pass
-
-    log_activity(request.user, Activity.VERB_DOWNLOADED, video=video, title=video.title)
+    started = schedule_youtube_audio(video.id, retry=True)
     return JsonResponse(
-        {
-            "success": True,
-            "status": "ready",
-            "message": _("Audio extracted."),
-        }
+        {"success": True, "started": started, "status": "processing"}
     )
 
 
