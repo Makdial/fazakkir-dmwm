@@ -33,6 +33,15 @@
     margin-bottom: 24px;
 }
 
+/* Keep the player in view while the rest of the watch page scrolls, the way
+   YouTube keeps the picture pinned under the navigation bar. */
+.watch-player-slot {
+    position: sticky;
+    top: 56px;
+    align-self: start;
+    z-index: 100;
+}
+
 /* Mini player: a small window in the corner that keeps playing while the
    visitor browses. Below the navbar (z-index 1000) and the queue panel. */
 .fz-player-host.is-mini {
@@ -87,6 +96,15 @@
 
 .fz-player-host.is-docked .fz-mini-bar {
     display: none;
+}
+
+/* The docked player shares the watch page's sticky behaviour so it stays
+   visible while the details, comments and related videos scroll past. */
+.fz-player-host.is-docked {
+    position: sticky;
+    top: 56px;
+    align-self: start;
+    z-index: 100;
 }
 
 .fz-mini-title {
