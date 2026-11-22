@@ -2,6 +2,8 @@
 // Desktop: hover plays a muted, looping clip inside the thumbnail.
 // Mobile: press and hold (long press) plays the preview; releasing stops it
 // and a normal tap still opens the video, so navigation is never broken.
+// YouTube-sourced cards (link-only) preview through a muted, autoplaying
+// embed, since there is no locally stored file to play.
 (function () {
     "use strict";
 
@@ -11,49 +13,73 @@
         var cards = document.querySelectorAll(".video-card");
         cards.forEach(function (card) {
             var thumb = card.querySelector(".video-thumbnail");
-            var preview = thumb ? thumb.querySelector(".card-preview") : null;
-            if (!preview) return;
-            var src = preview.getAttribute("data-src");
-            if (!src) return;
+            if (!thumb) return;
+            var preview = thumb.querySelector(".card-preview");
+            var ytId = thumb.getAttribute("data-youtube-id");
+            var src = preview ? preview.getAttribute("data-src") : null;
+
+            if (!preview && !ytId) return;
 
             var loaded = false;
             var hoverTimer = null;
             var pressTimer = null;
             var longPressed = false;
             var previewing = false;
+            var ytFrame = null;
 
             function load() {
-                if (!loaded) {
+                if (preview && !loaded) {
                     preview.src = src;
                     loaded = true;
+                }
+                if (ytId && !ytFrame) {
+                    ytFrame = document.createElement("iframe");
+                    ytFrame.className = "card-preview card-preview-yt";
+                    ytFrame.setAttribute("src",
+                        "https://www.youtube.com/embed/" + ytId +
+                        "?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=" + ytId);
+                    ytFrame.setAttribute("frameborder", "0");
+                    ytFrame.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture");
+                    ytFrame.setAttribute("aria-hidden", "true");
+                    thumb.appendChild(ytFrame);
                 }
             }
 
             function startPreview() {
                 load();
-                var p = preview.play();
-                if (p && typeof p.catch === "function") p.catch(function () {});
-                preview.classList.add("is-playing");
+                if (preview) {
+                    var p = preview.play();
+                    if (p && typeof p.catch === "function") p.catch(function () {});
+                    preview.classList.add("is-playing");
+                }
+                if (ytFrame) ytFrame.classList.add("is-playing");
                 previewing = true;
             }
 
             function stopPreview() {
                 if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
                 if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-                try { preview.pause(); } catch (e) {}
-                try { preview.currentTime = 0; } catch (e) {}
-                preview.classList.remove("is-playing");
+                if (preview) {
+                    try { preview.pause(); } catch (e) {}
+                    try { preview.currentTime = 0; } catch (e) {}
+                    preview.classList.remove("is-playing");
+                }
+                if (ytFrame) {
+                    ytFrame.classList.remove("is-playing");
+                    // Remove the iframe so the video stops and the thumbnail shows.
+                    try { thumb.removeChild(ytFrame); } catch (e) {}
+                    ytFrame = null;
+                    loaded = false;
+                }
                 previewing = false;
             }
 
-            // Desktop hover.
             thumb.addEventListener("mouseenter", function () {
-                hoverTimer = setTimeout(function () { load(); startPreview(); }, 250);
+                hoverTimer = setTimeout(function () { startPreview(); }, 250);
             });
             thumb.addEventListener("mouseleave", stopPreview);
 
-            // Mobile long-press preview.
-            thumb.addEventListener("touchstart", function (e) {
+            thumb.addEventListener("touchstart", function () {
                 longPressed = false;
                 pressTimer = setTimeout(function () {
                     longPressed = true;
@@ -68,7 +94,6 @@
             thumb.addEventListener("touchend", function (e) {
                 if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
                 if (longPressed) {
-                    // Prevent the tap from navigating after a long press.
                     e.preventDefault();
                     stopPreview();
                     longPressed = false;
@@ -81,7 +106,6 @@
                 longPressed = false;
             });
 
-            // Block navigation when a long press just happened.
             card.addEventListener("click", function (e) {
                 if (longPressed) {
                     longPressed = false;
