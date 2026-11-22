@@ -124,6 +124,8 @@
 <li><a href="{% url 'library:my_library' %}" class="nav-link">{% trans "My Library" %}</a></li>
 <li><a href="{% url 'videos:composition' %}" class="nav-link">{% trans "Composition" %}</a></li>
                 <li><a href="{% url 'videos:offline' %}" class="nav-link">{% trans "Offline" %}</a></li>
+<li><a href="{% url 'videos:my_notes' %}" class="nav-link">{% trans "Notes" %}</a></li>
+<li><a href="{% url 'videos:my_activity' %}" class="nav-link">{% trans "Activity" %}</a></li>
                 {% if can_read %}
                     <li><a href="{% url 'dashboard:home' %}" class="nav-link">{% trans "Dashboard" %}</a></li>
                     <li><a href="{% url 'library:admin_dashboard' %}" class="nav-link">{% trans "Library Admin" %}</a></li>
@@ -171,6 +173,7 @@
     <script src="{% static 'js/nav.js' %}"></script>
     <script src="{% static 'js/queue.js' %}"></script>
     <script src="{% static 'js/player.js' %}"></script>
+    <script src="{% static 'js/card-preview.js' %}"></script>
     {% block extra_js %}{% endblock %}
     <script>
         (function () {

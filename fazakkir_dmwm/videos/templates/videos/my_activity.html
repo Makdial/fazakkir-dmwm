@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "My activity" %} - Fazakkir{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/videos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="activity-page">
+    <h1>{% trans "My activity" %}</h1>
+    <p class="activity-intro">{% trans "A timeline of what you have watched, liked, commented on and saved." %}</p>
+
+    {% if activities %}
+    <ul class="activity-list">
+        {% for a in activities %}
+        <li class="activity-item">
+            <span class="activity-icon">
+                {% if a.verb == "watched" %}▶
+                {% elif a.verb == "liked" %}👍
+                {% elif a.verb == "disliked" %}👎
+                {% elif a.verb == "commented" %}💬
+                {% elif a.verb == "noted" %}📝
+                {% elif a.verb == "playlist_add" %}📋
+                {% elif a.verb == "uploaded" %}⬆
+                {% elif a.verb == "downloaded" %}⬇
+                {% else %}•{% endif %}
+            </span>
+            <div class="activity-body">
+                <span class="activity-verb">{{ a.get_verb_display }}</span>
+                {% if a.video %}
+                <a href="{% url 'videos:detail' a.video.id %}" class="activity-title">{{ a.title }}</a>
+                {% else %}
+                <span class="activity-title">{{ a.title }}</span>
+                {% endif %}
+                {% if a.detail %}<span class="activity-detail">— {{ a.detail }}</span>{% endif %}
+                <span class="activity-date">{{ a.created_at|date:"M d, Y H:i" }}</span>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-icon">📊</span>
+        <h2>{% trans "No activity yet" %}</h2>
+        <p>{% trans "Start watching videos and your activity will appear here." %}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

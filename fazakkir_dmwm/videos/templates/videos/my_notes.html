@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "My notes" %} - Fazakkir{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/videos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="notes-page">
+    <h1>{% trans "My notes" %}</h1>
+    <p class="notes-intro">{% trans "Every note you have taken, newest first. Click a timestamp to open the video at that moment." %}</p>
+
+    {% if notes %}
+    <div class="note-list">
+        {% for note in notes %}
+        <div class="note-card">
+            <div class="note-card-head">
+                <a href="{% url 'videos:detail' note.video.id %}" class="note-video-title">{{ note.video.title }}</a>
+                <span class="note-time">⏱ {{ note.timestamp_formatted }}</span>
+            </div>
+            <p class="note-text">{{ note.body }}</p>
+            <div class="note-card-foot">
+                <span class="note-date">{{ note.created_at|date:"M d, Y H:i" }}</span>
+                <a href="{% url 'videos:detail' note.video.id %}" class="btn-small">{% trans "Open video" %}</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-icon">📝</span>
+        <h2>{% trans "No notes yet" %}</h2>
+        <p>{% trans "Open a video and use the 'My notes' box to write one." %}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

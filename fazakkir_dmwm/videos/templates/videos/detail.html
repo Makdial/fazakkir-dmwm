@@ -271,6 +271,41 @@
                 </div>
             </div>
 
+            <div class="notes-section">
+                <h2 class="comments-title">{% trans "My notes" %}</h2>
+                {% if user.is_authenticated %}
+                <form class="note-form" onsubmit="return postNote(event)">
+                    <div class="note-row">
+                        <input type="number" id="noteTime" class="form-input note-time" min="0" step="1"
+                               placeholder="0" value="0" aria-label="{% trans 'Timestamp (seconds)' %}">
+                        <textarea id="noteBody" class="form-input" rows="2" maxlength="4000"
+                                  placeholder="{% trans 'Take a note on this video…' %}" required></textarea>
+                        <button type="submit" class="btn btn-primary btn-comment">{% trans "Add note" %}</button>
+                    </div>
+                    <p class="note-hint">{% trans "Tip: set the timestamp to jump back to this moment later." %}</p>
+                </form>
+                <div class="note-list" id="noteList">
+                    {% for note in video_notes %}
+                    <div class="note" data-note="{{ note.id }}">
+                        <div class="note-head">
+                            <button type="button" class="note-time-link" onclick="seekToNote({{ note.timestamp_seconds }})">
+                                ⏱ {{ note.timestamp_formatted }}
+                            </button>
+                            <span class="note-date">{{ note.created_at|date:"M d, Y H:i" }}</span>
+                            <button type="button" class="icon-btn" title="{% trans 'Delete' %}"
+                                    onclick="deleteNote({{ note.id }})">✕</button>
+                        </div>
+                        <p class="note-text">{{ note.body }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="note-empty" id="noteEmpty">{% trans "No notes yet. Add your first one above." %}</p>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="note-hint">{% trans "Sign in to take notes on this video." %}</p>
+                {% endif %}
+            </div>
+
             {% if can_write %}
             <div class="video-owner-actions">
                 <button class="delete-btn" type="button" onclick="deleteVideo({{ video.id }})">{% trans "Delete video" %}</button>
@@ -917,6 +952,89 @@
                 .catch(() => alert("{% trans 'Failed.' %}"));
         });
     };
+    function seekToNote(seconds) {
+        const player = document.querySelector("video");
+        if (player) {
+            try { player.currentTime = seconds; } catch (e) {}
+        }
+    };
+
+    function postNote(event) {
+        event.preventDefault();
+        const bodyEl = document.getElementById("noteBody");
+        const timeEl = document.getElementById("noteTime");
+        const body = bodyEl.value.trim();
+        if (!body) return false;
+
+        fetch(`/${videoId}/notes/add/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": csrfHeader(), "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ body: body, timestamp: timeEl.value || 0 }).toString(),
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) { alert(data.error || "{% trans 'Failed.' %}"); return; }
+                bodyEl.value = "";
+                addNoteToDom(data.note);
+                const empty = document.getElementById("noteEmpty");
+                if (empty) empty.remove();
+            })
+            .catch(() => alert("{% trans 'Failed.' %}"));
+        return false;
+    };
+
+    function addNoteToDom(note) {
+        const list = document.getElementById("noteList");
+        if (!list) return;
+        const el = document.createElement("div");
+        el.className = "note";
+        el.dataset.note = note.id;
+
+        const head = document.createElement("div");
+        head.className = "note-head";
+        const timeBtn = document.createElement("button");
+        timeBtn.type = "button";
+        timeBtn.className = "note-time-link";
+        timeBtn.textContent = "⏱ " + note.timestamp_formatted;
+        timeBtn.addEventListener("click", function () { seekToNote(note.timestamp); });
+        const date = document.createElement("span");
+        date.className = "note-date";
+        date.textContent = note.created;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "icon-btn";
+        remove.textContent = "✕";
+        remove.addEventListener("click", function () { deleteNote(note.id); });
+        head.append(timeBtn, date, remove);
+
+        const text = document.createElement("p");
+        text.className = "note-text";
+        text.textContent = note.body;
+
+        el.append(head, text);
+        list.prepend(el);
+    }
+
+    function deleteNote(noteId) {
+        fazakkirConfirm({
+            title: "{% trans 'Delete this note?' %}",
+            message: "{% trans 'The note will be removed and cannot be recovered.' %}",
+            confirmLabel: "{% trans 'Delete' %}",
+        }).then(function (ok) {
+            if (!ok) return;
+            fetch(`/notes/${noteId}/delete/`, {
+                method: "POST", headers: { "X-CSRFToken": csrfHeader() },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) { alert(data.error || "{% trans 'Failed.' %}"); return; }
+                    const el = document.querySelector(`.note[data-note="${noteId}"]`);
+                    if (el) el.remove();
+                })
+                .catch(() => alert("{% trans 'Failed.' %}"));
+        });
+    };
+
     // Inline handlers in the markup (onclick, onsubmit, onchange) call these by name.
     Object.assign(window, {
         retryAudio,
@@ -931,6 +1049,9 @@
         createPlaylistFromSave,
         postComment,
         deleteComment,
+        postNote,
+        deleteNote,
+        seekToNote,
     });
 })();
 </script>

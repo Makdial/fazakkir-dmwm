@@ -19,6 +19,10 @@
                     {% else %}
                         <span class="thumbnail-placeholder">▶</span>
                     {% endif %}
+                    {% if video.has_video %}
+                    <video class="card-preview" muted loop playsinline preload="none"
+                           data-src="{{ video.playback_url }}" aria-hidden="true"></video>
+                    {% endif %}
                     {% if video.duration_seconds %}
                     <span class="video-duration">{{ video.duration_formatted }}</span>
                     {% endif %}

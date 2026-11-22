@@ -30,7 +30,7 @@ from .audio import (
 from .audio_tasks import clear_stale_jobs, schedule_audio_generation
 from .duration_tasks import schedule_missing_durations
 from .forms import VideoEditForm, VideoUploadForm
-from .models import Comment, Playlist, PlaylistItem, SubtitleTrack, Video, VideoLike
+from .models import Activity, Comment, Playlist, PlaylistItem, SubtitleTrack, Video, VideoLike, VideoNote
 from .r2_storage import (
     StorageError,
     delete_file,
@@ -220,6 +220,7 @@ def video_detail(request, video_id):
                 playlist_videos = []
 
     _register_play(request, video)
+    log_activity(request.user, Activity.VERB_WATCHED, video=video, title=video.title)
 
     audio_pending = not video.has_audio and video.audio_status in ("", "processing")
     audio_failed = not video.has_audio and video.audio_status == "failed"
@@ -292,6 +293,11 @@ def video_detail(request, video_id):
             "subtitles_failed": video.auto_subtitle_status == "failed",
             "subtitle_tracks": video.subtitle_tracks.all(),
             "subtitle_choices": [(code, _(name)) for code, name in language_choices()],
+            "video_notes": (
+                VideoNote.objects.filter(user=request.user, video=video).order_by("-created_at")
+                if request.user.is_authenticated
+                else []
+            ),
         },
     )
 
@@ -631,6 +637,7 @@ def video_upload(request):
             duration_seconds=duration,
         )
         _notify_storage_after_upload()
+        log_activity(request.user, Activity.VERB_UPLOADED, video=video, title=video.title)
         payload = {
             "success": True,
             "video_id": video.id,
@@ -681,6 +688,7 @@ def video_upload(request):
     )
 
     _notify_storage_after_upload()
+    log_activity(request.user, Activity.VERB_UPLOADED, video=video, title=video.title)
 
     payload = {
         "success": True,
@@ -927,6 +935,11 @@ def video_vote(request, video_id):
 
     video.save(update_fields=["likes", "dislikes"])
 
+    if user_vote == VideoLike.LIKE:
+        log_activity(request.user, Activity.VERB_LIKED, video=video, title=video.title)
+    elif user_vote == VideoLike.DISLIKE:
+        log_activity(request.user, Activity.VERB_DISLIKED, video=video, title=video.title)
+
     return JsonResponse({
         "likes": video.likes,
         "dislikes": video.dislikes,
@@ -1081,6 +1094,14 @@ def comment_add(request, video_id):
         )
 
     comment = Comment.objects.create(video=video, user=request.user, body=body[:2000])
+
+    log_activity(
+        request.user,
+        Activity.VERB_COMMENTED,
+        video=video,
+        title=video.title,
+        detail=body[:120],
+    )
 
     display_name = comment.user.first_name or comment.user.username
     return JsonResponse(
@@ -1295,6 +1316,13 @@ def playlist_toggle_video(request, playlist_id):
     else:
         PlaylistItem.objects.create(playlist=playlist, video=video)
         added = True
+        log_activity(
+            request.user,
+            Activity.VERB_PLAYLIST_ADD,
+            video=video,
+            title=video.title,
+            detail=playlist.title,
+        )
 
     playlist.save(update_fields=["updated_at"])
 
@@ -1315,3 +1343,107 @@ def playlist_remove_video(request, playlist_id, video_id):
     PlaylistItem.objects.filter(playlist=playlist, video_id=video_id).delete()
     playlist.save(update_fields=["updated_at"])
     return JsonResponse({"success": True, "message": _("Removed from playlist")})
+
+
+# --- Notes & activity ---------------------------------------------------------
+
+def log_activity(user, verb, video=None, title="", detail=""):
+    """Best-effort record of a viewer action. Never breaks the request."""
+    if not getattr(user, "is_authenticated", False):
+        return
+    try:
+        Activity.objects.create(
+            user=user,
+            verb=verb,
+            video=video,
+            title=title or (video.title if video is not None else ""),
+            detail=detail or "",
+        )
+    except Exception:  # noqa: BLE001
+        logger.debug("Could not record activity", exc_info=True)
+
+
+@require_POST
+def note_add(request, video_id):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"success": False, "error": _("You must be signed in to take notes.")},
+            status=403,
+        )
+
+    video = get_object_or_404(Video, id=video_id)
+    body = (request.POST.get("body") or "").strip()
+    if not body:
+        return JsonResponse(
+            {"success": False, "error": _("Write something first.")}, status=400
+        )
+
+    try:
+        timestamp = float(request.POST.get("timestamp") or 0)
+    except (TypeError, ValueError):
+        timestamp = 0.0
+    if timestamp < 0:
+        timestamp = 0.0
+
+    note = VideoNote.objects.create(
+        user=request.user, video=video, timestamp_seconds=timestamp, body=body[:4000]
+    )
+
+    log_activity(
+        request.user,
+        Activity.VERB_NOTED,
+        video=video,
+        title=video.title,
+        detail=f"at {note.timestamp_formatted}: {note.body[:120]}",
+    )
+
+    return JsonResponse(
+        {
+            "success": True,
+            "note": {
+                "id": note.id,
+                "body": note.body,
+                "timestamp": note.timestamp_seconds,
+                "timestamp_formatted": note.timestamp_formatted,
+                "created": note.created_at.strftime("%b %d, %Y %H:%M"),
+            },
+        }
+    )
+
+
+@require_POST
+def note_delete(request, note_id):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"success": False, "error": _("You must be signed in.")}, status=403
+        )
+    note = get_object_or_404(VideoNote, id=note_id)
+    if note.user_id != request.user.id and not _can_moderate(request.user):
+        return JsonResponse(
+            {"success": False, "error": _("You cannot delete this note.")},
+            status=403,
+        )
+    note.delete()
+    return JsonResponse({"success": True})
+
+
+def my_notes(request):
+    if not request.user.is_authenticated:
+        return redirect("accounts:login")
+    notes = (
+        VideoNote.objects.filter(user=request.user)
+        .select_related("video__user")
+        .order_by("-created_at")
+    )
+    return render(request, "videos/my_notes.html", {"notes": notes})
+
+
+def my_activity(request):
+    if not request.user.is_authenticated:
+        return redirect("accounts:login")
+    activities = (
+        Activity.objects.filter(user=request.user)
+        .select_related("video")
+        .order_by("-created_at")[:200]
+    )
+    return render(request, "videos/my_activity.html", {"activities": activities})

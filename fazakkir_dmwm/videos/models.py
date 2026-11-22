@@ -326,3 +326,87 @@ class Comment(models.Model):
         from core.permissions import user_can_write
 
         return user_can_write(user)
+
+
+class VideoNote(models.Model):
+    """A personal note a viewer takes on a video.
+
+    Notes belong to the account that wrote them (guest or registered). They can
+    be anchored to a playback position so a viewer can jump back to the moment
+    a thought came to them, the way YouTube's "save note" feature works.
+    """
+
+    VERB_CHOICES = [
+        ("note", "Note"),
+    ]
+
+    user = models.ForeignKey(
+        "auth.User", on_delete=models.CASCADE, related_name="video_notes"
+    )
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name="notes")
+    timestamp_seconds = models.FloatField(default=0.0, blank=True)
+    body = models.TextField(max_length=4000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.username} note on {self.video.title}"
+
+    @property
+    def timestamp_formatted(self):
+        total = int(round(self.timestamp_seconds or 0))
+        if total < 0:
+            total = 0
+        hours, remainder = divmod(total, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if hours:
+            return f"{hours}:{minutes:02d}:{seconds:02d}"
+        return f"{minutes}:{seconds:02d}"
+
+
+class Activity(models.Model):
+    """A record of something a viewer did on the site.
+
+    Used to build the "My activity" page: every watch, like, comment, note,
+    playlist change and upload leaves a row here so the viewer can look back at
+    what they have been doing.
+    """
+
+    VERB_WATCHED = "watched"
+    VERB_LIKED = "liked"
+    VERB_DISLIKED = "disliked"
+    VERB_COMMENTED = "commented"
+    VERB_NOTED = "noted"
+    VERB_PLAYLIST_ADD = "playlist_add"
+    VERB_UPLOADED = "uploaded"
+    VERB_DOWNLOADED = "downloaded"
+    VERB_CHOICES = [
+        (VERB_WATCHED, "Watched"),
+        (VERB_LIKED, "Liked"),
+        (VERB_DISLIKED, "Disliked"),
+        (VERB_COMMENTED, "Commented"),
+        (VERB_NOTED, "Noted"),
+        (VERB_PLAYLIST_ADD, "Added to playlist"),
+        (VERB_UPLOADED, "Uploaded"),
+        (VERB_DOWNLOADED, "Downloaded"),
+    ]
+
+    user = models.ForeignKey(
+        "auth.User", on_delete=models.CASCADE, related_name="activities"
+    )
+    verb = models.CharField(max_length=20, choices=VERB_CHOICES)
+    video = models.ForeignKey(
+        Video, on_delete=models.CASCADE, null=True, blank=True, related_name="activities"
+    )
+    title = models.CharField(max_length=200, blank=True, default="")
+    detail = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.username} {self.verb} {self.title}"
