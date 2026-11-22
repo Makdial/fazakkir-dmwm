@@ -100,6 +100,13 @@
         </div>
         {% endif %}
 
+        {% if video.is_youtube and not video.has_audio %}
+        <div class="audio-status" id="ytAudioStatus">
+            <span>{% trans "Extract the MP3 from this YouTube video?" %}</span>
+            <button type="button" class="download-btn" onclick="extractYoutubeAudio()">{% trans "Get MP3" %}</button>
+        </div>
+        {% endif %}
+
         {% if video.has_audio or video.video_download_url %}
         <div class="player-controls">
             {% if video.has_audio and not is_audio_only %}
@@ -476,6 +483,22 @@
         fetch(url, { method: "POST", headers: { "X-CSRFToken": csrfHeader() } })
             .then(() => nav.reload())
             .catch(() => { button.disabled = false; });
+    };
+
+    function extractYoutubeAudio() {
+        const el = document.getElementById("ytAudioStatus");
+        const btn = el ? el.querySelector("button") : null;
+        if (btn) btn.disabled = true;
+        fetch(`/${videoId}/youtube-audio/`, {
+            method: "POST", headers: { "X-CSRFToken": csrfHeader() }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) nav.reload();
+                else alert(data.error || "{% trans 'Failed.' %}");
+            })
+            .catch(() => alert("{% trans 'Failed.' %}"))
+            .finally(() => { if (btn) btn.disabled = false; });
     };
 
     function deleteVideo(id) {
@@ -1053,6 +1076,7 @@
     // Inline handlers in the markup (onclick, onsubmit, onchange) call these by name.
     Object.assign(window, {
         retryAudio,
+        extractYoutubeAudio,
         deleteVideo,
         uploadSubtitle,
         deleteSubtitle,

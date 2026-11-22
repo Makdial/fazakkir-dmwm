@@ -48,6 +48,7 @@ urlpatterns = [
     path("<int:video_id>/audio-stream/", views.audio_stream, name="audio_stream"),
     path("<int:video_id>/audio-status/", views.audio_status, name="audio_status"),
     path("<int:video_id>/audio-generate/", views.audio_generate, name="audio_generate"),
+    path("<int:video_id>/youtube-audio/", views.youtube_audio, name="youtube_audio"),
     path("channel/<str:username>/", views.channel_videos, name="channel"),
     path("<int:video_id>/delete/", views.delete_video, name="delete"),
     path("<int:video_id>/edit/", views.video_edit, name="edit"),
