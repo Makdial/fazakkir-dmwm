@@ -20,11 +20,16 @@
         {% endcomment %}
         {% if video.is_youtube and not video.has_video %}
         <div class="watch-player-slot youtube-embed-slot">
-            <iframe src="{{ video.youtube_embed_url }}?origin={{ request.scheme }}://{{ request.get_host }}&enablejsapi=1&rel=0"
-                    title="{{ video.title }}"
-                    referrerpolicy="strict-origin-when-cross-origin"
-                    frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen loading="lazy"></iframe>
+            <div class="video-player-container youtube-player-container">
+                <div class="video-player youtube-player">
+                    <iframe src="{{ video.youtube_embed_url }}?origin={{ request.scheme }}://{{ request.get_host }}&enablejsapi=1&rel=0&modestbranding=1"
+                            title="{{ video.title }}"
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowfullscreen loading="lazy"></iframe>
+                </div>
+            </div>
         </div>
         {% else %}
         <div class="watch-player-slot" data-player-slot></div>

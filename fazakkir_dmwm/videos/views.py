@@ -588,6 +588,27 @@ def youtube_import(request):
         "quiet": True,
         "no_warnings": True,
     }
+    # yt-dlp needs ffmpeg to merge the separate video/audio streams. On the
+    # production image it is on PATH; locally (and on minimal hosts) it may only
+    # exist through imageio-ffmpeg, whose binary is renamed, so expose a copy
+    # named ffmpeg.exe for yt-dlp to find.
+    try:
+        import shutil
+
+        if not shutil.which("ffmpeg"):
+            import imageio_ffmpeg
+
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+            ffmpeg_dir = os.path.join(tmpdir, "ffmpeg-bin")
+            os.makedirs(ffmpeg_dir, exist_ok=True)
+            target = os.path.join(ffmpeg_dir, "ffmpeg.exe")
+            if not os.path.exists(target):
+                import shutil as _shutil
+
+                _shutil.copyfile(ffmpeg_exe, target)
+            ydl_opts["ffmpeg_location"] = ffmpeg_dir
+    except Exception:  # noqa: BLE001
+        pass
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
