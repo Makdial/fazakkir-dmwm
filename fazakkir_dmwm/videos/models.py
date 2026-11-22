@@ -34,6 +34,12 @@ class Video(models.Model):
     file_id = models.CharField(max_length=200, blank=True, default="")
     video_url = models.URLField(max_length=500, blank=True, default="")
 
+    # Optional YouTube source. When set, the video can be played from YouTube
+    # (embedded player) even before it has been imported into R2, and an
+    # administrator can trigger an import to make it a first-class recording
+    # with MP3 extraction, subtitles and offline support.
+    youtube_url = models.URLField(max_length=500, blank=True, default="")
+
     # Same idea for the optional/auto-generated thumbnail.
     thumbnail_file_id = models.CharField(max_length=200, blank=True, default="")
     thumbnail_url = models.URLField(max_length=500, blank=True)
@@ -102,7 +108,13 @@ class Video(models.Model):
     @property
     def display_thumbnail_url(self):
         """Public or presigned thumbnail URL, or an empty string."""
-        return r2_storage.resolve_url(self.thumbnail_file_id, self.thumbnail_url)
+        url = r2_storage.resolve_url(self.thumbnail_file_id, self.thumbnail_url)
+        if url:
+            return url
+        # Fall back to YouTube's thumbnail for recordings sourced from a link.
+        if self.youtube_video_id:
+            return f"https://img.youtube.com/vi/{self.youtube_video_id}/hqdefault.jpg"
+        return ""
 
     @property
     def has_audio(self):
@@ -118,6 +130,38 @@ class Video(models.Model):
     def has_video(self):
         """True when there is a picture to play."""
         return not self.is_audio_only and bool(self.file_id)
+
+    @property
+    def is_youtube(self):
+        """True when this recording came from a YouTube link."""
+        return bool(self.youtube_url)
+
+    @property
+    def youtube_video_id(self):
+        """Extract the 11-character video id from a YouTube URL, or ''."""
+        import re
+
+        url = (self.youtube_url or "").strip()
+        if not url:
+            return ""
+        patterns = [
+            r"youtube\.com/watch\?v=([A-Za-z0-9_-]{11})",
+            r"youtu\.be/([A-Za-z0-9_-]{11})",
+            r"youtube\.com/embed/([A-Za-z0-9_-]{11})",
+            r"youtube\.com/shorts/([A-Za-z0-9_-]{11})",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+        return ""
+
+    @property
+    def youtube_embed_url(self):
+        vid = self.youtube_video_id
+        if not vid:
+            return ""
+        return f"https://www.youtube.com/embed/{vid}"
 
     @property
     def audio_playback_url(self):

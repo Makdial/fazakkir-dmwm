@@ -101,6 +101,65 @@
         </form>
     </div>
 </div>
+
+<div class="upload-container youtube-import-container">
+    <div class="upload-card">
+        <h1>{% trans "Import from YouTube" %}</h1>
+        <p class="upload-help">{% trans "Paste a YouTube link to add it to the library. 'Import' downloads the video into storage so it gets every feature (MP3, subtitles, offline, downloads). 'Add as link' keeps it on YouTube and plays it through the embedded player." %}</p>
+
+        <div class="form-group">
+            <label for="ytUrl">{% trans "YouTube link" %}</label>
+            <input type="url" id="ytUrl" class="form-input" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+        <div class="form-group">
+            <label for="ytTitle">{% trans "Title" %}</label>
+            <input type="text" id="ytTitle" class="form-input" placeholder="{% trans 'Enter video title' %}">
+        </div>
+        <div class="form-group">
+            <label for="ytMode">{% trans "Mode" %}</label>
+            <select id="ytMode" class="form-input">
+                <option value="import">{% trans "Import (download into storage)" %}</option>
+                <option value="link">{% trans "Add as YouTube link (embed only)" %}</option>
+            </select>
+        </div>
+        <button type="button" class="btn-submit" id="ytSubmitBtn" onclick="submitYoutube()">{% trans "Add YouTube video" %}</button>
+        <div id="ytError" class="error-list" style="margin-top:10px;"></div>
+    </div>
+</div>
+<script>
+async function submitYoutube() {
+    const url = document.getElementById("ytUrl").value.trim();
+    const title = document.getElementById("ytTitle").value.trim();
+    const mode = document.getElementById("ytMode").value;
+    const btn = document.getElementById("ytSubmitBtn");
+    const err = document.getElementById("ytError");
+    err.innerHTML = "";
+    if (!url) { err.innerHTML = "<li>{% trans 'Paste a YouTube link first.' %}</li>"; return; }
+    btn.disabled = true;
+    btn.textContent = "{% trans 'Working…' %}";
+    try {
+        const body = new FormData();
+        body.append("youtube_url", url);
+        body.append("title", title);
+        body.append("mode", mode);
+        body.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+        const res = await fetch("{% url 'videos:youtube_import' %}", { method: "POST", body });
+        const text = await res.text();
+        let data = null;
+        try { data = JSON.parse(text); } catch (e) { data = null; }
+        if (data && data.success) {
+            location.href = "{% url 'videos:list' %}";
+            return;
+        }
+        err.innerHTML = `<li>${(data && (data.error || data.errors)) || "{% trans 'Failed.' %}"}</li>`;
+    } catch (e) {
+        err.innerHTML = `<li>{% trans 'Failed.' %}</li>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "{% trans 'Add YouTube video' %}";
+    }
+}
+</script>
 {% endblock %}
 
 {% block extra_js %}

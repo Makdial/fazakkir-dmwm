@@ -26,6 +26,7 @@ urlpatterns = [
     path("offline/", views.offline_library, name="offline"),
     path("upload/", views.video_upload_page, name="upload"),
     path("upload/submit/", views.video_upload, name="upload_submit"),
+    path("upload/youtube/", views.youtube_import, name="youtube_import"),
     path("playlists/", views.playlist_list, name="playlists"),
     path("playlists/new/", views.playlist_create, name="playlist_create"),
     path("playlists/<int:playlist_id>/", views.playlist_detail, name="playlist_detail"),

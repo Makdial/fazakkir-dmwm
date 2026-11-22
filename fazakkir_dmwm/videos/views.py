@@ -505,6 +505,203 @@ def video_upload_page(request):
     )
 
 
+@write_required
+@require_POST
+def youtube_import(request):
+    """Import a video from a YouTube link.
+
+    With ``mode=import`` (the default) the footage is downloaded with yt-dlp and
+    stored in R2, so it gets every feature the site offers (MP3, subtitles,
+    offline, downloads). With ``mode=link`` only the URL is saved and the video
+    is played through YouTube's embedded player, with no download.
+    """
+    youtube_url = (request.POST.get("youtube_url") or "").strip()
+    title = (request.POST.get("title") or "").strip()
+    mode = (request.POST.get("mode") or "import").strip().lower()
+
+    if not youtube_url:
+        return JsonResponse(
+            {"success": False, "error": _("Paste a YouTube link first.")}, status=400
+        )
+
+    # Minimal validation that this looks like a YouTube URL.
+    if "youtube.com" not in youtube_url and "youtu.be" not in youtube_url:
+        return JsonResponse(
+            {"success": False, "error": _("That does not look like a YouTube link.")},
+            status=400,
+        )
+
+    if not title:
+        title = "YouTube video"
+
+    # Link-only mode: no download, play through YouTube's embed.
+    if mode == "link":
+        video = Video.objects.create(
+            user=request.user,
+            title=title[:120],
+            description="",
+            media_type="video",
+            youtube_url=youtube_url,
+        )
+        log_activity(
+            request.user, Activity.VERB_UPLOADED, video=video, title=video.title
+        )
+        return JsonResponse(
+            {"success": True, "video_id": video.id, "mode": "link",
+             "message": _("YouTube link added.")}
+        )
+
+    # Import mode: download the footage and store it in R2.
+    try:
+        import yt_dlp
+    except ImportError:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": _(
+                    "yt-dlp is not installed on this server, so importing is "
+                    "unavailable. Use 'Add as YouTube link' instead, or install "
+                    "yt-dlp."
+                ),
+            },
+            status=400,
+        )
+
+    if not is_configured():
+        return JsonResponse(
+            {
+                "success": False,
+                "error": _("Video storage is not configured yet."),
+            },
+            status=400,
+        )
+
+    import os
+    import tempfile
+
+    tmpdir = tempfile.mkdtemp()
+    outtmpl = os.path.join(tmpdir, "video.%(ext)s")
+    ydl_opts = {
+        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "outtmpl": outtmpl,
+        "merge_output_format": "mp4",
+        "quiet": True,
+        "no_warnings": True,
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(youtube_url, download=True)
+            downloaded = ydl.prepare_filename(info)
+            # merge_output_format may change the extension.
+            if not os.path.exists(downloaded):
+                candidates = [
+                    os.path.join(tmpdir, f)
+                    for f in os.listdir(tmpdir)
+                    if f.startswith("video.")
+                ]
+                if candidates:
+                    downloaded = candidates[0]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("YouTube download failed", exc_info=True)
+        return JsonResponse(
+            {"success": False, "error": _("Could not download that video: %(err)s")
+             % {"err": str(exc)[:200]}},
+            status=400,
+        )
+
+    if not os.path.exists(downloaded):
+        return JsonResponse(
+            {"success": False, "error": _("The download did not produce a file.")},
+            status=400,
+        )
+
+    # Measure duration and extract the MP3, like a normal upload.
+    try:
+        from .audio import get_duration
+
+        duration = get_duration(downloaded)
+    except Exception:
+        duration = 0.0
+
+    # Upload the video to R2.
+    try:
+        with open(downloaded, "rb") as handle:
+            result = upload_video(file_data=handle, file_name=os.path.basename(downloaded))
+    except StorageError as exc:
+        return JsonResponse({"success": False, "error": str(exc)}, status=400)
+
+    # Extract MP3.
+    audio_file_id, audio_url, audio_status = "", "", ""
+    try:
+        mp3_path = os.path.join(tmpdir, "audio.mp3")
+        if extract_mp3(downloaded, mp3_path):
+            with open(mp3_path, "rb") as mp3_file:
+                audio_result = upload_audio(mp3_file, title + ".mp3")
+            audio_file_id = audio_result["path"]
+            audio_url = audio_result["url"]
+            audio_status = "ready"
+        else:
+            audio_status = "none"
+        _remove_path(mp3_path)
+    except Exception:  # noqa: BLE001
+        audio_status = ""
+
+    thumbnail_file_id, thumbnail_url, warning = "", "", ""
+    # Use YouTube's thumbnail when nothing else is available.
+    vid_id = ""
+    try:
+        import re
+
+        for pattern in (
+            r"youtube\.com/watch\?v=([A-Za-z0-9_-]{11})",
+            r"youtu\.be/([A-Za-z0-9_-]{11})",
+        ):
+            m = re.search(pattern, youtube_url)
+            if m:
+                vid_id = m.group(1)
+                break
+    except Exception:
+        pass
+    if vid_id:
+        thumbnail_url = f"https://img.youtube.com/vi/{vid_id}/hqdefault.jpg"
+
+    video = Video.objects.create(
+        user=request.user,
+        title=title[:120],
+        description="",
+        media_type="video",
+        file_id=result["path"],
+        video_url=result["url"],
+        thumbnail_file_id=thumbnail_file_id,
+        thumbnail_url=thumbnail_url,
+        audio_file_id=audio_file_id,
+        audio_url=audio_url,
+        audio_status=audio_status,
+        duration_seconds=duration,
+        youtube_url=youtube_url,
+    )
+
+    _notify_storage_after_upload()
+    log_activity(request.user, Activity.VERB_UPLOADED, video=video, title=video.title)
+
+    # Clean up temp files.
+    try:
+        for f in os.listdir(tmpdir):
+            _remove_path(os.path.join(tmpdir, f))
+        os.rmdir(tmpdir)
+    except OSError:
+        pass
+
+    payload = {"success": True, "video_id": video.id, "mode": "import",
+               "message": _("YouTube video imported.")}
+    if warning:
+        payload["warning"] = warning
+    if audio_status == "":
+        schedule_audio_generation(video.id)
+    return JsonResponse(payload)
+
+
 # The cover travels either as a streamed file part (preferred) or, from an older
 # page, as a base64 data URL inside a normal form field. A phone photo is many
 # megabytes, and Django refuses a request whose fields are too large before any

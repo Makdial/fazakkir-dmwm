@@ -11,3 +11,4 @@ openai>=1.40.0
 psycopg[binary]>=3.2.0
 python-dotenv>=1.2.4
 whitenoise>=6.6.0
+yt-dlp>=2024.0.0

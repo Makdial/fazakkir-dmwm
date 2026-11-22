@@ -18,8 +18,16 @@
             site (videos/_player.html), so it can keep playing when the visitor moves to
             another page. player.js docks it into this slot when the page is shown.
         {% endcomment %}
+        {% if video.is_youtube and not video.has_video %}
+        <div class="watch-player-slot youtube-embed-slot">
+            <iframe src="{{ video.youtube_embed_url }}" title="{{ video.title }}"
+                    frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen loading="lazy"></iframe>
+        </div>
+        {% else %}
         <div class="watch-player-slot" data-player-slot></div>
         {{ playback|json_script:"fz-video-data" }}
+        {% endif %}
         {% comment %}
             Always shown, even when the video has no captions yet: a viewer
             should be able to see that the feature exists and what it is set to,
