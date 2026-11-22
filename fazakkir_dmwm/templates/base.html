@@ -112,6 +112,7 @@
                 {% endif %}
                 {% comment %}Every visitor gets a guest account automatically, so these are available without signing in.{% endcomment %}
                 <li><a href="{% url 'videos:playlists' %}" class="nav-link">{% trans "Playlists" %}</a></li>
+<li><a href="{% url 'videos:watch_later' %}" class="nav-link">{% trans "Watch later" %}</a></li>
                 <li>
                     <button type="button" class="nav-link nav-queue-btn" id="fzQueueToggle"
                             aria-controls="fzQueue" aria-expanded="false">

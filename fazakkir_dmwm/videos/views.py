@@ -181,6 +181,28 @@ def _translate_description(text, target_language):
     return result
 
 
+def parse_chapters(description):
+    """Parse 'M:SS Title' or 'H:MM:SS Title' lines from a description."""
+    import re
+
+    chapters = []
+    if not description:
+        return chapters
+    pattern = re.compile(r"^\s*(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+?)\s*$")
+    for line in (description or "").splitlines():
+        match = pattern.match(line)
+        if not match:
+            continue
+        stamp, title = match.group(1), match.group(2).strip()
+        parts = stamp.split(":")
+        if len(parts) == 3:
+            seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+        else:
+            seconds = int(parts[0]) * 60 + int(parts[1])
+        chapters.append({"time": seconds, "label": stamp, "title": title})
+    return chapters
+
+
 def video_detail(request, video_id):
     video = get_object_or_404(Video.objects, id=video_id)
 
@@ -245,6 +267,7 @@ def video_detail(request, video_id):
 
     user_playlists = []
     playlist_ids_with_video = set()
+    in_watch_later = False
     if request.user.is_authenticated:
         user_playlists = list(
             request.user.playlists.annotate(item_count=Count("items"))
@@ -254,6 +277,9 @@ def video_detail(request, video_id):
                 playlist__user=request.user, video=video
             ).values_list("playlist_id", flat=True)
         )
+        wl = Playlist.objects.filter(user=request.user, title="Watch Later").first()
+        if wl is not None:
+            in_watch_later = PlaylistItem.objects.filter(playlist=wl, video=video).exists()
 
     # Absolute links a visitor can send to a friend. The MP3 is shared through
     # our own audio-stream route rather than the presigned download URL, because
@@ -279,6 +305,7 @@ def video_detail(request, video_id):
             "comment_count": comments.count(),
             "user_playlists": user_playlists,
             "playlist_ids_with_video": playlist_ids_with_video,
+            "in_watch_later": in_watch_later,
             "audio_pending": audio_pending,
             "audio_failed": audio_failed,
             "audio_none": audio_none,
@@ -293,6 +320,7 @@ def video_detail(request, video_id):
             "subtitles_failed": video.auto_subtitle_status == "failed",
             "subtitle_tracks": video.subtitle_tracks.all(),
             "subtitle_choices": [(code, _(name)) for code, name in language_choices()],
+            "chapters": parse_chapters(video.description),
             "video_notes": (
                 VideoNote.objects.filter(user=request.user, video=video).order_by("-created_at")
                 if request.user.is_authenticated
@@ -1699,3 +1727,49 @@ def my_activity(request):
         .order_by("-created_at")[:200]
     )
     return render(request, "videos/my_activity.html", {"activities": activities})
+
+
+# --- Watch Later ---------------------------------------------------------------
+
+def _watch_later_playlist(user):
+    """Get or create the user's private 'Watch Later' playlist."""
+    playlist = Playlist.objects.filter(user=user, title="Watch Later").first()
+    if playlist is None:
+        playlist = Playlist.objects.create(
+            user=user, title="Watch Later", is_public=False
+        )
+    return playlist
+
+
+def watch_later(request):
+    if not request.user.is_authenticated:
+        return redirect("accounts:login")
+    playlist = _watch_later_playlist(request.user)
+    items = playlist.items.all()
+    return render(
+        request, "videos/playlist_detail.html",
+        {"playlist": playlist, "items": items, "is_owner": True},
+    )
+
+
+@require_POST
+def watch_later_toggle(request, video_id):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"success": False, "error": _("You must be signed in.")}, status=403
+        )
+    video = get_object_or_404(Video, id=video_id)
+    playlist = _watch_later_playlist(request.user)
+    item = PlaylistItem.objects.filter(playlist=playlist, video=video).first()
+    if item:
+        item.delete()
+        added = False
+    else:
+        PlaylistItem.objects.create(playlist=playlist, video=video)
+        added = True
+        log_activity(
+            request.user, Activity.VERB_PLAYLIST_ADD, video=video,
+            title=video.title, detail="Watch Later",
+        )
+    playlist.save(update_fields=["updated_at"])
+    return JsonResponse({"success": True, "added": added})

@@ -193,6 +193,13 @@
 .activity-detail { color: var(--text-secondary); font-size: 0.9rem; }
 .activity-date { color: var(--text-secondary); font-size: 0.8rem; margin-left: auto; width: 100%; }
 
+.chapters-section { margin: 16px 0; padding: 12px; border: 1px solid var(--border-color, #333); border-radius: 8px; }
+.chapters-title { margin: 0 0 8px; font-size: 1rem; }
+.chapters-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.chapter-link { display: flex; gap: 10px; align-items: baseline; background: none; border: none; cursor: pointer; text-align: left; padding: 4px 0; color: inherit; width: 100%; }
+.chapter-time { color: var(--accent, #3ea6ff); font-weight: 600; font-variant-numeric: tabular-nums; min-width: 48px; }
+.chapter-title { flex: 1; }
+
 /* Mobile: stack the note form and tighten cards so every feature is usable on
    a phone, matching the rest of the site's responsive behaviour. */
 @media (max-width: 640px) {

@@ -152,6 +152,11 @@
                     <button type="button" class="vote-btn" id="saveToggle" aria-expanded="false" onclick="toggleSaveMenu()">
                         ＋ {% trans "Save" %}
                     </button>
+                    <button type="button" class="vote-btn" id="watchLaterToggle"
+                            data-added="{% if in_watch_later %}1{% else %}0{% endif %}"
+                            onclick="toggleWatchLater()">
+                        {% if in_watch_later %}✓{% else %}⏱{% endif %} {% trans "Watch later" %}
+                    </button>
                     {% endif %}
                     <button type="button" class="vote-btn" id="shareToggle" aria-expanded="false"
                             aria-controls="sharePanel" onclick="toggleShareMenu()">
@@ -229,6 +234,22 @@
 
             {% if video.description %}
             <p class="video-description">{{ video.description }}</p>
+            {% endif %}
+
+            {% if chapters %}
+            <div class="chapters-section">
+                <h3 class="chapters-title">{% trans "Chapters" %}</h3>
+                <ol class="chapters-list">
+                    {% for ch in chapters %}
+                    <li>
+                        <button type="button" class="chapter-link" onclick="seekToChapter({{ ch.time }})">
+                            <span class="chapter-time">{{ ch.label }}</span>
+                            <span class="chapter-title">{{ ch.title }}</span>
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ol>
+            </div>
             {% endif %}
 
             {% if can_write %}
@@ -1080,6 +1101,27 @@
         });
     };
 
+    function seekToChapter(seconds) {
+        const player = document.querySelector("video");
+        if (player) { try { player.currentTime = seconds; player.play(); } catch (e) {} }
+    };
+
+    function toggleWatchLater() {
+        const btn = document.getElementById("watchLaterToggle");
+        fetch(`/${videoId}/watch-later/`, {
+            method: "POST", headers: { "X-CSRFToken": csrfHeader() }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) { alert(data.error || "{% trans 'Failed.' %}"); return; }
+                if (btn) {
+                    btn.dataset.added = data.added ? "1" : "0";
+                    btn.innerHTML = (data.added ? "✓" : "⏱") + " {% trans 'Watch later' %}";
+                }
+            })
+            .catch(() => alert("{% trans 'Failed.' %}"));
+    };
+
     // Inline handlers in the markup (onclick, onsubmit, onchange) call these by name.
     Object.assign(window, {
         retryAudio,
@@ -1098,6 +1140,8 @@
         postNote,
         deleteNote,
         seekToNote,
+        seekToChapter,
+        toggleWatchLater,
     });
 })();
 </script>

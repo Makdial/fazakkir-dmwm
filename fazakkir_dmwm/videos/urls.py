@@ -28,6 +28,7 @@ urlpatterns = [
     path("upload/submit/", views.video_upload, name="upload_submit"),
     path("upload/youtube/", views.youtube_import, name="youtube_import"),
     path("playlists/", views.playlist_list, name="playlists"),
+    path("watch-later/", views.watch_later, name="watch_later"),
     path("playlists/new/", views.playlist_create, name="playlist_create"),
     path("playlists/<int:playlist_id>/", views.playlist_detail, name="playlist_detail"),
     path("playlists/<int:playlist_id>/delete/", views.playlist_delete, name="playlist_delete"),
@@ -53,6 +54,7 @@ urlpatterns = [
     path("<int:video_id>/delete/", views.delete_video, name="delete"),
     path("<int:video_id>/edit/", views.video_edit, name="edit"),
     path("<int:video_id>/vote/", views.video_vote, name="vote"),
+    path("<int:video_id>/watch-later/", views.watch_later_toggle, name="watch_later"),
     path("<int:video_id>/comments/add/", views.comment_add, name="comment_add"),
     path(
         "<int:video_id>/subtitles/<str:language_code>.vtt",
