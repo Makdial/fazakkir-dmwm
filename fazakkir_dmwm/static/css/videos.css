@@ -690,9 +690,9 @@
     }
 }
 
-@media (max-width: 768px) {
-    /* On phones the pinned player would otherwise cover the bottom of the
-       page, so let the page scroll naturally to its last item. */
+@media (max-width: 1000px) {
+    /* On tablets and phones the layout is a single column, so a pinned player
+       would cover the bottom of the page; let it scroll with the content. */
     .watch-player-slot,
     .fz-player-host.is-docked {
         position: static;
