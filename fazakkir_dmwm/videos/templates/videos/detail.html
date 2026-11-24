@@ -534,6 +534,11 @@
                             if (window.FZ && window.FZ.player) {
                                 window.FZ.player.dock(ytAudioSlot);
                                 window.FZ.player.setCurrent(data, { autoplay: true });
+                                const cover = document.getElementById("audioCover");
+                                if (cover && data.thumbnail_url) {
+                                    cover.hidden = false;
+                                    cover.src = data.thumbnail_url;
+                                }
                             }
                             ytLoaded = true;
                         })
