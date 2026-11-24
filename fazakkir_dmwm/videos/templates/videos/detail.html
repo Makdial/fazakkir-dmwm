@@ -410,6 +410,7 @@
                 {% if related.duration_seconds %}
                 <span class="video-duration">{{ related.duration_formatted }}</span>
                 {% endif %}
+                {% include "videos/_queue_menu.html" with video=related variant="card" %}
             </div>
             <div class="related-info">
                 <h3 class="related-title">{{ related.title }}</h3>
