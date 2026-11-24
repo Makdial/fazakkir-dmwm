@@ -12,6 +12,7 @@
     function init() {
         var cards = document.querySelectorAll(".video-card");
         cards.forEach(function (card) {
+            if (card.getAttribute("data-preview-bound") === "1") return;
             var thumb = card.querySelector(".video-thumbnail");
             if (!thumb) return;
             var preview = thumb.querySelector(".card-preview");
@@ -19,6 +20,7 @@
             var src = preview ? preview.getAttribute("data-src") : null;
 
             if (!preview && !ytId) return;
+            card.setAttribute("data-preview-bound", "1");
 
             var loaded = false;
             var hoverTimer = null;
@@ -115,6 +117,8 @@
             }, true);
         });
     }
+
+    document.addEventListener("fz:page", init);
 
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", init);
