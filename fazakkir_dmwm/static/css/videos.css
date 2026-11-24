@@ -277,6 +277,9 @@
     column-gap: 20px;
     row-gap: 16px;
     align-items: start;
+    /* Leave room at the bottom so the last items can scroll clear of the
+       pinned player instead of ending up hidden behind it. */
+    padding-bottom: 30vh;
 }
 
 /* Keep the playing video fixed in view while the page below scrolls. */
