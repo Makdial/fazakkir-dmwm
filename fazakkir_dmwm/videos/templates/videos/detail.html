@@ -109,7 +109,7 @@
 
         {% if video.has_audio or video.video_download_url %}
         <div class="player-controls">
-            {% if video.has_audio and not is_audio_only %}
+            {% if video.has_audio and not is_audio_only or video.has_audio and video.is_youtube %}
             <div class="mode-toggle" role="group" aria-label="{% trans 'Playback mode' %}">
                 <button type="button" id="mode-video" class="mode-btn active"
                         onclick="setMode('video')">{% trans "Video" %}</button>
