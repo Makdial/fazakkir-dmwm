@@ -1165,6 +1165,9 @@
             playNextFromQueue: playNextFromQueue,
             close: close,
             toggle: togglePlayPause,
+            dock: dock,
+            undock: undock,
+            setCurrent: setCurrent,
         }
     }
 

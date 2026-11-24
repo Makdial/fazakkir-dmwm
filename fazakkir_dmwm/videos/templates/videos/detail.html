@@ -19,7 +19,7 @@
             another page. player.js docks it into this slot when the page is shown.
         {% endcomment %}
         {% if video.is_youtube and not video.has_video %}
-        <div class="watch-player-slot youtube-embed-slot">
+        <div class="watch-player-slot youtube-embed-slot" id="ytVideoFrame">
             <div class="video-player-container youtube-player-container">
                 <div class="video-player youtube-player">
                     <iframe src="{{ video.youtube_embed_url }}?origin={{ request.scheme }}://{{ request.get_host }}&enablejsapi=1&rel=0&modestbranding=1"
@@ -31,6 +31,7 @@
                 </div>
             </div>
         </div>
+        <div class="watch-player-slot" id="ytAudioSlot" hidden></div>
         {% else %}
         <div class="watch-player-slot" data-player-slot></div>
         {{ playback|json_script:"fz-video-data" }}
@@ -505,6 +506,56 @@
             .then(() => nav.reload())
             .catch(() => { button.disabled = false; });
     };
+
+    const ytVideoFrame = document.getElementById("ytVideoFrame");
+    const ytAudioSlot = document.getElementById("ytAudioSlot");
+    if (ytVideoFrame && ytAudioSlot) {
+        let ytMode = "video";
+        let ytLoaded = false;
+        const ytPlaybackUrl = "{% url 'videos:playback' video.id %}";
+        function updateYtModeButtons() {
+            const vb = document.getElementById("mode-video");
+            const ab = document.getElementById("mode-audio");
+            if (vb) vb.classList.toggle("active", ytMode === "video");
+            if (ab) ab.classList.toggle("active", ytMode === "audio");
+        }
+        window.setMode = function (next) {
+            if (next === "audio" && ytMode === "video") {
+                const iframe = ytVideoFrame.querySelector("iframe");
+                if (iframe && iframe._ytPlayer && typeof iframe._ytPlayer.pauseVideo === "function") {
+                    try { iframe._ytPlayer.pauseVideo(); } catch (e) {}
+                }
+                ytVideoFrame.hidden = true;
+                ytAudioSlot.hidden = false;
+                if (!ytLoaded) {
+                    fetch(ytPlaybackUrl, { credentials: "same-origin", headers: { Accept: "application/json" } })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (window.FZ && window.FZ.player) {
+                                window.FZ.player.dock(ytAudioSlot);
+                                window.FZ.player.setCurrent(data, { autoplay: true });
+                            }
+                            ytLoaded = true;
+                        })
+                        .catch(() => {});
+                } else {
+                    const ap = document.getElementById("audio-player");
+                    if (ap) {
+                        const p = ap.play();
+                        if (p && typeof p.catch === "function") p.catch(() => {});
+                    }
+                }
+                ytMode = "audio";
+            } else if (next === "video" && ytMode === "audio") {
+                const ap = document.getElementById("audio-player");
+                if (ap) ap.pause();
+                ytAudioSlot.hidden = true;
+                ytVideoFrame.hidden = false;
+                ytMode = "video";
+            }
+            updateYtModeButtons();
+        };
+    }
 
     function extractYoutubeAudio() {
         const el = document.getElementById("ytAudioStatus");
