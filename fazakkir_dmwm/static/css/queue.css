@@ -107,30 +107,6 @@
     z-index: 100;
 }
 
-@media (max-width: 1000px) {
-    .watch-player-slot,
-    .fz-player-host.is-docked {
-        position: sticky;
-        top: 56px;
-    }
-}
-
-@media (max-width: 768px) {
-    .watch-player-slot,
-    .fz-player-host.is-docked {
-        position: sticky;
-        top: 56px;
-    }
-}
-
-@media (min-width: 1001px) and (max-width: 1200px) {
-    .watch-player-slot,
-    .fz-player-host.is-docked {
-        position: sticky;
-        top: 56px;
-    }
-}
-
 .fz-mini-title {
     flex: 1 1 auto;
     min-width: 0;

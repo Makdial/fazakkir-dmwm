@@ -694,8 +694,10 @@
 
 /* On phones and tablets keep the video frame fixed at the top of the viewport
    (like YouTube) while the rest of the page scrolls underneath it, so it
-   stays visible no matter how many related videos follow. Reserve the frame's
-   height at the top of the page so content does not slide under it. */
+   stays visible no matter how many related videos follow. The control bar
+   floats over the picture here (as it does on desktop), so the pinned band is
+   exactly one 16:9 frame high. The slot paints an opaque band edge to edge;
+   the picture itself stays inset like the rest of the page. */
 @media (max-width: 1000px) {
     .watch-main {
         display: contents;
@@ -703,56 +705,107 @@
     .watch-player-slot {
         position: fixed;
         top: 56px;
-        left: 16px;
-        right: 16px;
+        left: 0;
+        right: 0;
         z-index: 100;
+        margin: 0;
+        padding: 0 16px 12px;
+        background: var(--bg-primary);
+        box-shadow: 0 1px 0 var(--border-color);
+    }
+    /* The slot is now a full-width band, so its children no longer need the
+       old left/right offsets. */
+    .watch-player-slot .fz-player-host,
+    .watch-player-slot > .video-player-container {
+        width: auto;
+    }
+    .watch-player-slot .fz-player-host.is-docked {
+        position: static;
+    }
+    .watch-player-slot .video-player {
+        margin-bottom: 0;
+        border-radius: var(--radius-lg);
+    }
+    .watch-player-slot:empty {
+        margin: 0;
+        aspect-ratio: auto;
+        background: var(--bg-primary);
+        border-radius: 0;
+    }
+    .watch-player-slot:empty::before {
+        content: "";
+        display: block;
+        aspect-ratio: 16 / 9;
+        background: #000;
+        border-radius: var(--radius-lg);
+    }
+    /* Float the bar over the picture, matching the desktop player. Below the
+       picture it would add ~130px to the pinned band and hide the page. */
+    .watch-player-slot .player-bar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 8px 10px 10px;
+        border: none;
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+        --bar-fg: #fff;
+        --bar-btn: rgba(255, 255, 255, 0.18);
+        --bar-btn-hover: rgba(255, 255, 255, 0.34);
+        --bar-field: rgba(255, 255, 255, 0.18);
+    }
+    .watch-player-slot .player-btn {
+        border-color: rgba(255, 255, 255, 0.18);
+    }
+    .watch-player-slot .player-rate {
+        border-color: rgba(255, 255, 255, 0.18);
+    }
+    .watch-player-slot .player-bar .cc-list {
+        top: auto;
+        bottom: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        min-width: 0;
+        max-width: none;
+        background: #1c1c1c;
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+    .watch-player-slot .cc-item {
+        color: #fff;
+    }
+    .watch-player-slot .cc-item:hover {
+        background: rgba(255, 255, 255, 0.14);
     }
     .watch-layout {
-        padding-top: calc((100vw - 32px) * 9 / 16);
+        padding-top: calc((100vw - 32px) * 9 / 16 + 12px);
         padding-bottom: 35vh;
     }
 }
 
 @media (min-width: 769px) and (max-width: 1000px) {
     .watch-player-slot {
-        left: 24px;
-        right: 24px;
+        padding-inline: 24px;
     }
     .watch-layout {
-        padding-top: calc((100vw - 48px) * 9 / 16);
-    }
-}
-
-/* Landscape tablets are wider than 1000px but still need the same pinned
-   player, so the watch page stays a single column up to the desktop width. */
-@media (min-width: 1001px) and (max-width: 1200px) {
-    .watch-layout {
-        grid-template-columns: 1fr;
-        padding-top: calc((100vw - 48px) * 9 / 16);
-        padding-bottom: 35vh;
-    }
-    .watch-main {
-        display: contents;
-    }
-    .watch-player-slot {
-        position: fixed;
-        top: 56px;
-        left: 24px;
-        right: 24px;
-        z-index: 100;
-        aspect-ratio: 16 / 9;
+        padding-top: calc((100vw - 48px) * 9 / 16 + 12px);
     }
 }
 
 @media (max-width: 768px) {
-    .watch-player-slot {
-        left: 16px;
-        right: 16px;
+    .watch-player-slot #muteBtn {
+        /* The device's own volume buttons are the natural control on a phone,
+           and dropping this button keeps the floating bar to one row. */
+        display: none;
     }
-    .watch-layout {
-        /* The control bar sits below the picture on a phone, so reserve that
-           space too or it would cover the title underneath. */
-        padding-top: calc((100vw - 32px) * 9 / 16 + 96px);
+}
+
+@media (max-width: 768px) {
+    .watch-player-slot #muteBtn {
+        /* The device's own volume buttons are the natural control on a phone,
+           and dropping this button keeps the floating bar to one row. */
+        display: none;
     }
 }
 
