@@ -276,7 +276,9 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 402px);
     column-gap: 20px;
     row-gap: 16px;
-    align-items: start;
+    /* The main column stretches to the full height of the taller "Up next"
+       column, so its sticky player stays pinned all the way down the page. */
+    align-items: stretch;
     /* Leave room at the bottom so the last items can scroll clear of the
        pinned player instead of ending up hidden behind it. */
     padding-bottom: 35vh;
@@ -690,15 +692,67 @@
     }
 }
 
+/* On phones and tablets keep the video frame fixed at the top of the viewport
+   (like YouTube) while the rest of the page scrolls underneath it, so it
+   stays visible no matter how many related videos follow. Reserve the frame's
+   height at the top of the page so content does not slide under it. */
 @media (max-width: 1000px) {
-    /* On tablets and phones the layout is a single column, so a pinned player
-       would cover the bottom of the page; let it scroll with the content. */
-    .watch-player-slot,
-    .fz-player-host.is-docked {
-        position: static;
+    .watch-main {
+        display: contents;
+    }
+    .watch-player-slot {
+        position: fixed;
+        top: 56px;
+        left: 16px;
+        right: 16px;
+        z-index: 100;
     }
     .watch-layout {
+        padding-top: calc((100vw - 32px) * 9 / 16);
         padding-bottom: 35vh;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1000px) {
+    .watch-player-slot {
+        left: 24px;
+        right: 24px;
+    }
+    .watch-layout {
+        padding-top: calc((100vw - 48px) * 9 / 16);
+    }
+}
+
+/* Landscape tablets are wider than 1000px but still need the same pinned
+   player, so the watch page stays a single column up to the desktop width. */
+@media (min-width: 1001px) and (max-width: 1200px) {
+    .watch-layout {
+        grid-template-columns: 1fr;
+        padding-top: calc((100vw - 48px) * 9 / 16);
+        padding-bottom: 35vh;
+    }
+    .watch-main {
+        display: contents;
+    }
+    .watch-player-slot {
+        position: fixed;
+        top: 56px;
+        left: 24px;
+        right: 24px;
+        z-index: 100;
+        aspect-ratio: 16 / 9;
+    }
+}
+
+@media (max-width: 768px) {
+    .watch-player-slot {
+        left: 16px;
+        right: 16px;
+    }
+    .watch-layout {
+        /* The control bar sits below the picture on a phone, so reserve that
+           space too or it would cover the title underneath. */
+        padding-top: calc((100vw - 32px) * 9 / 16 + 96px);
     }
 }
 
