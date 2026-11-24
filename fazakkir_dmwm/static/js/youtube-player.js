@@ -23,8 +23,24 @@
                 onReady: function (e) {
                     bindMediaSession(e.target, iframe);
                 },
-                onStateChange: function () {
+                onStateChange: function (e) {
                     syncState();
+                    // When the YouTube video finishes, move on to the first
+                    // "Up next" recording automatically.
+                    if (e && e.data === 0) {
+                        var next = document.querySelector(".related-card");
+                        if (next && next.href) {
+                            var url = next.href;
+                            if (url.indexOf("autoplay=") === -1) {
+                                url += (url.indexOf("?") === -1 ? "?" : "&") + "autoplay=1";
+                            }
+                            if (window.FZ && window.FZ.nav && typeof window.FZ.nav.navigate === "function") {
+                                window.FZ.nav.navigate(url);
+                            } else {
+                                window.location.href = url;
+                            }
+                        }
+                    }
                 },
             },
         });

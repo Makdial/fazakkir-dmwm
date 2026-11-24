@@ -407,7 +407,20 @@
     function onEnded() {
         refreshAll()
         saveNow()
-        if (queueCount()) playNextFromQueue()
+        if (queueCount()) {
+            playNextFromQueue()
+            return
+        }
+        // No queue: continue with the first "Up next" video on the watch page.
+        var nextLink = document.querySelector(".related-card")
+        if (nextLink && nextLink.getAttribute("href")) {
+            pendingAutoplay = true
+            if (window.FZ && window.FZ.nav && typeof window.FZ.nav.navigate === "function") {
+                window.FZ.nav.navigate(nextLink.getAttribute("href"))
+            } else {
+                window.location.href = nextLink.getAttribute("href")
+            }
+        }
     }
 
     function close() {

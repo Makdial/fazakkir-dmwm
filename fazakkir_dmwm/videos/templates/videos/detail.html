@@ -22,7 +22,7 @@
         <div class="watch-player-slot youtube-embed-slot" id="ytVideoFrame">
             <div class="video-player-container youtube-player-container">
                 <div class="video-player youtube-player">
-                    <iframe src="{{ video.youtube_embed_url }}?origin={{ request.scheme }}://{{ request.get_host }}&enablejsapi=1&rel=0&modestbranding=1"
+                    <iframe src="{{ video.youtube_embed_url }}?origin={{ request.scheme }}://{{ request.get_host }}&enablejsapi=1&rel=0&modestbranding=1{% if request.GET.autoplay %}&autoplay=1{% endif %}"
                             title="{{ video.title }}"
                             referrerpolicy="strict-origin-when-cross-origin"
                             frameborder="0"
