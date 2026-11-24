@@ -279,7 +279,7 @@
     align-items: start;
     /* Leave room at the bottom so the last items can scroll clear of the
        pinned player instead of ending up hidden behind it. */
-    padding-bottom: 30vh;
+    padding-bottom: 35vh;
 }
 
 /* Keep the playing video fixed in view while the page below scrolls. */
@@ -698,7 +698,7 @@
         position: static;
     }
     .watch-layout {
-        padding-bottom: 16px;
+        padding-bottom: 35vh;
     }
 }
 
