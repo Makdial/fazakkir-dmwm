@@ -123,7 +123,7 @@
         );
     }
 
-    function swap(doc, url, push) {
+    function swap(doc, url, push, scrollY) {
         var nextMain = doc.querySelector("main.main-content");
         var currentMain = document.querySelector("main.main-content");
         if (!nextMain || !currentMain) {
@@ -136,9 +136,14 @@
         currentMain.replaceChildren.apply(currentMain, Array.from(nextMain.childNodes));
 
         if (push) {
-            history.pushState({ fz: true }, "", url);
+            history.pushState({ fz: true, scrollY: 0 }, "", url);
+            window.scrollTo(0, 0);
+        } else {
+            // Restore the position the visitor had on this page, so going back
+            // does not drop them at the top of a long list.
+            var y = (typeof scrollY === "number") ? scrollY : 0;
+            window.scrollTo(0, y);
         }
-        window.scrollTo(0, 0);
         document.dispatchEvent(new CustomEvent("fz:page", { detail: { url: url } }));
         runPageScripts(doc);
     }
@@ -153,6 +158,14 @@
         options = options || {};
         var target = new URL(href, window.location.href);
 
+        // Remember where the visitor is on the current page so a later "back"
+        // can bring them to the same spot.
+        try {
+            var currentScroll = (typeof window.scrollY === "number") ? window.scrollY : 0;
+            var baseState = (history.state && typeof history.state === "object") ? history.state : { fz: true };
+            history.replaceState(Object.assign({}, baseState, { scrollY: currentScroll }), "", window.location.href);
+        } catch (e) {}
+
         if (!options.force) {
             if (target.href === window.location.href) {
                 window.scrollTo(0, 0);
@@ -165,6 +178,7 @@
         }
 
         var token = ++sequence;
+        var restoreScroll = (typeof options.scrollY === "number") ? options.scrollY : null;
         return fetch(target.href, {
             credentials: "same-origin",
             headers: { Accept: "text/html" },
@@ -188,7 +202,9 @@
                 return loadStyles(doc).then(function () {
                     if (token !== sequence) return;
                     leave();
-                    swap(doc, page.url, options.push !== false);
+                    var push = options.push !== false;
+                    var scrollY = push ? 0 : (restoreScroll !== null ? restoreScroll : 0);
+                    swap(doc, page.url, push, scrollY);
                 });
             })
             .catch(function (error) {
@@ -226,9 +242,11 @@
         navigate(action.pathname + (query ? "?" + query : ""), { push: true });
     });
 
-    window.addEventListener("popstate", function () {
+    window.addEventListener("popstate", function (event) {
         if (isSpaPath(window.location.pathname)) {
-            navigate(window.location.href, { push: false, force: true });
+            var state = (event && event.state && typeof event.state === "object") ? event.state : (history.state || {});
+            var scrollY = (typeof state.scrollY === "number") ? state.scrollY : 0;
+            navigate(window.location.href, { push: false, force: true, scrollY: scrollY });
         } else {
             window.location.reload();
         }
