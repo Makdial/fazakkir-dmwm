@@ -107,6 +107,12 @@
     z-index: 100;
 }
 
+@media (max-width: 768px) {
+    .fz-player-host.is-docked {
+        position: static;
+    }
+}
+
 .fz-mini-title {
     flex: 1 1 auto;
     min-width: 0;

@@ -691,6 +691,18 @@
 }
 
 @media (max-width: 768px) {
+    /* On phones the pinned player would otherwise cover the bottom of the
+       page, so let the page scroll naturally to its last item. */
+    .watch-player-slot,
+    .fz-player-host.is-docked {
+        position: static;
+    }
+    .watch-layout {
+        padding-bottom: 16px;
+    }
+}
+
+@media (max-width: 768px) {
     .video-grid {
         column-gap: 16px;
         row-gap: 28px;
