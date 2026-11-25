@@ -66,13 +66,12 @@
             <div class="category-column">
                 <h3>{% trans "Add videos / audio" %}</h3>
                 <div class="add-row">
-                    <select class="form-input" data-available="{{ category.id }}">
-                        <option value="">{% trans "Choose a video or audio..." %}</option>
+                    <select class="form-input" data-available="{{ category.id }}" multiple size="6">
                         {% for video in videos %}
                         <option value="{{ video.id }}">{{ video.title }}</option>
                         {% endfor %}
                     </select>
-                    <button type="button" class="btn-small" data-add="{{ category.id }}">{% trans "Add" %}</button>
+                    <button type="button" class="btn-small" data-add="{{ category.id }}">{% trans "Add selected" %}</button>
                 </div>
                 <p class="dash-hint">{% trans "Added items appear on the left. Reorder them with the arrows, then Save." %}</p>
             </div>
@@ -119,25 +118,28 @@
         btn.addEventListener('click', () => {
             const cat = btn.dataset.add;
             const select = document.querySelector('[data-available="' + cat + '"]');
-            const id = select.value;
-            if (!id) return;
-            const title = select.options[select.selectedIndex].text;
             const list = document.querySelector('[data-list="' + cat + '"]');
-            if (list.querySelector('li[data-id="' + id + '"]')) return;
-            const li = document.createElement('li');
-            li.dataset.id = id;
-            const span = document.createElement('span');
-            span.className = 'video-title';
-            span.textContent = title;
-            const actions = document.createElement('span');
-            actions.className = 'video-actions';
-            const up = document.createElement('button'); up.type='button'; up.className='move-up'; up.title='{% trans "Move up" %}'; up.textContent='↑';
-            const down = document.createElement('button'); down.type='button'; down.className='move-down'; down.title='{% trans "Move down" %}'; down.textContent='↓';
-            const rem = document.createElement('button'); rem.type='button'; rem.className='remove'; rem.title='{% trans "Remove" %}'; rem.textContent='✕';
-            actions.append(up, down, rem);
-            li.append(span, actions);
-            list.appendChild(li);
-            select.value = '';
+            const selected = [...select.selectedOptions];
+            selected.forEach(opt => {
+                const id = opt.value;
+                if (!id) return;
+                if (list.querySelector('li[data-id="' + id + '"]')) return;
+                const li = document.createElement('li');
+                li.dataset.id = id;
+                const span = document.createElement('span');
+                span.className = 'video-title';
+                span.textContent = opt.text;
+                const actions = document.createElement('span');
+                actions.className = 'video-actions';
+                const up = document.createElement('button'); up.type='button'; up.className='move-up'; up.title='{% trans "Move up" %}'; up.textContent='↑';
+                const down = document.createElement('button'); down.type='button'; down.className='move-down'; down.title='{% trans "Move down" %}'; down.textContent='↓';
+                const rem = document.createElement('button'); rem.type='button'; rem.className='remove'; rem.title='{% trans "Remove" %}'; rem.textContent='✕';
+                actions.append(up, down, rem);
+                li.append(span, actions);
+                list.appendChild(li);
+            });
+            // clear selection
+            [...select.options].forEach(o => o.selected = false);
             sync(cat);
         });
     });
