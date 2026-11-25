@@ -545,6 +545,7 @@ def youtube_import(request):
     """
     youtube_url = (request.POST.get("youtube_url") or "").strip()
     title = (request.POST.get("title") or "").strip()
+    description = (request.POST.get("description") or "").strip()
     mode = (request.POST.get("mode") or "import").strip().lower()
 
     if not youtube_url:
@@ -567,7 +568,7 @@ def youtube_import(request):
         video = Video.objects.create(
             user=request.user,
             title=title[:120],
-            description="",
+            description=description,
             media_type="video",
             youtube_url=youtube_url,
         )
@@ -718,7 +719,7 @@ def youtube_import(request):
     video = Video.objects.create(
         user=request.user,
         title=title[:120],
-        description="",
+        description=description or (info.get("description") or "").strip(),
         media_type="video",
         file_id=result["path"],
         video_url=result["url"],

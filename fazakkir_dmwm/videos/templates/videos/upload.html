@@ -116,6 +116,11 @@
             <input type="text" id="ytTitle" class="form-input" placeholder="{% trans 'Enter video title' %}">
         </div>
         <div class="form-group">
+            <label for="ytDescription">{% trans "Description" %}</label>
+            <textarea id="ytDescription" class="form-input" rows="3"
+                      placeholder="{% trans 'Enter video description (optional)' %}"></textarea>
+        </div>
+        <div class="form-group">
             <label for="ytMode">{% trans "Mode" %}</label>
             <select id="ytMode" class="form-input">
                 <option value="import">{% trans "Import (download into storage)" %}</option>
@@ -130,6 +135,7 @@
 async function submitYoutube() {
     const url = document.getElementById("ytUrl").value.trim();
     const title = document.getElementById("ytTitle").value.trim();
+    const description = document.getElementById("ytDescription").value.trim();
     const mode = document.getElementById("ytMode").value;
     const btn = document.getElementById("ytSubmitBtn");
     const err = document.getElementById("ytError");
@@ -141,6 +147,7 @@ async function submitYoutube() {
         const body = new FormData();
         body.append("youtube_url", url);
         body.append("title", title);
+        body.append("description", description);
         body.append("mode", mode);
         body.append("csrfmiddlewaretoken", "{{ csrf_token }}");
         const res = await fetch("{% url 'videos:youtube_import' %}", { method: "POST", body });
