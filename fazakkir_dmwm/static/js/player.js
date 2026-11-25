@@ -781,6 +781,14 @@
                 if (item && window.FZ.nav) window.FZ.nav.navigate(item.url)
             })
         }
+        if (host) {
+            host.addEventListener("dblclick", (event) => {
+                if (docked || !item || !item.url) return
+                event.preventDefault()
+                if (window.FZ && window.FZ.nav) window.FZ.nav.navigate(item.url)
+                else window.location.href = item.url
+            })
+        }
         if (miniClose) miniClose.addEventListener("click", close)
     }
 

@@ -13,6 +13,7 @@
     var closeBtn = document.getElementById("fzYtClose");
     var player = null;
     var currentId = null;
+    var currentUrl = null;
     var docked = false;
 
     function loadApi(cb) {
@@ -76,6 +77,8 @@
         host.hidden = false;
         host.classList.remove("is-mini");
         host.classList.add("is-docked");
+
+        currentUrl = window.location.pathname + window.location.search;
 
         var id = slot.getAttribute("data-youtube-id");
         var url = slot.getAttribute("data-youtube-url");
@@ -145,9 +148,17 @@
                 try { player.stopVideo(); } catch (e) {}
             }
             currentId = null;
+            currentUrl = null;
             host.hidden = true;
         });
     }
+
+    host.addEventListener("dblclick", function (event) {
+        if (docked || !currentUrl) return;
+        event.preventDefault();
+        if (window.FZ && window.FZ.nav) window.FZ.nav.navigate(currentUrl);
+        else window.location.href = currentUrl;
+    });
 
     document.addEventListener("fz:page", onPage);
     if (document.readyState === "loading") {
