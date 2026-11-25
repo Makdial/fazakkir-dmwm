@@ -12,62 +12,96 @@
 {% block content %}
 <div class="section-header">
     <h1>{% trans "Manage categories" %}</h1>
+    <p class="section-subtitle">{% trans "Create categories and drag videos into them. Order matters on the main page." %}</p>
 </div>
 
 {% include 'dashboard/_tabs.html' %}
 
 <div class="dash-card">
     <h2>{% trans "Create a category" %}</h2>
-    <form method="post" action="{% url 'dashboard:category_create' %}" class="inline-form">
+    <form method="post" action="{% url 'dashboard:category_create' %}" class="category-create-form">
         {% csrf_token %}
-        <input type="text" name="name" class="form-input" placeholder="{% trans 'Category name' %}" required>
-        <input type="number" name="order" class="form-input" value="0" style="width:90px">
-        <button type="submit" class="btn-small">{% trans "Create" %}</button>
+        <div class="form-row">
+            <input type="text" name="name" class="form-input" placeholder="{% trans 'Category name' %}" required>
+            <input type="number" name="order" class="form-input" value="0" style="width:90px" title="{% trans 'Display order' %}">
+            <button type="submit" class="btn-small">{% trans "Create" %}</button>
+        </div>
     </form>
 </div>
 
 {% for category in categories %}
-<div class="dash-card">
+<div class="dash-card category-card">
     <form method="post" action="{% url 'dashboard:category_update' category.id %}" class="category-form" data-category="{{ category.id }}">
         {% csrf_token %}
-        <div class="form-row">
-            <input type="text" name="name" class="form-input" value="{{ category.name }}" required>
-            <input type="number" name="order" class="form-input" value="{{ category.order }}" style="width:90px">
+        <div class="category-header">
+            <input type="text" name="name" class="form-input category-name" value="{{ category.name }}" required>
+            <input type="number" name="order" class="form-input" value="{{ category.order }}" style="width:80px" title="{% trans 'Display order' %}">
             <button type="submit" class="btn-small">{% trans "Save" %}</button>
             <button type="submit" formaction="{% url 'dashboard:category_delete' category.id %}" class="btn-small btn-danger" onclick="return confirm('{% trans 'Delete this category?' %}')">{% trans "Delete" %}</button>
         </div>
-        <div class="form-group" style="margin-top:10px">
-            <label>{% trans "Videos / audio in this category (in order)" %}</label>
-            <ul class="ordered-list" data-list="{{ category.id }}">
-                {% for vid in category.video_order %}
-                    {% for video in videos %}
-                        {% if video.id == vid %}
-                        <li data-id="{{ video.id }}">
-                            {{ video.title }}
-                            <button type="button" class="move-up">↑</button>
-                            <button type="button" class="move-down">↓</button>
-                            <button type="button" class="remove">✕</button>
-                        </li>
-                        {% endif %}
+
+        <div class="category-body">
+            <div class="category-column">
+                <h3>{% trans "In this category" %}</h3>
+                <ul class="ordered-list" data-list="{{ category.id }}">
+                    {% for vid in category.video_order %}
+                        {% for video in videos %}
+                            {% if video.id == vid %}
+                            <li data-id="{{ video.id }}">
+                                <span class="video-title">{{ video.title }}</span>
+                                <span class="video-actions">
+                                    <button type="button" class="move-up" title="{% trans 'Move up' %}">↑</button>
+                                    <button type="button" class="move-down" title="{% trans 'Move down' %}">↓</button>
+                                    <button type="button" class="remove" title="{% trans 'Remove' %}">✕</button>
+                                </span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                    {% empty %}
+                    <li class="empty-placeholder">{% trans "No videos yet. Add some from the right." %}</li>
                     {% endfor %}
-                {% endfor %}
-            </ul>
-            <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-                <select class="form-input" data-available="{{ category.id }}" style="flex:1">
-                    <option value="">{% trans "Add a video/audio..." %}</option>
-                    {% for video in videos %}
-                    <option value="{{ video.id }}">{{ video.title }}</option>
-                    {% endfor %}
-                </select>
-                <button type="button" class="btn-small" data-add="{{ category.id }}">{% trans "Add" %}</button>
+                </ul>
             </div>
-            <input type="hidden" name="ordered_videos" class="ordered-input" data-ordered="{{ category.id }}" value="{{ category.video_order|join:',' }}">
+
+            <div class="category-column">
+                <h3>{% trans "Add videos / audio" %}</h3>
+                <div class="add-row">
+                    <select class="form-input" data-available="{{ category.id }}">
+                        <option value="">{% trans "Choose a video or audio..." %}</option>
+                        {% for video in videos %}
+                        <option value="{{ video.id }}">{{ video.title }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn-small" data-add="{{ category.id }}">{% trans "Add" %}</button>
+                </div>
+                <p class="dash-hint">{% trans "Added items appear on the left. Reorder them with the arrows, then Save." %}</p>
+            </div>
         </div>
+
+        <input type="hidden" name="ordered_videos" class="ordered-input" data-ordered="{{ category.id }}" value="{{ category.video_order|join:',' }}">
     </form>
 </div>
 {% empty %}
 <p class="dash-hint">{% trans "No categories yet. Create one above." %}</p>
 {% endfor %}
+
+<style>
+.category-card { margin-bottom: 20px; }
+.category-header { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+.category-name { flex:1; min-width:180px; }
+.category-body { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+@media (max-width:768px) { .category-body { grid-template-columns: 1fr; } }
+.category-column h3 { margin:0 0 8px; font-size:0.95rem; color:var(--text-secondary); }
+.ordered-list { list-style:none; padding:0; margin:0; min-height:60px; border:1px solid var(--border-color); border-radius:var(--radius-md,8px); background:var(--bg-secondary); }
+.ordered-list li { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid var(--border-color); gap:8px; }
+.ordered-list li:last-child { border-bottom:none; }
+.ordered-list .video-title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ordered-list .video-actions { display:flex; gap:4px; }
+.ordered-list .video-actions button { background:var(--bg-tertiary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px; padding:2px 8px; cursor:pointer; font-size:0.85rem; }
+.ordered-list .empty-placeholder { color:var(--text-muted); font-style:italic; justify-content:center; }
+.add-row { display:flex; gap:8px; align-items:center; }
+.add-row select { flex:1; }
+</style>
 
 <script>
 (function () {
@@ -75,8 +109,11 @@
         const list = document.querySelector('[data-list="' + cat + '"]');
         const input = document.querySelector('[data-ordered="' + cat + '"]');
         if (!list || !input) return;
-        const ids = [...list.querySelectorAll('li')].map(li => li.dataset.id);
+        const ids = [...list.querySelectorAll('li[data-id]')].map(li => li.dataset.id);
         input.value = ids.join(',');
+        // toggle empty placeholder
+        const empty = list.querySelector('.empty-placeholder');
+        if (empty) empty.style.display = ids.length ? 'none' : '';
     }
     document.querySelectorAll('[data-add]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -86,32 +123,38 @@
             if (!id) return;
             const title = select.options[select.selectedIndex].text;
             const list = document.querySelector('[data-list="' + cat + '"]');
-            // avoid duplicates
             if (list.querySelector('li[data-id="' + id + '"]')) return;
             const li = document.createElement('li');
             li.dataset.id = id;
-            li.textContent = title + ' ';
-            const up = document.createElement('button'); up.type='button'; up.className='move-up'; up.textContent='↑';
-            const down = document.createElement('button'); down.type='button'; down.className='move-down'; down.textContent='↓';
-            const rem = document.createElement('button'); rem.type='button'; rem.className='remove'; rem.textContent='✕';
-            li.append(up, down, rem);
+            const span = document.createElement('span');
+            span.className = 'video-title';
+            span.textContent = title;
+            const actions = document.createElement('span');
+            actions.className = 'video-actions';
+            const up = document.createElement('button'); up.type='button'; up.className='move-up'; up.title='{% trans "Move up" %}'; up.textContent='↑';
+            const down = document.createElement('button'); down.type='button'; down.className='move-down'; down.title='{% trans "Move down" %}'; down.textContent='↓';
+            const rem = document.createElement('button'); rem.type='button'; rem.className='remove'; rem.title='{% trans "Remove" %}'; rem.textContent='✕';
+            actions.append(up, down, rem);
+            li.append(span, actions);
             list.appendChild(li);
             select.value = '';
             sync(cat);
         });
     });
     document.addEventListener('click', (e) => {
-        const li = e.target.closest('li');
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const li = btn.closest('li[data-id]');
         if (!li) return;
         const list = li.parentElement;
         const cat = list.dataset.list;
-        if (e.target.classList.contains('move-up')) {
-            if (li.previousElementSibling) list.insertBefore(li, li.previousElementSibling);
+        if (btn.classList.contains('move-up')) {
+            if (li.previousElementSibling && li.previousElementSibling.dataset.id) list.insertBefore(li, li.previousElementSibling);
             sync(cat);
-        } else if (e.target.classList.contains('move-down')) {
-            if (li.nextElementSibling) list.insertBefore(li.nextElementSibling, li);
+        } else if (btn.classList.contains('move-down')) {
+            if (li.nextElementSibling && li.nextElementSibling.dataset.id) list.insertBefore(li.nextElementSibling, li);
             sync(cat);
-        } else if (e.target.classList.contains('remove')) {
+        } else if (btn.classList.contains('remove')) {
             li.remove();
             sync(cat);
         }
