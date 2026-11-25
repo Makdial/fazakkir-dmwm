@@ -13,7 +13,8 @@
     <button type="button" class="queue-toggle" data-queue-toggle aria-haspopup="menu"
             aria-expanded="false" aria-label="{% trans 'Queue options' %}"
             title="{% trans 'Queue options' %}">
-        <span class="queue-toggle-glyph" aria-hidden="true">☰+</span>
+        <span class="queue-toggle-glyph queue-glyph-desktop" aria-hidden="true">☰+</span>
+        <span class="queue-toggle-glyph queue-glyph-mobile" aria-hidden="true">⋮</span>
     </button>
     <div class="queue-menu" data-queue-menu role="menu" hidden>
         <button type="button" class="queue-menu-item" role="menuitem" data-queue-add="next">
@@ -22,5 +23,10 @@
         <button type="button" class="queue-menu-item" role="menuitem" data-queue-add="last">
             {% trans "Add to queue" %}
         </button>
+        {% if user.is_authenticated %}
+        <button type="button" class="queue-menu-item" role="menuitem" data-watch-later="{{ video.id }}">
+            {% trans "Watch later" %}
+        </button>
+        {% endif %}
     </div>
 </div>

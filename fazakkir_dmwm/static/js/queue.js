@@ -374,6 +374,25 @@
             return;
         }
 
+        var wlButton = target.closest("[data-watch-later]");
+        if (wlButton) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeMenus();
+            var wlId = wlButton.getAttribute("data-watch-later");
+            var wlToken = (window.FZ && window.FZ.csrfToken) ? window.FZ.csrfToken() : "";
+            fetch("/" + wlId + "/watch-later/", {
+                method: "POST",
+                headers: { "X-CSRFToken": wlToken },
+                credentials: "same-origin",
+            }).then(function (res) { return res.json(); }).then(function (data) {
+                if (data && data.success) {
+                    toast(data.added ? (labels.addedToWatchLater || "Added to Watch later") : (labels.removedFromWatchLater || "Removed from Watch later"));
+                }
+            }).catch(function () {});
+            return;
+        }
+
         var action = target.closest("[data-queue-action]");
         if (action) {
             event.preventDefault();

@@ -214,6 +214,19 @@
     }
 }
 
+.queue-glyph-mobile {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .queue-glyph-desktop {
+        display: none;
+    }
+    .queue-glyph-mobile {
+        display: inline;
+    }
+}
+
 /* In the watch page's row of buttons, styled like the other pill buttons. */
 .queue-anchor-action .queue-toggle {
     height: 36px;
