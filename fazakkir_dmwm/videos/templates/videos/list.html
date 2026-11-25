@@ -8,6 +8,14 @@
 {% endblock %}
 
 {% block content %}
+{% if categories %}
+<div class="category-bar">
+    <a href="{% url 'videos:list' %}" class="category-chip{% if not selected_category %} active{% endif %}">{% trans "All" %}</a>
+    {% for category in categories %}
+        <a href="{% url 'videos:list' %}?category={{ category.slug }}" class="category-chip{% if selected_category == category.slug %} active{% endif %}">{{ category.name }}</a>
+    {% endfor %}
+</div>
+{% endif %}
 {% if videos %}
 <div class="video-grid">
     {% for video in videos %}

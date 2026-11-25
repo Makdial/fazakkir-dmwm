@@ -343,11 +343,30 @@ def video_playback(request, video_id):
 
 
 def video_list(request):
+    from .models import Category
+
+    categories = Category.objects.all()
+    selected = (request.GET.get("category") or "").strip()
     videos = Video.objects.all()
+    if selected:
+        try:
+            category = categories.get(slug=selected)
+            videos = videos.filter(categories=category)
+        except Category.DoesNotExist:
+            selected = ""
+
     # Old uploads have no length yet; measure the ones on this page in the
     # background so the badge fills in without the administrator doing anything.
     schedule_missing_durations(videos)
-    return render(request, "videos/list.html", {"videos": videos})
+    return render(
+        request,
+        "videos/list.html",
+        {
+            "videos": videos,
+            "categories": categories,
+            "selected_category": selected,
+        },
+    )
 
 
 def video_search(request):

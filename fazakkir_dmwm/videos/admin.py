@@ -1,6 +1,18 @@
 from django.contrib import admin
 
-from .models import Comment, Playlist, PlaylistItem, SubtitleTrack, Video, VideoLike
+from .models import Category, Comment, Playlist, PlaylistItem, SubtitleTrack, Video, VideoLike
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "order", "video_count")
+    list_editable = ("order",)
+    search_fields = ("name",)
+    filter_horizontal = ("videos",)
+
+    @admin.display(description="Videos")
+    def video_count(self, obj):
+        return obj.videos.count()
 
 
 @admin.register(Video)

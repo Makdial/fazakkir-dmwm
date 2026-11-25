@@ -298,52 +298,52 @@ msgstr[1] ""
 #: .\accounts\templates\accounts\manage_users.html:45
 #: .\library\templates\library\admin_dashboard.html:49
 msgid "User"
-msgstr ""
+msgstr "Usuario"
 
 #: .\accounts\templates\accounts\manage_users.html:46
 #: .\dashboard\templates\dashboard\_tabs.html:7
 #: .\dashboard\templates\dashboard\home.html:43
 #: .\videos\templates\videos\list.html:4
 msgid "Videos"
-msgstr ""
+msgstr "Vídeos"
 
 #: .\accounts\templates\accounts\manage_users.html:48
 #: .\library\templates\library\admin_dashboard.html:36
 #: .\library\templates\library\manage_books.html:35
 #: .\library\templates\library\upload.html:49
 msgid "Status"
-msgstr ""
+msgstr "Estado"
 
 #: .\accounts\templates\accounts\manage_users.html:49
 #: .\dashboard\templates\dashboard\comments.html:38
 #: .\dashboard\templates\dashboard\home.html:169
 #: .\dashboard\templates\dashboard\videos.html:93
 msgid "Actions"
-msgstr ""
+msgstr "Comportamiento"
 
 #: .\accounts\templates\accounts\manage_users.html:60
 msgid "Superuser"
-msgstr ""
+msgstr "Superusuario"
 
 #: .\accounts\templates\accounts\manage_users.html:61
 msgid "You"
-msgstr ""
+msgstr "Tú"
 
 #: .\accounts\templates\accounts\manage_users.html:77
 msgid "Active"
-msgstr ""
+msgstr "Activo"
 
 #: .\accounts\templates\accounts\manage_users.html:77
 msgid "Blocked"
-msgstr ""
+msgstr "Obstruido"
 
 #: .\accounts\templates\accounts\manage_users.html:84
 msgid "Block"
-msgstr ""
+msgstr "Bloquear"
 
 #: .\accounts\templates\accounts\manage_users.html:84
 msgid "Unblock"
-msgstr ""
+msgstr "Desatascar"
 
 #: .\accounts\templates\accounts\manage_users.html:87
 #: .\accounts\templates\accounts\manage_users.html:144
@@ -368,294 +368,294 @@ msgstr ""
 #: .\videos\templates\videos\detail.html:1065
 #: .\videos\templates\videos\detail.html:1148
 msgid "Delete"
-msgstr ""
+msgstr "Borrar"
 
 #: .\accounts\templates\accounts\manage_users.html:100
 msgid ""
 "Read-only staff can view this page; read & write staff can also upload, "
 "moderate and manage users."
-msgstr ""
+msgstr "El personal de solo lectura puede ver esta página; El personal de lectura y escritura también puede cargar, moderar y administrar usuarios."
 
 #: .\accounts\templates\accounts\manage_users.html:144
 msgid "This also deletes their videos and comments."
-msgstr ""
+msgstr "Esto también elimina sus videos y comentarios."
 
 #: .\accounts\templates\accounts\password_reset_complete.html:4
 msgid "Password Changed"
-msgstr ""
+msgstr "Contraseña cambiada"
 
 #: .\accounts\templates\accounts\password_reset_complete.html:9
 msgid "Your password has been changed"
-msgstr ""
+msgstr "Tu contraseña ha sido cambiada"
 
 #: .\accounts\templates\accounts\password_reset_complete.html:12
 msgid "You can now sign in with your new password."
-msgstr ""
+msgstr "Ahora puedes iniciar sesión con tu nueva contraseña."
 
 #: .\accounts\templates\accounts\password_reset_confirm.html:4
 msgid "Choose a New Password"
-msgstr ""
+msgstr "Elija una nueva contraseña"
 
 #: .\accounts\templates\accounts\password_reset_confirm.html:9
 msgid "Choose a new password"
-msgstr ""
+msgstr "Elija una nueva contraseña"
 
 #: .\accounts\templates\accounts\password_reset_confirm.html:30
 msgid "New password"
-msgstr ""
+msgstr "Nueva contraseña"
 
 #: .\accounts\templates\accounts\password_reset_confirm.html:36
 msgid "Confirm new password"
-msgstr ""
+msgstr "Confirmar nueva contraseña"
 
 #: .\accounts\templates\accounts\password_reset_confirm.html:41
 msgid "Save New Password"
-msgstr ""
+msgstr "Guardar nueva contraseña"
 
 #: .\accounts\templates\accounts\password_reset_confirm.html:44
 msgid ""
 "This reset link is invalid, most likely because it has already been used or "
 "has expired. Please request a new one."
-msgstr ""
+msgstr "Este enlace de restablecimiento no es válido, probablemente porque ya se ha utilizado o ha caducado. Por favor solicite uno nuevo."
 
 #: .\accounts\templates\accounts\password_reset_confirm.html:46
 msgid "Request a new link"
-msgstr ""
+msgstr "Solicitar un nuevo enlace"
 
 #: .\accounts\templates\accounts\password_reset_done.html:4
 msgid "Check Your Email"
-msgstr ""
+msgstr "Revisa tu correo electrónico"
 
 #: .\accounts\templates\accounts\password_reset_done.html:9
 msgid "Check your email"
-msgstr ""
+msgstr "Revisa tu correo electrónico"
 
 #: .\accounts\templates\accounts\password_reset_done.html:13
 msgid ""
 "The address does not match any account. Check it and try again, or ask an "
 "administrator to add an email address to your profile."
-msgstr ""
+msgstr "La dirección no coincide con ninguna cuenta. Compruébalo e inténtalo de nuevo, o pídele a un administrador que agregue una dirección de correo electrónico a tu perfil."
 
 #: .\accounts\templates\accounts\password_reset_done.html:15
 #, python-format
 msgid ""
 "If an account exists for %(email)s, a message with a reset link is on its "
 "way. The link expires shortly, so use it soon."
-msgstr ""
+msgstr "Si existe una cuenta para %(email)s, un mensaje con un enlace de restablecimiento está en camino. El enlace caduca en breve, así que úsalo pronto."
 
 #: .\accounts\templates\accounts\password_reset_done.html:19
 #: .\accounts\templates\accounts\password_reset_form.html:39
 msgid "Back to sign in"
-msgstr ""
+msgstr "Volver para iniciar sesión"
 
 #: .\accounts\templates\accounts\password_reset_email.txt:1
 msgid "Someone asked to reset the password for your Fazakkir account."
-msgstr ""
+msgstr "Alguien pidió restablecer la contraseña de su cuenta de Fazakkir."
 
 #: .\accounts\templates\accounts\password_reset_email.txt:3
 msgid "Open the link below to choose a new one:"
-msgstr ""
+msgstr "Abra el siguiente enlace para elegir uno nuevo:"
 
 #: .\accounts\templates\accounts\password_reset_email.txt:6
 msgid ""
 "If you did not ask for this, you can ignore this message and nothing will "
 "change."
-msgstr ""
+msgstr "Si no solicitó esto, puede ignorar este mensaje y nada cambiará."
 
 #: .\accounts\templates\accounts\password_reset_email.txt:8
 msgid "Fazakkir"
-msgstr ""
+msgstr "Fazakkir"
 
 #: .\accounts\templates\accounts\password_reset_form.html:4
 msgid "Reset Password"
-msgstr ""
+msgstr "Restablecer contraseña"
 
 #: .\accounts\templates\accounts\password_reset_form.html:10
 msgid ""
 "Enter your email address and we will send you a link to choose a new one."
-msgstr ""
+msgstr "Introduce tu dirección de correo electrónico y te enviaremos un enlace para elegir una nueva."
 
 #: .\accounts\templates\accounts\password_reset_form.html:32
 msgid "Enter your email address"
-msgstr ""
+msgstr "Introduce tu dirección de correo electrónico"
 
 #: .\accounts\templates\accounts\password_reset_form.html:35
 msgid "Send Reset Link"
-msgstr ""
+msgstr "Enviar enlace de reinicio"
 
 #: .\accounts\templates\accounts\password_reset_subject.txt:1
 msgid "Reset your Fazakkir password"
-msgstr ""
+msgstr "Restablece tu contraseña de Fazakkir"
 
 #: .\accounts\templates\accounts\register.html:4
 #: .\accounts\templates\accounts\register.html:13
 #: .\accounts\templates\accounts\register.html:58
 msgid "Create Account"
-msgstr ""
+msgstr "Crear una cuenta"
 
 #: .\accounts\templates\accounts\register.html:14
 msgid "Join Fazakkir and start sharing"
-msgstr ""
+msgstr "Únete a Fazakkir y comienza a compartir"
 
 #: .\accounts\templates\accounts\register.html:36
 msgid "Choose a username"
-msgstr ""
+msgstr "Elige un nombre de usuario"
 
 #: .\accounts\templates\accounts\register.html:42
 msgid "Enter your email"
-msgstr ""
+msgstr "Introduce tu correo electrónico"
 
 #: .\accounts\templates\accounts\register.html:48
 msgid "Create a password"
-msgstr ""
+msgstr "Crear una contraseña"
 
 #: .\accounts\templates\accounts\register.html:49
 msgid "At least 8 characters, not entirely numeric."
-msgstr ""
+msgstr "Al menos 8 caracteres, no enteramente numéricos."
 
 #: .\accounts\templates\accounts\register.html:53
 msgid "Confirm Password"
-msgstr ""
+msgstr "confirmar Contraseña"
 
 #: .\accounts\templates\accounts\register.html:55
 msgid "Confirm your password"
-msgstr ""
+msgstr "Confirma tu contraseña"
 
 #: .\accounts\templates\accounts\register.html:62
 msgid "Already have an account?"
-msgstr ""
+msgstr "¿Ya tienes una cuenta?"
 
 #: .\accounts\views.py:47
 msgid "You cannot change your own account here."
-msgstr ""
+msgstr "No puede cambiar su propia cuenta aquí."
 
 #: .\accounts\views.py:49
 msgid "Only a superuser can manage another superuser."
-msgstr ""
+msgstr "Sólo un superusuario puede gestionar otro superusuario."
 
 #: .\accounts\views.py:105
 msgid "User blocked"
-msgstr ""
+msgstr "Usuario bloqueado"
 
 #: .\accounts\views.py:105
 msgid "User unblocked"
-msgstr ""
+msgstr "Usuario desbloqueado"
 
 #: .\accounts\views.py:121 .\accounts\views.py:219
 msgid "Invalid access level."
-msgstr ""
+msgstr "Nivel de acceso no válido."
 
 #: .\accounts\views.py:136
 msgid "Access updated"
-msgstr ""
+msgstr "Acceso actualizado"
 
 #: .\accounts\views.py:161
 msgid "User deleted"
-msgstr ""
+msgstr "Usuario eliminado"
 
 #: .\accounts\views.py:183
 msgid "Method not allowed."
-msgstr ""
+msgstr "Método no permitido."
 
 #: .\accounts\views.py:229
 msgid "Username is required."
-msgstr ""
+msgstr "Se requiere nombre de usuario."
 
 #: .\accounts\views.py:233
 msgid "A user with that username already exists."
-msgstr ""
+msgstr "Ya existe un usuario con ese nombre de usuario."
 
 #: .\accounts\views.py:238
 msgid "Password is required."
-msgstr ""
+msgstr "Se requiere contraseña."
 
 #: .\accounts\views.py:242
 msgid "The two passwords did not match."
-msgstr ""
+msgstr "Las dos contraseñas no coincidían."
 
 #: .\accounts\views.py:252
 msgid "Invalid password."
-msgstr ""
+msgstr "Contraseña no válida."
 
 #: .\core\permissions.py:55
 msgid "Only administrators can manage videos."
-msgstr ""
+msgstr "Sólo los administradores pueden gestionar vídeos."
 
 #: .\core\permissions.py:60
 msgid "Only administrators can view this page."
-msgstr ""
+msgstr "Sólo los administradores pueden ver esta página."
 
 #: .\core\views.py:48
 msgid "Watch and listen to videos, online or offline."
-msgstr ""
+msgstr "Mire y escuche videos, en línea o sin conexión."
 
 #: .\dashboard\models.py:24 .\dashboard\templates\dashboard\home.html:65
 msgid "OK"
-msgstr ""
+msgstr "DE ACUERDO"
 
 #: .\dashboard\models.py:25 .\dashboard\templates\dashboard\home.html:64
 msgid "Nearly full"
-msgstr ""
+msgstr "Casi lleno"
 
 #: .\dashboard\models.py:26 .\dashboard\templates\dashboard\home.html:63
 msgid "Full"
-msgstr ""
+msgstr "Lleno"
 
 #: .\dashboard\models.py:32
 msgid "Media quota (bytes)"
-msgstr ""
+msgstr "Cuota de medios (bytes)"
 
 #: .\dashboard\models.py:33
 msgid "How much room the Cloudflare R2 bucket has."
-msgstr ""
+msgstr "Cuánto espacio tiene el depósito de Cloudflare R2."
 
 #: .\dashboard\models.py:37
 msgid "Database quota (bytes)"
-msgstr ""
+msgstr "Cuota de base de datos (bytes)"
 
 #: .\dashboard\models.py:38
 msgid "Soft limit for the SQLite database file."
-msgstr ""
+msgstr "Límite flexible para el archivo de base de datos SQLite."
 
 #: .\dashboard\models.py:42
 msgid "Alert threshold (%)"
-msgstr ""
+msgstr "Umbral de alerta (%)"
 
 #: .\dashboard\models.py:43
 msgid "Send an email once this percentage of the space is used."
-msgstr ""
+msgstr "Envíe un correo electrónico una vez utilizado este porcentaje del espacio."
 
 #: .\dashboard\models.py:47 .\dashboard\templates\dashboard\home.html:144
 msgid "Notification email"
-msgstr ""
+msgstr "Correo electrónico de notificación"
 
 #: .\dashboard\models.py:64 .\dashboard\models.py:65
 msgid "Storage monitor"
-msgstr ""
+msgstr "monitor de almacenamiento"
 
 #: .\dashboard\models.py:102
 msgid "View"
-msgstr ""
+msgstr "Vista"
 
 #: .\dashboard\models.py:103 .\dashboard\templates\dashboard\order.html:51
 #: .\dashboard\templates\dashboard\usage.html:131
 #: .\videos\templates\videos\composition.html:34
 #: .\videos\templates\videos\composition.html:109
 msgid "Audio"
-msgstr ""
+msgstr "Audio"
 
 #: .\dashboard\templates\dashboard\_tabs.html:2
 msgid "Dashboard sections"
-msgstr ""
+msgstr "Secciones del tablero"
 
 #: .\dashboard\templates\dashboard\_tabs.html:4
 msgid "Overview"
-msgstr ""
+msgstr "Descripción general"
 
 #: .\dashboard\templates\dashboard\_tabs.html:10
 #: .\dashboard\templates\dashboard\order.html:4
 msgid "Home order"
-msgstr ""
+msgstr "pedido a domicilio"
 
 #: .\dashboard\templates\dashboard\_tabs.html:13
 #: .\dashboard\templates\dashboard\home.html:51
@@ -664,23 +664,23 @@ msgstr ""
 #: .\shorts\templates\shorts\list.html:115
 #: .\videos\templates\videos\detail.html:290
 msgid "Comments"
-msgstr ""
+msgstr "Comentarios"
 
 #: .\dashboard\templates\dashboard\_tabs.html:16
 #: .\dashboard\templates\dashboard\usage.html:3
 msgid "Usage"
-msgstr ""
+msgstr "Uso"
 
 #: .\dashboard\templates\dashboard\_tabs.html:19
 #: .\dashboard\templates\dashboard\home.html:47
 #: .\dashboard\templates\dashboard\usage.html:190 .\templates\base.html:137
 msgid "Users"
-msgstr ""
+msgstr "Usuarios"
 
 #: .\dashboard\templates\dashboard\comments.html:4
 #: .\dashboard\templates\dashboard\comments.html:14
 msgid "Manage comments"
-msgstr ""
+msgstr "Gestionar comentarios"
 
 #: .\dashboard\templates\dashboard\comments.html:16
 #, python-format
@@ -691,7 +691,7 @@ msgstr[1] ""
 
 #: .\dashboard\templates\dashboard\comments.html:24
 msgid "Search by author or text"
-msgstr ""
+msgstr "Buscar por autor o texto"
 
 #: .\dashboard\templates\dashboard\comments.html:25
 #: .\dashboard\templates\dashboard\videos.html:76
@@ -700,18 +700,18 @@ msgstr ""
 #: .\videos\templates\videos\search.html:4
 #: .\videos\templates\videos\search.html:17
 msgid "Search"
-msgstr ""
+msgstr "Buscar"
 
 #: .\dashboard\templates\dashboard\comments.html:26
 #: .\dashboard\templates\dashboard\videos.html:77
 msgid "Clear"
-msgstr ""
+msgstr "Claro"
 
 #: .\dashboard\templates\dashboard\comments.html:34
 #: .\library\templates\library\manage_books.html:34
 #: .\library\templates\library\upload.html:21
 msgid "Author"
-msgstr ""
+msgstr "Autor"
 
 #: .\dashboard\templates\dashboard\comments.html:35
 #: .\library\templates\library\book_detail.html:99
@@ -719,7 +719,7 @@ msgstr ""
 #: .\shorts\templates\shorts\list.html:70
 #: .\videos\templates\videos\detail.html:296
 msgid "Comment"
-msgstr ""
+msgstr "Comentario"
 
 #: .\dashboard\templates\dashboard\comments.html:36
 #: .\dashboard\templates\dashboard\home.html:166
@@ -731,309 +731,309 @@ msgstr ""
 #: .\videos\models.py:25 .\videos\templates\videos\composition.html:108
 #: .\videos\templates\videos\detail.html:119
 msgid "Video"
-msgstr ""
+msgstr "Video"
 
 #: .\dashboard\templates\dashboard\comments.html:37
 msgid "Posted"
-msgstr ""
+msgstr "Al corriente"
 
 #: .\dashboard\templates\dashboard\comments.html:63
 msgid "No comments found"
-msgstr ""
+msgstr "No se encontraron comentarios"
 
 #: .\dashboard\templates\dashboard\comments.html:64
 #: .\dashboard\templates\dashboard\videos.html:141
 msgid "Nothing matches your search."
-msgstr ""
+msgstr "Nada coincide con tu búsqueda."
 
 #: .\dashboard\templates\dashboard\comments.html:77
 #: .\videos\templates\videos\detail.html:1063
 msgid "Delete this comment?"
-msgstr ""
+msgstr "¿Eliminar este comentario?"
 
 #: .\dashboard\templates\dashboard\comments.html:78
 #: .\videos\templates\videos\detail.html:1064
 msgid "The comment will be removed and cannot be recovered."
-msgstr ""
+msgstr "El comentario será eliminado y no podrá recuperarse."
 
 #: .\dashboard\templates\dashboard\home.html:4
 #: .\dashboard\templates\dashboard\home.html:14 .\templates\base.html:127
 #: .\templates\base.html:134
 msgid "Dashboard"
-msgstr ""
+msgstr "Panel"
 
 #: .\dashboard\templates\dashboard\home.html:15
 msgid ""
 "Control the videos, the users, the comments and the storage in one place."
-msgstr ""
+msgstr "Controla los vídeos, los usuarios, los comentarios y el almacenamiento en un solo lugar."
 
 #: .\dashboard\templates\dashboard\home.html:55
 msgid "Stored files"
-msgstr ""
+msgstr "Archivos almacenados"
 
 #: .\dashboard\templates\dashboard\home.html:61 .\library\admin.py:25
 msgid "Storage"
-msgstr ""
+msgstr "Almacenamiento"
 
 #: .\dashboard\templates\dashboard\home.html:69
 msgid "Measured"
-msgstr ""
+msgstr "Mesurado"
 
 #: .\dashboard\templates\dashboard\home.html:72
 msgid "Refresh"
-msgstr ""
+msgstr "Refrescar"
 
 #: .\dashboard\templates\dashboard\home.html:77
 msgid ""
 "Cloudflare R2 is not configured, so the media usage cannot be measured. Add "
 "the R2 credentials to your .env file."
-msgstr ""
+msgstr "Cloudflare R2 no está configurado, por lo que no se puede medir el uso de medios. Agregue las credenciales de R2 a su archivo .env."
 
 #: .\dashboard\templates\dashboard\home.html:85
 msgid "Media storage (Cloudflare R2)"
-msgstr ""
+msgstr "Almacenamiento de medios (Cloudflare R2)"
 
 #: .\dashboard\templates\dashboard\home.html:89
 #: .\dashboard\templates\dashboard\home.html:103
 #, python-format
 msgid "%(free)s free"
-msgstr ""
+msgstr "%(gratis)s gratis"
 
 #: .\dashboard\templates\dashboard\home.html:99
 msgid "Database (SQLite)"
-msgstr ""
+msgstr "Base de datos (SQLite)"
 
 #: .\dashboard\templates\dashboard\home.html:122
 msgid "Alerts"
-msgstr ""
+msgstr "Alertas"
 
 #: .\dashboard\templates\dashboard\home.html:124
 #, python-format
 msgid ""
 "An email is sent to %(email)s once the storage passes the alert threshold."
-msgstr ""
+msgstr "Se envía un correo electrónico a %(email)s una vez que el almacenamiento supera el umbral de alerta."
 
 #: .\dashboard\templates\dashboard\home.html:125
 #, python-format
 msgid ""
 "The alert triggers at %(threshold)s percent or more, and again when the "
 "storage is completely full."
-msgstr ""
+msgstr "La alerta se activa en %(threshold)s por ciento o más, y nuevamente cuando el almacenamiento está completamente lleno."
 
 #: .\dashboard\templates\dashboard\home.html:132
 msgid "Media quota (GB)"
-msgstr ""
+msgstr "Cuota de medios (GB)"
 
 #: .\dashboard\templates\dashboard\home.html:136
 msgid "Database quota (GB)"
-msgstr ""
+msgstr "Cuota de base de datos (GB)"
 
 #: .\dashboard\templates\dashboard\home.html:140
 #, python-format
 msgid "Alert threshold (%%)"
-msgstr ""
+msgstr "Umbral de alerta (%%)"
 
 #: .\dashboard\templates\dashboard\home.html:149
 msgid "Save settings"
-msgstr ""
+msgstr "Guardar configuración"
 
 #: .\dashboard\templates\dashboard\home.html:150
 msgid "Send test email"
-msgstr ""
+msgstr "Enviar correo electrónico de prueba"
 
 #: .\dashboard\templates\dashboard\home.html:158
 msgid "Largest videos"
-msgstr ""
+msgstr "Vídeos más grandes"
 
 #: .\dashboard\templates\dashboard\home.html:159
 msgid "Manage all"
-msgstr ""
+msgstr "Administrar todo"
 
 #: .\dashboard\templates\dashboard\home.html:167
 #: .\dashboard\templates\dashboard\videos.html:86
 msgid "Uploader"
-msgstr ""
+msgstr "Cargador"
 
 #: .\dashboard\templates\dashboard\home.html:168
 #: .\dashboard\templates\dashboard\videos.html:89
 msgid "Size"
-msgstr ""
+msgstr "Tamaño"
 
 #: .\dashboard\templates\dashboard\home.html:192
 msgid "No videos yet."
-msgstr ""
+msgstr "Aún no hay vídeos."
 
 #: .\dashboard\templates\dashboard\home.html:199
 msgid "Reclaimable space"
-msgstr ""
+msgstr "Espacio recuperable"
 
 #: .\dashboard\templates\dashboard\home.html:202
 msgid "Files left behind by interrupted uploads:"
-msgstr ""
+msgstr "Archivos dejados por cargas interrumpidas:"
 
 #: .\dashboard\templates\dashboard\home.html:203
 msgid "Deleting them frees space without touching any video."
-msgstr ""
+msgstr "Eliminarlos libera espacio sin tocar ningún vídeo."
 
 #: .\dashboard\templates\dashboard\home.html:206
 msgid "Free this space"
-msgstr ""
+msgstr "Libera este espacio"
 
 #: .\dashboard\templates\dashboard\home.html:214
 msgid "Deleting a video removes it from the database and from Cloudflare R2."
-msgstr ""
+msgstr "Eliminar un video lo elimina de la base de datos y de Cloudflare R2."
 
 #: .\dashboard\templates\dashboard\home.html:216
 msgid ""
 "Read-only staff can view the dashboard; read & write staff can also delete "
 "videos and free space."
-msgstr ""
+msgstr "El personal de solo lectura puede ver el panel; El personal de lectura y escritura también puede eliminar videos y liberar espacio."
 
 #: .\dashboard\templates\dashboard\home.html:249
 #: .\videos\templates\videos\detail.html:595
 msgid "Delete this video?"
-msgstr ""
+msgstr "¿Eliminar este vídeo?"
 
 #: .\dashboard\templates\dashboard\home.html:250
 msgid ""
 "This permanently removes the recording, its MP3 and its thumbnail from "
 "Cloudflare storage. This cannot be undone."
-msgstr ""
+msgstr "Esto elimina permanentemente la grabación, su MP3 y su miniatura del almacenamiento de Cloudflare. Esto no se puede deshacer."
 
 #: .\dashboard\templates\dashboard\home.html:251
 #: .\videos\templates\videos\detail.html:598
 msgid "Delete permanently"
-msgstr ""
+msgstr "Eliminar permanentemente"
 
 #: .\dashboard\templates\dashboard\home.html:265
 msgid "Saved."
-msgstr ""
+msgstr "Guardado."
 
 #: .\dashboard\templates\dashboard\home.html:274
 msgid "Sent."
-msgstr ""
+msgstr "Enviado."
 
 #: .\dashboard\templates\dashboard\home.html:308
 msgid "Delete the files that no video uses?"
-msgstr ""
+msgstr "¿Eliminar los archivos que ningún vídeo utiliza?"
 
 #: .\dashboard\templates\dashboard\home.html:309
 msgid ""
 "Every object in Cloudflare R2 that no video references is deleted "
 "permanently. Videos, their MP3s and their thumbnails are kept, and offline "
 "copies on visitors' devices are not affected."
-msgstr ""
+msgstr "Todos los objetos en Cloudflare R2 a los que no hace referencia ningún vídeo se eliminan permanentemente. Los vídeos, sus MP3 y sus miniaturas se conservan, y las copias fuera de línea en los dispositivos de los visitantes no se ven afectadas."
 
 #: .\dashboard\templates\dashboard\home.html:310
 msgid "Delete unused files"
-msgstr ""
+msgstr "Eliminar archivos no utilizados"
 
 #: .\dashboard\templates\dashboard\home.html:315
 msgid "Space freed:"
-msgstr ""
+msgstr "Espacio liberado:"
 
 #: .\dashboard\templates\dashboard\order.html:14
 msgid "Home page order"
-msgstr ""
+msgstr "Orden de la página de inicio"
 
 #: .\dashboard\templates\dashboard\order.html:16
 msgid "Drag the rows to choose what visitors see first on the home page."
-msgstr ""
+msgstr "Arrastra las filas para elegir lo que los visitantes ven primero en la página de inicio."
 
 #: .\dashboard\templates\dashboard\order.html:25
 msgid "Drag a row, or use the arrows, then save."
-msgstr ""
+msgstr "Arrastre una fila o use las flechas y luego guárdela."
 
 #: .\dashboard\templates\dashboard\order.html:27
 msgid "Save order"
-msgstr ""
+msgstr "Guardar pedido"
 
 #: .\dashboard\templates\dashboard\order.html:57
 #: .\videos\templates\videos\_queue.html:17
 msgid "Move up"
-msgstr ""
+msgstr "Subir"
 
 #: .\dashboard\templates\dashboard\order.html:59
 #: .\videos\templates\videos\_queue.html:18
 msgid "Move down"
-msgstr ""
+msgstr "Bajar"
 
 #: .\dashboard\templates\dashboard\order.html:68
 msgid "Nothing to arrange yet"
-msgstr ""
+msgstr "Nada que arreglar todavía"
 
 #: .\dashboard\templates\dashboard\order.html:69
 msgid "Upload a video or an audio file and it will appear here."
-msgstr ""
+msgstr "Sube un vídeo o un archivo de audio y aparecerá aquí."
 
 #: .\dashboard\templates\dashboard\order.html:149 .\dashboard\views.py:239
 msgid "Order saved."
-msgstr ""
+msgstr "Pedido guardado."
 
 #: .\dashboard\templates\dashboard\usage.html:12
 msgid "Daily usage"
-msgstr ""
+msgstr "Uso diario"
 
 #: .\dashboard\templates\dashboard\usage.html:13
 msgid ""
 "How many users (guests and registered) use the app each day, and which "
 "recordings they play."
-msgstr ""
+msgstr "Cuántos usuarios (invitados y registrados) utilizan la aplicación cada día y qué grabaciones reproducen."
 
 #: .\dashboard\templates\dashboard\usage.html:20
 msgid "Show"
-msgstr ""
+msgstr "Espectáculo"
 
 #: .\dashboard\templates\dashboard\usage.html:21
 msgid "Today"
-msgstr ""
+msgstr "Hoy"
 
 #: .\dashboard\templates\dashboard\usage.html:27
 msgid "Active users"
-msgstr ""
+msgstr "Usuarios activos"
 
 #: .\dashboard\templates\dashboard\usage.html:31
 msgid "Guests"
-msgstr ""
+msgstr "Huéspedes"
 
 #: .\dashboard\templates\dashboard\usage.html:35
 msgid "Registered"
-msgstr ""
+msgstr "Registrado"
 
 #: .\dashboard\templates\dashboard\usage.html:39
 msgid "Video views"
-msgstr ""
+msgstr "Vistas de vídeo"
 
 #: .\dashboard\templates\dashboard\usage.html:43
 #: .\dashboard\templates\dashboard\usage.html:190
 msgid "Audio plays"
-msgstr ""
+msgstr "Reproducciones de audio"
 
 #: .\dashboard\templates\dashboard\usage.html:47
 msgid "Where people are using the app"
-msgstr ""
+msgstr "Dónde la gente usa la aplicación"
 
 #: .\dashboard\templates\dashboard\usage.html:50
 msgid "World map of the countries visitors came from on the selected day."
-msgstr ""
+msgstr "Mapa mundial de los países de procedencia de los visitantes el día seleccionado."
 
 #: .\dashboard\templates\dashboard\usage.html:62
 msgid "No map locations for this day."
-msgstr ""
+msgstr "No hay ubicaciones en el mapa para este día."
 
 #: .\dashboard\templates\dashboard\usage.html:64
 msgid "Some requests could not be placed on the map."
-msgstr ""
+msgstr "Algunas solicitudes no se pudieron colocar en el mapa."
 
 #: .\dashboard\templates\dashboard\usage.html:65
 msgid ""
 "Locations are estimated from each visitor's IP address, so each pin marks a "
 "country, not a street."
-msgstr ""
+msgstr "Las ubicaciones se estiman a partir de la dirección IP de cada visitante, por lo que cada pin marca un país, no una calle."
 
 #: .\dashboard\templates\dashboard\usage.html:68
 msgid "Top viewed videos"
-msgstr ""
+msgstr "Vídeos más vistos"
 
 #: .\dashboard\templates\dashboard\usage.html:72
 #: .\dashboard\templates\dashboard\usage.html:110
@@ -1043,86 +1043,86 @@ msgstr ""
 #: .\library\templates\library\manage_books.html:37
 #: .\videos\composition_views.py:166
 msgid "Views"
-msgstr ""
+msgstr "Vistas"
 
 #: .\dashboard\templates\dashboard\usage.html:76
 #: .\dashboard\templates\dashboard\usage.html:95
 #: .\dashboard\templates\dashboard\usage.html:114
 #: .\dashboard\templates\dashboard\usage.html:135
 msgid "Deleted video"
-msgstr ""
+msgstr "Vídeo eliminado"
 
 #: .\dashboard\templates\dashboard\usage.html:84
 msgid "No views recorded for this day."
-msgstr ""
+msgstr "No se registraron vistas para este día."
 
 #: .\dashboard\templates\dashboard\usage.html:87
 msgid "Top played audio"
-msgstr ""
+msgstr "Audio más reproducido"
 
 #: .\dashboard\templates\dashboard\usage.html:91
 #: .\dashboard\templates\dashboard\usage.html:131
 msgid "Plays"
-msgstr ""
+msgstr "juega"
 
 #: .\dashboard\templates\dashboard\usage.html:103
 msgid "No audio plays recorded for this day."
-msgstr ""
+msgstr "No hay reproducciones de audio grabadas para este día."
 
 #: .\dashboard\templates\dashboard\usage.html:106
 msgid "Where videos are watched"
-msgstr ""
+msgstr "Donde se ven los videos"
 
 #: .\dashboard\templates\dashboard\usage.html:110
 #: .\dashboard\templates\dashboard\usage.html:131
 #: .\dashboard\templates\dashboard\usage.html:171
 msgid "Country"
-msgstr ""
+msgstr "País"
 
 #: .\dashboard\templates\dashboard\usage.html:110
 #: .\dashboard\templates\dashboard\usage.html:131
 #: .\dashboard\templates\dashboard\usage.html:152
 #: .\dashboard\templates\dashboard\usage.html:171
 msgid "Continent"
-msgstr ""
+msgstr "Continente"
 
 #: .\dashboard\templates\dashboard\usage.html:124
 #: .\dashboard\templates\dashboard\usage.html:145
 #: .\dashboard\templates\dashboard\usage.html:164
 #: .\dashboard\templates\dashboard\usage.html:184
 msgid "No location data recorded for this day."
-msgstr ""
+msgstr "No se registraron datos de ubicación para este día."
 
 #: .\dashboard\templates\dashboard\usage.html:127
 msgid "Where audio is played"
-msgstr ""
+msgstr "Donde se reproduce el audio"
 
 #: .\dashboard\templates\dashboard\usage.html:148
 msgid "Visitors by continent"
-msgstr ""
+msgstr "Visitantes por continente"
 
 #: .\dashboard\templates\dashboard\usage.html:152
 #: .\dashboard\templates\dashboard\usage.html:171
 msgid "Requests"
-msgstr ""
+msgstr "Solicitudes"
 
 #: .\dashboard\templates\dashboard\usage.html:167
 msgid "Visitors by country"
-msgstr ""
+msgstr "Visitantes por país"
 
 #: .\dashboard\templates\dashboard\usage.html:187
 msgid "Last 14 days"
-msgstr ""
+msgstr "Últimos 14 días"
 
 #: .\dashboard\templates\dashboard\usage.html:190
 #: .\library\templates\library\admin_dashboard.html:36
 msgid "Date"
-msgstr ""
+msgstr "Fecha"
 
 #: .\dashboard\templates\dashboard\videos.html:4
 #: .\dashboard\templates\dashboard\videos.html:14
 msgid "Manage videos"
-msgstr ""
+msgstr "Administrar vídeos"
 
 #: .\dashboard\templates\dashboard\videos.html:16
 #: .\videos\templates\videos\playlist_detail.html:27
@@ -1142,7 +1142,7 @@ msgstr[1] ""
 
 #: .\dashboard\templates\dashboard\videos.html:29
 msgid "Every video has an MP3"
-msgstr ""
+msgstr "Cada vídeo tiene un MP3."
 
 #: .\dashboard\templates\dashboard\videos.html:33
 #, python-format
@@ -1153,573 +1153,573 @@ msgstr[1] ""
 
 #: .\dashboard\templates\dashboard\videos.html:41
 msgid "Generate missing MP3s"
-msgstr ""
+msgstr "Generar MP3 faltantes"
 
 #: .\dashboard\templates\dashboard\videos.html:55
 msgid "Captions are made with the speech-to-text service."
-msgstr ""
+msgstr "Los subtítulos se crean con el servicio de voz a texto."
 
 #: .\dashboard\templates\dashboard\videos.html:61
 msgid "Generate subtitles for all"
-msgstr ""
+msgstr "Genera subtítulos para todos."
 
 #: .\dashboard\templates\dashboard\videos.html:75
 msgid "Search by title or uploader"
-msgstr ""
+msgstr "Buscar por título o cargador"
 
 #: .\dashboard\templates\dashboard\videos.html:90
 msgid "MP3"
-msgstr ""
+msgstr "MP3"
 
 #: .\dashboard\templates\dashboard\videos.html:91
 msgid "Captions"
-msgstr ""
+msgstr "Subtítulos"
 
 #: .\dashboard\templates\dashboard\videos.html:92
 msgid "Added"
-msgstr ""
+msgstr "Agregado"
 
 #: .\dashboard\templates\dashboard\videos.html:140
 msgid "No videos found"
-msgstr ""
+msgstr "No se encontraron vídeos"
 
 #: .\dashboard\templates\dashboard\videos.html:153
 msgid "This cannot be undone."
-msgstr ""
+msgstr "Esto no se puede deshacer."
 
 #: .\dashboard\templates\dashboard\videos.html:178
 msgid "Generating MP3sâ¦"
-msgstr ""
+msgstr "Generando MP3..."
 
 #: .\dashboard\templates\dashboard\videos.html:187
 #: .\dashboard\templates\dashboard\videos.html:222
 #: .\videos\templates\videos\detail.html:683
 #: .\videos\templates\videos\detail.html:711
 msgid "Startingâ¦"
-msgstr ""
+msgstr "Empezando..."
 
 #: .\dashboard\templates\dashboard\videos.html:213
 msgid "Generating subtitlesâ¦"
-msgstr ""
+msgstr "Generando subtítulos..."
 
 #: .\dashboard\views.py:50 .\shorts\models.py:22 .\videos\models.py:58
 #: .\videos\models.py:71 .\videos\templates\videos\detail.html:272
 msgid "Ready"
-msgstr ""
+msgstr "Listo"
 
 #: .\dashboard\views.py:52 .\videos\models.py:57 .\videos\models.py:70
 msgid "Generating"
-msgstr ""
+msgstr "generando"
 
 #: .\dashboard\views.py:54 .\dashboard\views.py:78 .\shorts\models.py:24
 #: .\videos\models.py:60 .\videos\models.py:72
 #: .\videos\templates\videos\detail.html:268
 msgid "Failed"
-msgstr ""
+msgstr "Fallido"
 
 #: .\dashboard\views.py:56 .\shorts\models.py:23 .\videos\models.py:59
 msgid "No audio track"
-msgstr ""
+msgstr "Sin pista de audio"
 
 #: .\dashboard\views.py:57 .\shorts\models.py:21 .\videos\models.py:56
 #: .\videos\models.py:69 .\videos\templates\videos\detail.html:270
 msgid "Not generated"
-msgstr ""
+msgstr "No generado"
 
 #: .\dashboard\views.py:73
 msgid "lyrics"
-msgstr ""
+msgstr "lírica"
 
 #: .\dashboard\views.py:76
 msgid "Working"
-msgstr ""
+msgstr "Laboral"
 
 #: .\dashboard\views.py:79
 msgid "None"
-msgstr ""
+msgstr "Ninguno"
 
 #: .\dashboard\views.py:213 .\dashboard\views.py:229
 msgid "Nothing to reorder."
-msgstr ""
+msgstr "Nada que reordenar."
 
 #: .\dashboard\views.py:330
 msgid "Storage settings saved."
-msgstr ""
+msgstr "Configuración de almacenamiento guardada."
 
 #: .\dashboard\views.py:345
 #, python-format
 msgid "Test email sent to %(email)s."
-msgstr ""
+msgstr "Correo electrónico de prueba enviado a %(email)s."
 
 #: .\dashboard\views.py:348
 msgid "Could not send the email."
-msgstr ""
+msgstr "No se pudo enviar el correo electrónico."
 
 #: .\dashboard\views.py:362
 msgid "Generating missing MP3s in the background."
-msgstr ""
+msgstr "Generando MP3 faltantes en segundo plano."
 
 #: .\dashboard\views.py:364
 msgid "An MP3 generation run is already in progress."
-msgstr ""
+msgstr "Ya se está realizando una generación de MP3."
 
 #: .\dashboard\views.py:378 .\videos\views.py:1312
 msgid "Generating subtitles in the background."
-msgstr ""
+msgstr "Generando subtítulos en segundo plano."
 
 #: .\dashboard\views.py:380
 msgid "A subtitle run is already in progress."
-msgstr ""
+msgstr "Ya hay una ejecución de subtítulos en progreso."
 
 #: .\library\admin.py:24
 msgid "Publishing"
-msgstr ""
+msgstr "Publicación"
 
 #: .\library\admin.py:26
 msgid "Stats"
-msgstr ""
+msgstr "Estadísticas"
 
 #: .\library\forms.py:8 .\library\templates\library\upload.html:58
 msgid "PDF file"
-msgstr ""
+msgstr "archivo pdf"
 
 #: .\library\forms.py:9 .\library\templates\library\upload.html:63
 msgid "Cover image"
-msgstr ""
+msgstr "Imagen de portada"
 
 #: .\library\forms.py:20
 msgid "e.g. science, fiction, history"
-msgstr ""
+msgstr "p.ej. ciencia, ficción, historia"
 
 #: .\library\forms.py:26
 msgid "Only PDF files are allowed."
-msgstr ""
+msgstr "Sólo se permiten archivos PDF."
 
 #: .\library\forms.py:33
 msgid "Cover must be an image (jpg, png, webp)."
-msgstr ""
+msgstr "La portada debe ser una imagen (jpg, png, webp)."
 
 #: .\library\models.py:20 .\library\templates\library\upload.html:24
 msgid "Category"
-msgstr ""
+msgstr "Categoría"
 
 #: .\library\models.py:21 .\library\templates\library\admin_dashboard.html:60
 #: .\library\templates\library\manage_books.html:15
 #: .\library\templates\library\manage_categories.html:12
 msgid "Categories"
-msgstr ""
+msgstr "Categorías"
 
 #: .\library\models.py:36
 msgid "Auto-detect"
-msgstr ""
+msgstr "Detección automática"
 
 #: .\library\models.py:37
 msgid "English"
-msgstr ""
+msgstr "Inglés"
 
 #: .\library\models.py:38
 msgid "French"
-msgstr ""
+msgstr "Francés"
 
 #: .\library\models.py:39
 msgid "Arabic"
-msgstr ""
+msgstr "árabe"
 
 #: .\library\models.py:40
 msgid "Spanish"
-msgstr ""
+msgstr "Español"
 
 #: .\library\models.py:41
 msgid "German"
-msgstr ""
+msgstr "Alemán"
 
 #: .\library\models.py:42
 msgid "Italian"
-msgstr ""
+msgstr "italiano"
 
 #: .\library\models.py:43
 msgid "Portuguese"
-msgstr ""
+msgstr "portugués"
 
 #: .\library\models.py:44
 msgid "Russian"
-msgstr ""
+msgstr "ruso"
 
 #: .\library\models.py:45
 msgid "Chinese (Simplified)"
-msgstr ""
+msgstr "Chino (simplificado)"
 
 #: .\library\models.py:46
 msgid "Chinese (Traditional)"
-msgstr ""
+msgstr "Chino (tradicional)"
 
 #: .\library\models.py:47
 msgid "Japanese"
-msgstr ""
+msgstr "japonés"
 
 #: .\library\models.py:48
 msgid "Korean"
-msgstr ""
+msgstr "coreano"
 
 #: .\library\models.py:49
 msgid "Turkish"
-msgstr ""
+msgstr "turco"
 
 #: .\library\models.py:50
 msgid "Dutch"
-msgstr ""
+msgstr "Holandés"
 
 #: .\library\models.py:51
 msgid "Polish"
-msgstr ""
+msgstr "Polaco"
 
 #: .\library\models.py:52
 msgid "Hindi"
-msgstr ""
+msgstr "hindi"
 
 #: .\library\models.py:53
 msgid "Urdu"
-msgstr ""
+msgstr "urdu"
 
 #: .\library\models.py:54
 msgid "Wolof"
-msgstr ""
+msgstr "wólof"
 
 #: .\library\models.py:55
 msgid "Bengali"
-msgstr ""
+msgstr "bengalí"
 
 #: .\library\models.py:56
 msgid "Persian"
-msgstr ""
+msgstr "persa"
 
 #: .\library\models.py:57
 msgid "Hebrew"
-msgstr ""
+msgstr "hebreo"
 
 #: .\library\models.py:58
 msgid "Indonesian"
-msgstr ""
+msgstr "indonesio"
 
 #: .\library\models.py:59
 msgid "Malay"
-msgstr ""
+msgstr "malayo"
 
 #: .\library\models.py:60
 msgid "Thai"
-msgstr ""
+msgstr "tailandés"
 
 #: .\library\models.py:61
 msgid "Vietnamese"
-msgstr ""
+msgstr "vietnamita"
 
 #: .\library\models.py:62
 msgid "Tagalog"
-msgstr ""
+msgstr "tagalo"
 
 #: .\library\models.py:63
 msgid "Swahili"
-msgstr ""
+msgstr "swahili"
 
 #: .\library\models.py:64
 msgid "Amharic"
-msgstr ""
+msgstr "amárico"
 
 #: .\library\models.py:65
 msgid "Hausa"
-msgstr ""
+msgstr "Hausa"
 
 #: .\library\models.py:66
 msgid "Yoruba"
-msgstr ""
+msgstr "yoruba"
 
 #: .\library\models.py:67
 msgid "Igbo"
-msgstr ""
+msgstr "igbo"
 
 #: .\library\models.py:68
 msgid "Zulu"
-msgstr ""
+msgstr "zulú"
 
 #: .\library\models.py:69
 msgid "Xhosa"
-msgstr ""
+msgstr "xhosa"
 
 #: .\library\models.py:70
 msgid "Afrikaans"
-msgstr ""
+msgstr "africaans"
 
 #: .\library\models.py:71
 msgid "Albanian"
-msgstr ""
+msgstr "albanés"
 
 #: .\library\models.py:72
 msgid "Armenian"
-msgstr ""
+msgstr "armenio"
 
 #: .\library\models.py:73
 msgid "Azerbaijani"
-msgstr ""
+msgstr "azerbaiyano"
 
 #: .\library\models.py:74
 msgid "Basque"
-msgstr ""
+msgstr "vasco"
 
 #: .\library\models.py:75
 msgid "Belarusian"
-msgstr ""
+msgstr "bielorruso"
 
 #: .\library\models.py:76
 msgid "Bosnian"
-msgstr ""
+msgstr "bosnio"
 
 #: .\library\models.py:77
 msgid "Bulgarian"
-msgstr ""
+msgstr "búlgaro"
 
 #: .\library\models.py:78
 msgid "Catalan"
-msgstr ""
+msgstr "catalán"
 
 #: .\library\models.py:79
 msgid "Croatian"
-msgstr ""
+msgstr "croata"
 
 #: .\library\models.py:80
 msgid "Czech"
-msgstr ""
+msgstr "checo"
 
 #: .\library\models.py:81
 msgid "Danish"
-msgstr ""
+msgstr "danés"
 
 #: .\library\models.py:82
 msgid "Estonian"
-msgstr ""
+msgstr "estonio"
 
 #: .\library\models.py:83
 msgid "Finnish"
-msgstr ""
+msgstr "finlandés"
 
 #: .\library\models.py:84
 msgid "Galician"
-msgstr ""
+msgstr "gallego"
 
 #: .\library\models.py:85
 msgid "Georgian"
-msgstr ""
+msgstr "georgiano"
 
 #: .\library\models.py:86
 msgid "Greek"
-msgstr ""
+msgstr "Griego"
 
 #: .\library\models.py:87
 msgid "Gujarati"
-msgstr ""
+msgstr "gujarati"
 
 #: .\library\models.py:88
 msgid "Hungarian"
-msgstr ""
+msgstr "húngaro"
 
 #: .\library\models.py:89
 msgid "Icelandic"
-msgstr ""
+msgstr "islandés"
 
 #: .\library\models.py:90
 msgid "Kannada"
-msgstr ""
+msgstr "canarés"
 
 #: .\library\models.py:91
 msgid "Kazakh"
-msgstr ""
+msgstr "kazajo"
 
 #: .\library\models.py:92
 msgid "Khmer"
-msgstr ""
+msgstr "jemer"
 
 #: .\library\models.py:93
 msgid "Kyrgyz"
-msgstr ""
+msgstr "Kirguistán"
 
 #: .\library\models.py:94
 msgid "Lao"
-msgstr ""
+msgstr "laosiano"
 
 #: .\library\models.py:95
 msgid "Latvian"
-msgstr ""
+msgstr "letón"
 
 #: .\library\models.py:96
 msgid "Lithuanian"
-msgstr ""
+msgstr "lituano"
 
 #: .\library\models.py:97
 msgid "Macedonian"
-msgstr ""
+msgstr "macedónio"
 
 #: .\library\models.py:98
 msgid "Malayalam"
-msgstr ""
+msgstr "malayalam"
 
 #: .\library\models.py:99
 msgid "Maltese"
-msgstr ""
+msgstr "maltés"
 
 #: .\library\models.py:100
 msgid "Marathi"
-msgstr ""
+msgstr "marathi"
 
 #: .\library\models.py:101
 msgid "Mongolian"
-msgstr ""
+msgstr "mongol"
 
 #: .\library\models.py:102
 msgid "Nepali"
-msgstr ""
+msgstr "nepalí"
 
 #: .\library\models.py:103
 msgid "Norwegian"
-msgstr ""
+msgstr "noruego"
 
 #: .\library\models.py:104
 msgid "Punjabi"
-msgstr ""
+msgstr "punjabi"
 
 #: .\library\models.py:105
 msgid "Romanian"
-msgstr ""
+msgstr "rumano"
 
 #: .\library\models.py:106
 msgid "Serbian"
-msgstr ""
+msgstr "serbio"
 
 #: .\library\models.py:107
 msgid "Sinhala"
-msgstr ""
+msgstr "cingalés"
 
 #: .\library\models.py:108
 msgid "Slovak"
-msgstr ""
+msgstr "eslovaco"
 
 #: .\library\models.py:109
 msgid "Slovenian"
-msgstr ""
+msgstr "esloveno"
 
 #: .\library\models.py:110
 msgid "Somali"
-msgstr ""
+msgstr "somalí"
 
 #: .\library\models.py:111
 msgid "Sundanese"
-msgstr ""
+msgstr "sundanés"
 
 #: .\library\models.py:112
 msgid "Swedish"
-msgstr ""
+msgstr "sueco"
 
 #: .\library\models.py:113
 msgid "Tamil"
-msgstr ""
+msgstr "Tamil"
 
 #: .\library\models.py:114
 msgid "Telugu"
-msgstr ""
+msgstr "telugu"
 
 #: .\library\models.py:115
 msgid "Ukrainian"
-msgstr ""
+msgstr "ucranio"
 
 #: .\library\models.py:116
 msgid "Uzbek"
-msgstr ""
+msgstr "uzbeko"
 
 #: .\library\models.py:117
 msgid "Welsh"
-msgstr ""
+msgstr "galés"
 
 #: .\library\models.py:121 .\library\templates\library\manage_books.html:23
 msgid "Draft"
-msgstr ""
+msgstr "Borrador"
 
 #: .\library\models.py:122 .\library\templates\library\admin_dashboard.html:14
 #: .\library\templates\library\manage_books.html:24
 msgid "Published"
-msgstr ""
+msgstr "Publicado"
 
 #: .\library\models.py:123 .\library\templates\library\manage_books.html:25
 msgid "Archived"
-msgstr ""
+msgstr "Archivado"
 
 #: .\library\models.py:139
 msgid "Comma separated"
-msgstr ""
+msgstr "Separados por comas"
 
 #: .\library\models.py:168
 msgid "Book"
-msgstr ""
+msgstr "Libro"
 
 #: .\library\models.py:169 .\library\templates\library\admin_dashboard.html:49
 #: .\library\templates\library\book_list.html:60
 msgid "Books"
-msgstr ""
+msgstr "Libros"
 
 #: .\library\models.py:222
 msgid "Reading progress"
-msgstr ""
+msgstr "Progreso de lectura"
 
 #: .\library\models.py:237
 msgid "Bookmark"
-msgstr ""
+msgstr "Marcador"
 
 #: .\library\models.py:253
 msgid "Review"
-msgstr ""
+msgstr "Revisar"
 
 #: .\library\models.py:266
 msgid "Favorite"
-msgstr ""
+msgstr "Favorito"
 
 #: .\library\models.py:285
 msgid "Translation history"
-msgstr ""
+msgstr "Historial de traducción"
 
 #: .\library\models.py:302
 msgid "Saved highlight"
-msgstr ""
+msgstr "Resaltado guardado"
 
 #: .\library\models.py:315
 msgid "Reading session"
-msgstr ""
+msgstr "Sesión de lectura"
 
 #: .\library\models.py:327
 msgid "Personal collection"
-msgstr ""
+msgstr "colección personal"
 
 #: .\library\templates\library\admin_dashboard.html:4
 #: .\library\templates\library\admin_dashboard.html:11
 msgid "Admin Dashboard"
-msgstr ""
+msgstr "Panel de administración"
 
 #: .\library\templates\library\admin_dashboard.html:13
 msgid "Total books"
-msgstr ""
+msgstr "Libros totales"
 
 #: .\library\templates\library\admin_dashboard.html:15
 msgid "Registered users"
-msgstr ""
+msgstr "Usuarios registrados"
 
 #: .\library\templates\library\admin_dashboard.html:16
 msgid "Reading sessions"
-msgstr ""
+msgstr "Sesiones de lectura"
 
 #: .\library\templates\library\admin_dashboard.html:17
 #: .\library\templates\library\user_dashboard.html:15
 msgid "Translations"
-msgstr ""
+msgstr "Traducciones"
 
 #: .\library\templates\library\admin_dashboard.html:22
 msgid "Most popular books"
-msgstr ""
+msgstr "Libros más populares"
 
 #: .\library\templates\library\admin_dashboard.html:24
 #: .\library\templates\library\admin_dashboard.html:36
@@ -1729,89 +1729,89 @@ msgstr ""
 #: .\videos\forms.py:122 .\videos\templates\videos\upload.html:58
 #: .\videos\templates\videos\upload.html:115
 msgid "Title"
-msgstr ""
+msgstr "Título"
 
 #: .\library\templates\library\admin_dashboard.html:24
 #: .\library\templates\library\book_detail.html:53
 #: .\library\templates\library\manage_books.html:38
 msgid "Downloads"
-msgstr ""
+msgstr "Descargas"
 
 #: .\library\templates\library\admin_dashboard.html:28
 #: .\library\templates\library\admin_dashboard.html:40
 #: .\library\templates\library\manage_books.html:57
 msgid "No books."
-msgstr ""
+msgstr "Sin libros."
 
 #: .\library\templates\library\admin_dashboard.html:34
 msgid "Recently uploaded"
-msgstr ""
+msgstr "subido recientemente"
 
 #: .\library\templates\library\admin_dashboard.html:47
 msgid "Most active readers"
-msgstr ""
+msgstr "Lectores más activos"
 
 #: .\library\templates\library\admin_dashboard.html:53
 msgid "No data."
-msgstr ""
+msgstr "Sin datos."
 
 #: .\library\templates\library\admin_dashboard.html:59
 #: .\library\templates\library\manage_books.html:4
 #: .\library\templates\library\manage_books.html:13
 msgid "Manage books"
-msgstr ""
+msgstr "Administrar libros"
 
 #: .\library\templates\library\book_detail.html:4 .\templates\base.html:126
 msgid "Library"
-msgstr ""
+msgstr "Biblioteca"
 
 #: .\library\templates\library\book_detail.html:20
 msgid "Read now"
-msgstr ""
+msgstr "Leer ahora"
 
 #: .\library\templates\library\book_detail.html:22
 msgid "Download PDF"
-msgstr ""
+msgstr "Descargar PDF"
 
 #: .\library\templates\library\book_detail.html:26
 msgid "Remove from favorites"
-msgstr ""
+msgstr "Quitar de favoritos"
 
 #: .\library\templates\library\book_detail.html:26
 msgid "Add to favorites"
-msgstr ""
+msgstr "Añadir a favoritos"
 
 #: .\library\templates\library\book_detail.html:33
 msgid "Progress"
-msgstr ""
+msgstr "Progreso"
 
 #: .\library\templates\library\book_detail.html:44
 #: .\library\templates\library\book_list.html:41
 #: .\library\templates\library\book_list.html:72
 #: .\library\templates\library\upload.html:53
 msgid "Featured"
-msgstr ""
+msgstr "Presentado"
 
 #: .\library\templates\library\book_detail.html:48
 #: .\library\templates\library\upload.html:36
 msgid "Publisher"
-msgstr ""
+msgstr "Editor"
 
 #: .\library\templates\library\book_detail.html:49
 msgid "Year"
-msgstr ""
+msgstr "Año"
 
 #: .\library\templates\library\book_detail.html:50
 msgid "Pages"
-msgstr ""
+msgstr "paginas"
 
 #: .\library\templates\library\book_detail.html:52
 msgid "Reads"
-msgstr ""
+msgstr "Lee"
 
 #: .\library\templates\library\book_detail.html:54
 msgid "Rating"
-msgstr ""
+msgstr "Clasificación"
 
 #: .\library\templates\library\book_detail.html:58
 #: .\library\templates\library\upload.html:46
@@ -1820,250 +1820,250 @@ msgstr ""
 #: .\videos\templates\videos\upload.html:65
 #: .\videos\templates\videos\upload.html:119
 msgid "Description"
-msgstr ""
+msgstr "Descripción"
 
 #: .\library\templates\library\book_detail.html:70
 #: .\library\templates\library\manage_books.html:52
 #: .\videos\templates\videos\detail.html:170
 msgid "Edit"
-msgstr ""
+msgstr "Editar"
 
 #: .\library\templates\library\book_detail.html:79
 msgid "Your bookmarks"
-msgstr ""
+msgstr "Tus marcadores"
 
 #: .\library\templates\library\book_detail.html:85
 #: .\videos\templates\videos\detail.html:643
 #: .\videos\templates\videos\playlist_detail.html:79
 #: .\videos\templates\videos\playlist_detail.html:158
 msgid "Remove"
-msgstr ""
+msgstr "Eliminar"
 
 #: .\library\templates\library\book_detail.html:93
 msgid "Reviews"
-msgstr ""
+msgstr "Reseñas"
 
 #: .\library\templates\library\book_detail.html:97
 msgid "Rating (1-5)"
-msgstr ""
+msgstr "Calificación (1-5)"
 
 #: .\library\templates\library\book_detail.html:101
 msgid "Save review"
-msgstr ""
+msgstr "Guardar reseña"
 
 #: .\library\templates\library\book_detail.html:112
 msgid "No reviews yet."
-msgstr ""
+msgstr "Aún no hay reseñas."
 
 #: .\library\templates\library\book_detail.html:119
 msgid "Related books"
-msgstr ""
+msgstr "Libros relacionados"
 
 #: .\library\templates\library\book_list.html:4
 #: .\library\templates\library\book_list.html:13
 msgid "Digital Library"
-msgstr ""
+msgstr "Biblioteca Digital"
 
 #: .\library\templates\library\book_list.html:14
 msgid "Browse, read and translate books from around the world."
-msgstr ""
+msgstr "Explore, lea y traduzca libros de todo el mundo."
 
 #: .\library\templates\library\book_list.html:16
 msgid "Search books, authors, tags..."
-msgstr ""
+msgstr "Busca libros, autores, etiquetas..."
 
 #: .\library\templates\library\book_list.html:18
 msgid "All categories"
-msgstr ""
+msgstr "Todas las categorias"
 
 #: .\library\templates\library\book_list.html:24
 msgid "All languages"
-msgstr ""
+msgstr "Todos los idiomas"
 
 #: .\library\templates\library\book_list.html:30
 msgid "Newest"
-msgstr ""
+msgstr "El más nuevo"
 
 #: .\library\templates\library\book_list.html:31
 msgid "Most read"
-msgstr ""
+msgstr "Más leído"
 
 #: .\library\templates\library\book_list.html:32
 msgid "Top rated"
-msgstr ""
+msgstr "Mejor valorados"
 
 #: .\library\templates\library\book_list.html:33
 msgid "Title A-Z"
-msgstr ""
+msgstr "Título A-Z"
 
 #: .\library\templates\library\book_list.html:62
 #: .\library\templates\library\manage_books.html:16
 #: .\library\templates\library\upload.html:4
 msgid "Upload book"
-msgstr ""
+msgstr "Subir libro"
 
 #: .\library\templates\library\book_list.html:80
 msgid "pages"
-msgstr ""
+msgstr "paginas"
 
 #: .\library\templates\library\book_list.html:81
 msgid "reads"
-msgstr ""
+msgstr "lee"
 
 #: .\library\templates\library\book_list.html:87
 msgid "No books found."
-msgstr ""
+msgstr "No se encontraron libros."
 
 #: .\library\templates\library\book_list.html:93
 #: .\library\templates\library\manage_books.html:64
 #: .\library\templates\library\translation_history.html:49
 msgid "Previous"
-msgstr ""
+msgstr "Anterior"
 
 #: .\library\templates\library\book_list.html:94
 msgid "Page"
-msgstr ""
+msgstr "Página"
 
 #: .\library\templates\library\book_list.html:95
 #: .\library\templates\library\manage_books.html:66
 #: .\library\templates\library\read.html:31
 #: .\library\templates\library\translation_history.html:51
 msgid "Next"
-msgstr ""
+msgstr "Próximo"
 
 #: .\library\templates\library\collections.html:4
 #: .\library\templates\library\collections.html:11
 msgid "My Collections"
-msgstr ""
+msgstr "Mis colecciones"
 
 #: .\library\templates\library\collections.html:13
 msgid "New collection name"
-msgstr ""
+msgstr "Nuevo nombre de colección"
 
 #: .\library\templates\library\collections.html:14
 #: .\videos\templates\videos\detail.html:197
 #: .\videos\templates\videos\playlists.html:28
 msgid "Create"
-msgstr ""
+msgstr "Crear"
 
 #: .\library\templates\library\collections.html:22
 #: .\library\templates\library\user_dashboard.html:91
 msgid "books"
-msgstr ""
+msgstr "libros"
 
 #: .\library\templates\library\collections.html:25
 msgid "remove"
-msgstr ""
+msgstr "eliminar"
 
 #: .\library\templates\library\collections.html:28
 msgid "Delete collection"
-msgstr ""
+msgstr "Eliminar colección"
 
 #: .\library\templates\library\collections.html:30
 #: .\library\templates\library\user_dashboard.html:92
 msgid "No collections yet."
-msgstr ""
+msgstr "Aún no hay colecciones."
 
 #: .\library\templates\library\confirm_delete.html:4
 #: .\library\templates\library\confirm_delete.html:12
 msgid "Delete book"
-msgstr ""
+msgstr "Eliminar libro"
 
 #: .\library\templates\library\confirm_delete.html:13
 msgid "Are you sure you want to delete"
-msgstr ""
+msgstr "¿Estás seguro de que quieres eliminar?"
 
 #: .\library\templates\library\confirm_delete.html:16
 msgid "Yes, delete"
-msgstr ""
+msgstr "Si, eliminar"
 
 #: .\library\templates\library\confirm_delete.html:17
 #: .\library\templates\library\upload.html:70
 #: .\videos\templates\videos\edit.html:68
 msgid "Cancel"
-msgstr ""
+msgstr "Cancelar"
 
 #: .\library\templates\library\highlights.html:4
 #: .\library\templates\library\highlights.html:11
 msgid "Saved Highlights"
-msgstr ""
+msgstr "Destacados guardados"
 
 #: .\library\templates\library\highlights.html:19
 #: .\library\templates\library\user_dashboard.html:83
 msgid "No highlights."
-msgstr ""
+msgstr "Sin destacados."
 
 #: .\library\templates\library\manage_books.html:20
 msgid "Search..."
-msgstr ""
+msgstr "Buscar..."
 
 #: .\library\templates\library\manage_books.html:22
 msgid "All statuses"
-msgstr ""
+msgstr "Todos los estados"
 
 #: .\library\templates\library\manage_books.html:27
 #: .\library\templates\library\translation_history.html:26
 msgid "Filter"
-msgstr ""
+msgstr "Filtrar"
 
 #: .\library\templates\library\manage_books.html:36
 #: .\library\templates\library\upload.html:27 .\templates\base.html:94
 msgid "Language"
-msgstr ""
+msgstr "Idioma"
 
 #: .\library\templates\library\manage_categories.html:4
 msgid "Manage categories"
-msgstr ""
+msgstr "Administrar categorías"
 
 #: .\library\templates\library\manage_categories.html:16
 msgid "Add"
-msgstr ""
+msgstr "Agregar"
 
 #: .\library\templates\library\manage_categories.html:25
 msgid "No categories."
-msgstr ""
+msgstr "Sin categorías."
 
 #: .\library\templates\library\manage_categories.html:28
 msgid "Back to books"
-msgstr ""
+msgstr "volver a los libros"
 
 #: .\library\templates\library\my_library.html:4
 #: .\library\templates\library\my_library.html:12
 msgid "My library"
-msgstr ""
+msgstr "mi biblioteca"
 
 #: .\library\templates\library\my_library.html:13
 #: .\library\templates\library\user_dashboard.html:21
 msgid "Continue reading"
-msgstr ""
+msgstr "Continuar leyendo"
 
 #: .\library\templates\library\my_library.html:29
 #: .\library\templates\library\user_dashboard.html:34
 msgid "No reading in progress."
-msgstr ""
+msgstr "No hay lectura en curso."
 
 #: .\library\templates\library\my_library.html:33
 #: .\library\templates\library\user_dashboard.html:17
 #: .\library\templates\library\user_dashboard.html:39
 msgid "Favorites"
-msgstr ""
+msgstr "Favoritos"
 
 #: .\library\templates\library\my_library.html:48
 #: .\library\templates\library\user_dashboard.html:48
 msgid "No favorites yet."
-msgstr ""
+msgstr "Aún no hay favoritos."
 
 #: .\library\templates\library\read.html:4
 msgid "Read"
-msgstr ""
+msgstr "Leer"
 
 #: .\library\templates\library\read.html:17
 msgid "Back"
-msgstr ""
+msgstr "Atrás"
 
 #: .\library\templates\library\read.html:21
 msgid "Translation"
-msgstr ""
+msgstr "Traducción"
 
 #: .\library\templates\library\read.html:22
 #: .\library\templates\library\read.html:81
@@ -2071,135 +2071,135 @@ msgstr ""
 #: .\videos\templates\videos\composition.html:31
 #: .\videos\templates\videos\composition.html:71
 msgid "Close"
-msgstr ""
+msgstr "Cerca"
 
 #: .\library\templates\library\read.html:29
 msgid "Prev"
-msgstr ""
+msgstr "Anterior"
 
 #: .\library\templates\library\read.html:37
 msgid "Fit"
-msgstr ""
+msgstr "Adaptar"
 
 #: .\library\templates\library\read.html:40
 msgid "Dark reading"
-msgstr ""
+msgstr "lectura oscura"
 
 #: .\library\templates\library\read.html:43
 msgid "Translate on select"
-msgstr ""
+msgstr "Traducir al seleccionar"
 
 #: .\library\templates\library\read.html:46
 msgid "View mode"
-msgstr ""
+msgstr "Modo de visualización"
 
 #: .\library\templates\library\read.html:48
 msgid "Side by side"
-msgstr ""
+msgstr "Juntos"
 
 #: .\library\templates\library\read.html:49
 msgid "Original only"
-msgstr ""
+msgstr "Sólo originales"
 
 #: .\library\templates\library\read.html:50
 msgid "Translated only"
-msgstr ""
+msgstr "Traducido solamente"
 
 #: .\library\templates\library\read.html:54
 msgid "Translate to"
-msgstr ""
+msgstr "Traducir a"
 
 #: .\library\templates\library\read.html:64
 #: .\shorts\templates\shorts\detail.html:73
 #: .\shorts\templates\shorts\list.html:81
 msgid "Download"
-msgstr ""
+msgstr "Descargar"
 
 #: .\library\templates\library\read.html:66
 msgid "Open PDF directly"
-msgstr ""
+msgstr "Abrir PDF directamente"
 
 #: .\library\templates\library\read.html:67
 msgid "Bookmark this page"
-msgstr ""
+msgstr "Marcar esta página"
 
 #: .\library\templates\library\read.html:68
 #: .\videos\templates\videos\_player.html:80
 #: .\videos\templates\videos\_queue.html:11
 msgid "Fullscreen"
-msgstr ""
+msgstr "Pantalla completa"
 
 #: .\library\templates\library\read.html:69
 msgid "Use native viewer"
-msgstr ""
+msgstr "Usar visor nativo"
 
 #: .\library\templates\library\read.html:75 .\templates\base.html:70
 msgid "Menu"
-msgstr ""
+msgstr "Menú"
 
 #: .\library\templates\library\read.html:85
 msgid "Loading..."
-msgstr ""
+msgstr "Cargando..."
 
 #: .\library\templates\library\translation_history.html:4
 #: .\library\templates\library\translation_history.html:12
 msgid "Translation History"
-msgstr ""
+msgstr "Historial de traducción"
 
 #: .\library\templates\library\translation_history.html:14
 msgid "Export saved"
-msgstr ""
+msgstr "Exportación guardada"
 
 #: .\library\templates\library\translation_history.html:20
 msgid "All books"
-msgstr ""
+msgstr "Todos los libros"
 
 #: .\library\templates\library\translation_history.html:25
 msgid "Saved only"
-msgstr ""
+msgstr "Sólo guardado"
 
 #: .\library\templates\library\translation_history.html:38
 msgid "Unsave"
-msgstr ""
+msgstr "Dejar de guardar"
 
 #: .\library\templates\library\translation_history.html:38
 #: .\videos\templates\videos\detail.html:157
 #: .\videos\templates\videos\playlist_detail.html:46
 msgid "Save"
-msgstr ""
+msgstr "Ahorrar"
 
 #: .\library\templates\library\translation_history.html:44
 msgid "No translations."
-msgstr ""
+msgstr "Sin traducciones."
 
 #: .\library\templates\library\upload.html:4
 #: .\library\templates\library\upload.html:12
 msgid "Edit book"
-msgstr ""
+msgstr "Editar libro"
 
 #: .\library\templates\library\upload.html:12
 msgid "Upload a new book"
-msgstr ""
+msgstr "Sube un nuevo libro"
 
 #: .\library\templates\library\upload.html:30
 msgid "Tags"
-msgstr ""
+msgstr "Etiquetas"
 
 #: .\library\templates\library\upload.html:33
 msgid "ISBN"
-msgstr ""
+msgstr "ISBN"
 
 #: .\library\templates\library\upload.html:39
 msgid "Published year"
-msgstr ""
+msgstr "Año de publicación"
 
 #: .\library\templates\library\upload.html:42
 msgid "Page count"
-msgstr ""
+msgstr "Recuento de páginas"
 
 #: .\library\templates\library\upload.html:54
 msgid "Allow download"
-msgstr ""
+msgstr "Permitir descarga"
 
 #: .\library\templates\library\upload.html:55
 #: .\videos\templates\videos\playlist_detail.html:28
@@ -2207,126 +2207,126 @@ msgstr ""
 #: .\videos\templates\videos\playlists.html:26
 #: .\videos\templates\videos\playlists.html:47
 msgid "Public"
-msgstr ""
+msgstr "Público"
 
 #: .\library\templates\library\upload.html:61
 msgid "Current PDF kept unless a new one is uploaded."
-msgstr ""
+msgstr "El PDF actual se conserva a menos que se cargue uno nuevo."
 
 #: .\library\templates\library\upload.html:65
 msgid "Current cover kept unless a new one is uploaded."
-msgstr ""
+msgstr "La portada actual se mantiene a menos que se cargue una nueva."
 
 #: .\library\templates\library\upload.html:69
 #: .\videos\templates\videos\edit.html:69
 msgid "Save changes"
-msgstr ""
+msgstr "Guardar cambios"
 
 #: .\library\templates\library\upload.html:69
 #: .\shorts\templates\shorts\upload.html:21 .\templates\base.html:113
 msgid "Upload"
-msgstr ""
+msgstr "Subir"
 
 #: .\library\templates\library\user_dashboard.html:4
 msgid "My Dashboard"
-msgstr ""
+msgstr "Mi panel"
 
 #: .\library\templates\library\user_dashboard.html:11
 msgid "Welcome back"
-msgstr ""
+msgstr "Bienvenido de nuevo"
 
 #: .\library\templates\library\user_dashboard.html:14
 msgid "Books in progress"
-msgstr ""
+msgstr "Libros en progreso"
 
 #: .\library\templates\library\user_dashboard.html:16
 msgid "Highlights"
-msgstr ""
+msgstr "Reflejos"
 
 #: .\library\templates\library\user_dashboard.html:53
 msgid "Recent translations"
-msgstr ""
+msgstr "Traducciones recientes"
 
 #: .\library\templates\library\user_dashboard.html:61
 msgid "No translations yet."
-msgstr ""
+msgstr "Aún no hay traducciones."
 
 #: .\library\templates\library\user_dashboard.html:63
 msgid "View all"
-msgstr ""
+msgstr "Ver todo"
 
 #: .\library\templates\library\user_dashboard.html:67
 msgid "Saved translations"
-msgstr ""
+msgstr "Traducciones guardadas"
 
 #: .\library\templates\library\user_dashboard.html:74
 msgid "No saved translations."
-msgstr ""
+msgstr "No hay traducciones guardadas."
 
 #: .\library\templates\library\user_dashboard.html:79
 msgid "Saved highlights"
-msgstr ""
+msgstr "Destacados guardados"
 
 #: .\library\templates\library\user_dashboard.html:88
 msgid "Collections"
-msgstr ""
+msgstr "Colecciones"
 
 #: .\library\templates\library\user_dashboard.html:94
 msgid "Manage collections"
-msgstr ""
+msgstr "Administrar colecciones"
 
 #: .\library\templates\library\user_dashboard.html:98
 msgid "Recommended reading"
-msgstr ""
+msgstr "Lectura recomendada"
 
 #: .\library\templates\library\user_dashboard.html:107
 msgid "No recommendations yet."
-msgstr ""
+msgstr "Aún no hay recomendaciones."
 
 #: .\library\views.py:186 .\library\views.py:211
 msgid "A PDF file is required."
-msgstr ""
+msgstr "Se requiere un archivo PDF."
 
 #: .\library\views.py:207
 msgid "Book uploaded successfully."
-msgstr ""
+msgstr "Libro cargado exitosamente."
 
 #: .\library\views.py:251
 msgid "Book updated."
-msgstr ""
+msgstr "Libro actualizado."
 
 #: .\library\views.py:268
 msgid "Book deleted."
-msgstr ""
+msgstr "Libro eliminado."
 
 #: .\library\views.py:294
 msgid "Category added."
-msgstr ""
+msgstr "Categoría agregada."
 
 #: .\library\views.py:307
 msgid "Category deleted."
-msgstr ""
+msgstr "Categoría eliminada."
 
 #: .\library\views.py:385
 msgid "Review saved."
-msgstr ""
+msgstr "Revisión guardada."
 
 #: .\library\views.py:387
 msgid "Invalid review."
-msgstr ""
+msgstr "Revisión no válida."
 
 #: .\library\views.py:440
 msgid "Download is not permitted for this book."
-msgstr ""
+msgstr "No se permite la descarga de este libro."
 
 #: .\shorts\templates\shorts\detail.html:12
 msgid "Back to feed"
-msgstr ""
+msgstr "Volver al feed"
 
 #: .\shorts\templates\shorts\detail.html:27
 #: .\shorts\templates\shorts\list.html:32
 msgid "Mute/Unmute"
-msgstr ""
+msgstr "Silenciar/Activar silencio"
 
 #: .\shorts\templates\shorts\detail.html:42
 #: .\shorts\templates\shorts\list.html:50
@@ -2346,7 +2346,7 @@ msgstr[1] ""
 #: .\shorts\templates\shorts\list.html:76
 #: .\videos\templates\videos\detail.html:167
 msgid "Share"
-msgstr ""
+msgstr "Compartir"
 
 #: .\shorts\templates\shorts\detail.html:71
 #: .\shorts\templates\shorts\list.html:79
@@ -2355,179 +2355,179 @@ msgstr ""
 #: .\videos\templates\videos\list.html:46
 #: .\videos\templates\videos\search.html:65 .\videos\tests.py:1365
 msgid "Download MP3"
-msgstr ""
+msgstr "Descargar MP3"
 
 #: .\shorts\templates\shorts\detail.html:86
 #: .\shorts\templates\shorts\list.html:92
 #: .\videos\templates\videos\detail.html:121
 msgid "Listen (MP3)"
-msgstr ""
+msgstr "Escuchar (MP3)"
 
 #: .\shorts\templates\shorts\detail.html:116
 msgid "No comments yet."
-msgstr ""
+msgstr "Aún no hay comentarios."
 
 #: .\shorts\templates\shorts\detail.html:121
 #: .\shorts\templates\shorts\list.html:121
 msgid "Add a comment..."
-msgstr ""
+msgstr "Añade un comentario..."
 
 #: .\shorts\templates\shorts\detail.html:122
 #: .\shorts\templates\shorts\list.html:122
 msgid "Post"
-msgstr ""
+msgstr "Correo"
 
 #: .\shorts\templates\shorts\list.html:3 .\templates\base.html:125
 msgid "Shorts"
-msgstr ""
+msgstr "Bermudas"
 
 #: .\shorts\templates\shorts\list.html:13
 #: .\shorts\templates\shorts\list.html:105
 #: .\shorts\templates\shorts\upload.html:3
 #: .\shorts\templates\shorts\upload.html:11
 msgid "Upload short"
-msgstr ""
+msgstr "Subir corto"
 
 #: .\shorts\templates\shorts\list.html:15
 msgid "Home"
-msgstr ""
+msgstr "Hogar"
 
 #: .\shorts\templates\shorts\list.html:41
 msgid "Follow"
-msgstr ""
+msgstr "Seguir"
 
 #: .\shorts\templates\shorts\list.html:94
 msgid "Sound"
-msgstr ""
+msgstr "Sonido"
 
 #: .\shorts\templates\shorts\list.html:102
 msgid "No Shorts Yet"
-msgstr ""
+msgstr "Aún no hay pantalones cortos"
 
 #: .\shorts\templates\shorts\list.html:103
 msgid "Short vertical videos will appear here."
-msgstr ""
+msgstr "Aquí aparecerán vídeos verticales cortos."
 
 #: .\shorts\templates\shorts\upload.html:12
 msgid "Back to Shorts"
-msgstr ""
+msgstr "Volver a Pantalones cortos"
 
 #: .\shorts\templates\shorts\upload.html:14
 msgid "Storage is not configured."
-msgstr ""
+msgstr "El almacenamiento no está configurado."
 
 #: .\shorts\views.py:66 .\videos\forms.py:96
 msgid "Please choose a video file."
-msgstr ""
+msgstr "Por favor elija un archivo de video."
 
 #: .\shorts\views.py:80
 msgid "Short uploaded"
-msgstr ""
+msgstr "Corto subido"
 
 #: .\shorts\views.py:89
 msgid "Short deleted"
-msgstr ""
+msgstr "Corto eliminado"
 
 #: .\shorts\views.py:95
 msgid "You must be signed in to like."
-msgstr ""
+msgstr "Debes iniciar sesión para dar me gusta."
 
 #: .\shorts\views.py:126
 msgid "This short has no sound."
-msgstr ""
+msgstr "Este corto no tiene sonido."
 
 #: .\shorts\views.py:130 .\shorts\views.py:137
 msgid "The sound could not be prepared. Please try again."
-msgstr ""
+msgstr "No se pudo preparar el sonido. Por favor inténtalo de nuevo."
 
 #: .\shorts\views.py:152 .\videos\views.py:1346
 msgid "You must be signed in to comment."
-msgstr ""
+msgstr "Debes iniciar sesión para comentar."
 
 #: .\shorts\views.py:156
 msgid "Comment cannot be empty."
-msgstr ""
+msgstr "El comentario no puede estar vacío."
 
 #: .\shorts\views.py:195
 msgid "Not allowed."
-msgstr ""
+msgstr "No permitido."
 
 #: .\templates\base.html:41 .\templates\base.html:45 .\templates\base.html:50
 msgid "Watch and listen to videos and audio, online or offline."
-msgstr ""
+msgstr "Mire y escuche videos y audio, en línea o sin conexión."
 
 #: .\templates\base.html:81 .\templates\base.html:83
 #: .\videos\templates\videos\composition.html:36
 #: .\videos\templates\videos\search.html:16
 msgid "Search videos"
-msgstr ""
+msgstr "buscar vídeos"
 
 #: .\templates\base.html:105 .\templates\base.html:106
 msgid "Toggle light and dark mode"
-msgstr ""
+msgstr "Alternar modo claro y oscuro"
 
 #: .\templates\base.html:117
 msgid "Playlists"
-msgstr ""
+msgstr "Listas de reproducción"
 
 #: .\templates\base.html:118 .\videos\templates\videos\detail.html:162
 #: .\videos\templates\videos\detail.html:1179
 msgid "Watch later"
-msgstr ""
+msgstr "Ver más tarde"
 
 #: .\templates\base.html:122 .\videos\templates\videos\_queue.html:32
 #: .\videos\templates\videos\_queue.html:34
 #: .\videos\templates\videos\detail.html:397
 msgid "Queue"
-msgstr ""
+msgstr "Cola"
 
 #: .\templates\base.html:128
 msgid "My Library"
-msgstr ""
+msgstr "Mi biblioteca"
 
 #: .\templates\base.html:129 .\videos\templates\videos\composition.html:4
 msgid "Composition"
-msgstr ""
+msgstr "Composición"
 
 #: .\templates\base.html:130 .\videos\templates\videos\offline.html:4
 msgid "Offline"
-msgstr ""
+msgstr "Desconectado"
 
 #: .\templates\base.html:131
 msgid "Notes"
-msgstr ""
+msgstr "Notas"
 
 #: .\templates\base.html:132
 msgid "Activity"
-msgstr ""
+msgstr "Actividad"
 
 #: .\templates\base.html:135
 msgid "Library Admin"
-msgstr ""
+msgstr "Administrador de biblioteca"
 
 #: .\templates\base.html:136
 msgid "Manage Books"
-msgstr ""
+msgstr "Administrar libros"
 
 #: .\templates\base.html:145
 msgid "Logout"
-msgstr ""
+msgstr "Cerrar sesión"
 
 #: .\videos\composition_views.py:163
 msgid "Add to timeline"
-msgstr ""
+msgstr "Agregar a la línea de tiempo"
 
 #: .\videos\composition_views.py:164
 msgid "No matches for this search."
-msgstr ""
+msgstr "No hay coincidencias para esta búsqueda."
 
 #: .\videos\composition_views.py:165
 msgid "On timeline"
-msgstr ""
+msgstr "en la línea de tiempo"
 
 #: .\videos\composition_views.py:167
 msgid "Nothing here yet."
-msgstr ""
+msgstr "Nada aquí todavía."
 
 #: .\videos\composition_views.py:168 .\videos\templates\videos\_player.html:38
 #: .\videos\templates\videos\_player.html:46
@@ -2535,898 +2535,898 @@ msgstr ""
 #: .\videos\templates\videos\_queue.html:9
 #: .\videos\templates\videos\composition.html:61
 msgid "Play"
-msgstr ""
+msgstr "Jugar"
 
 #: .\videos\composition_views.py:169 .\videos\templates\videos\_queue.html:10
 msgid "Pause"
-msgstr ""
+msgstr "Pausa"
 
 #: .\videos\composition_views.py:170
 msgid "Add a video or audio to the timeline to start."
-msgstr ""
+msgstr "Agrega un video o audio a la línea de tiempo para comenzar."
 
 #: .\videos\composition_views.py:171
 msgid "Audio only: the sound plays while you preview."
-msgstr ""
+msgstr "Solo audio: el sonido se reproduce mientras obtienes una vista previa."
 
 #: .\videos\composition_views.py:172
 msgid "Add a clip to the timeline first."
-msgstr ""
+msgstr "Primero agregue un clip a la línea de tiempo."
 
 #: .\videos\composition_views.py:173
 msgid "Could not read this file."
-msgstr ""
+msgstr "No se pudo leer este archivo."
 
 #: .\videos\composition_views.py:174
 msgid "Move the playhead onto a clip, then split."
-msgstr ""
+msgstr "Mueva el cabezal de reproducción a un clip y luego divídalo."
 
 #: .\videos\composition_views.py:175
 msgid "The playhead is too close to the edge of the clip."
-msgstr ""
+msgstr "El cabezal de reproducción está demasiado cerca del borde del clip."
 
 #: .\videos\composition_views.py:176
 msgid "Export discarded."
-msgstr ""
+msgstr "Exportación descartada."
 
 #: .\videos\composition_views.py:177
 msgid "Waiting for the rendererâ¦"
-msgstr ""
+msgstr "Esperando al renderizador..."
 
 #: .\videos\composition_views.py:178
 msgid "Preparing clipsâ¦"
-msgstr ""
+msgstr "Preparando clips..."
 
 #: .\videos\composition_views.py:179
 msgid "Encoding clipsâ¦"
-msgstr ""
+msgstr "Codificación de clips..."
 
 #: .\videos\composition_views.py:180
 msgid "Joining clipsâ¦"
-msgstr ""
+msgstr "Unir clips..."
 
 #: .\videos\composition_views.py:181
 msgid "Mixing audioâ¦"
-msgstr ""
+msgstr "Mezclando audio..."
 
 #: .\videos\composition_views.py:182
 msgid "Finishingâ¦"
-msgstr ""
+msgstr "Terminando..."
 
 #: .\videos\composition_views.py:184
 msgid "The export request was invalid."
-msgstr ""
+msgstr "La solicitud de exportación no era válida."
 
 #: .\videos\composition_views.py:185
 msgid "Add at least one clip."
-msgstr ""
+msgstr "Añade al menos un clip."
 
 #: .\videos\composition_views.py:186
 msgid "There are too many clips for one export."
-msgstr ""
+msgstr "Hay demasiados clips para una exportación."
 
 #: .\videos\composition_views.py:187
 msgid "The timeline is too long for one export."
-msgstr ""
+msgstr "El cronograma es demasiado largo para una exportación."
 
 #: .\videos\composition_views.py:188
 msgid "One of the clips is no longer available."
-msgstr ""
+msgstr "Uno de los clips ya no está disponible."
 
 #: .\videos\composition_views.py:189
 msgid "A video clip has no picture."
-msgstr ""
+msgstr "Un videoclip no tiene imagen."
 
 #: .\videos\composition_views.py:190
 msgid "An audio clip has no sound track."
-msgstr ""
+msgstr "Un clip de audio no tiene banda sonora."
 
 #: .\videos\composition_views.py:191
 msgid "A clip is too short (0.2 seconds minimum)."
-msgstr ""
+msgstr "Un clip es demasiado corto (mínimo 0,2 segundos)."
 
 #: .\videos\composition_views.py:192
 msgid "A clip could not be downloaded."
-msgstr ""
+msgstr "No se pudo descargar un clip."
 
 #: .\videos\composition_views.py:193
 msgid "A clip could not be rendered."
-msgstr ""
+msgstr "No se pudo renderizar un clip."
 
 #: .\videos\composition_views.py:194
 msgid "The export took too long. Try a shorter timeline."
-msgstr ""
+msgstr "La exportación tomó demasiado tiempo. Pruebe con un cronograma más corto."
 
 #: .\videos\composition_views.py:195
 msgid "The export was interrupted. Please try again."
-msgstr ""
+msgstr "La exportación fue interrumpida. Por favor inténtalo de nuevo."
 
 #: .\videos\composition_views.py:196
 msgid "The export failed. Please try again."
-msgstr ""
+msgstr "La exportación fracasó. Por favor inténtalo de nuevo."
 
 #: .\videos\composition_views.py:197
 msgid "Could not reach the server. Check your connection."
-msgstr ""
+msgstr "No se pudo llegar al servidor. Comprueba tu conexión."
 
 #: .\videos\forms.py:24
 msgid "Audio only (MP3)"
-msgstr ""
+msgstr "Sólo audio (MP3)"
 
 #: .\videos\forms.py:30
 msgid "Upload type"
-msgstr ""
+msgstr "Tipo de carga"
 
 #: .\videos\forms.py:40 .\videos\forms.py:126
 #: .\videos\templates\videos\upload.html:60
 #: .\videos\templates\videos\upload.html:116
 msgid "Enter video title"
-msgstr ""
+msgstr "Introduce el título del vídeo"
 
 #: .\videos\forms.py:50 .\videos\forms.py:136
 #: .\videos\templates\videos\upload.html:67
 msgid "Enter video description"
-msgstr ""
+msgstr "Introduce la descripción del vídeo"
 
 #: .\videos\forms.py:56 .\videos\templates\videos\upload.html:71
 msgid "Video File"
-msgstr ""
+msgstr "Archivo de vídeo"
 
 #: .\videos\forms.py:62
 msgid "Required for a video upload. Leave empty for an audio-only upload."
-msgstr ""
+msgstr "Requerido para subir un video. Déjelo vacío para una carga de solo audio."
 
 #: .\videos\forms.py:66 .\videos\templates\videos\upload.html:81
 msgid "Audio File (MP3)"
-msgstr ""
+msgstr "Archivo de audio (MP3)"
 
 #: .\videos\forms.py:72
 msgid ""
 "Required for an audio-only upload. Leave empty for a video upload, where the "
 "MP3 is extracted automatically."
-msgstr ""
+msgstr "Requerido para una carga de solo audio. Déjelo vacío para cargar un video, donde el MP3 se extrae automáticamente."
 
 #: .\videos\forms.py:87
 msgid "Choose either a video or an MP3 file, not both."
-msgstr ""
+msgstr "Elija un vídeo o un archivo MP3, no ambos."
 
 #: .\videos\forms.py:93
 msgid "Please choose an MP3 file for an audio upload."
-msgstr ""
+msgstr "Elija un archivo MP3 para cargar el audio."
 
 #: .\videos\forms.py:103 .\videos\forms.py:193
 msgid "Video must be under 3 GB."
-msgstr ""
+msgstr "El vídeo debe tener menos de 3 GB."
 
 #: .\videos\forms.py:106 .\videos\forms.py:196
 msgid "This video type is not allowed."
-msgstr ""
+msgstr "Este tipo de vídeo no está permitido."
 
 #: .\videos\forms.py:143
 msgid "Replace thumbnail"
-msgstr ""
+msgstr "Reemplazar miniatura"
 
 #: .\videos\forms.py:147
 msgid "Leave empty to keep the current thumbnail."
-msgstr ""
+msgstr "Déjelo vacío para conservar la miniatura actual."
 
 #: .\videos\forms.py:151
 msgid "Replace video"
-msgstr ""
+msgstr "Reemplazar vídeo"
 
 #: .\videos\forms.py:156
 msgid ""
 "Leave empty to keep the current video. Replacing it deletes the old file, "
 "MP3 and subtitles, and rebuilds the MP3."
-msgstr ""
+msgstr "Déjelo vacío para conservar el vídeo actual. Reemplazarlo elimina el archivo antiguo, MP3 y subtítulos, y reconstruye el MP3."
 
 #: .\videos\forms.py:162
 msgid "Remove the current thumbnail"
-msgstr ""
+msgstr "Eliminar la miniatura actual"
 
 #: .\videos\forms.py:172
 msgid "Image must be under 8 MB."
-msgstr ""
+msgstr "La imagen debe tener menos de 8 MB."
 
 #: .\videos\forms.py:175
 msgid "This image type is not allowed."
-msgstr ""
+msgstr "Este tipo de imagen no está permitido."
 
 #: .\videos\forms.py:183
 msgid "Choose a new thumbnail or remove the current one, not both."
-msgstr ""
+msgstr "Elija una nueva miniatura o elimine la actual, no ambas."
 
 #: .\videos\models.py:26
 msgid "Audio only"
-msgstr ""
+msgstr "Sólo audio"
 
 #: .\videos\models.py:288
 msgid "Public playlists can be viewed by anyone."
-msgstr ""
+msgstr "Cualquiera puede ver las listas de reproducción públicas."
 
 #: .\videos\templates\videos\_player.html:32
 msgid "Video Unavailable"
-msgstr ""
+msgstr "Vídeo no disponible"
 
 #: .\videos\templates\videos\_player.html:33
 msgid "The video file could not be loaded."
-msgstr ""
+msgstr "No se pudo cargar el archivo de vídeo."
 
 #: .\videos\templates\videos\_player.html:36
 msgid "Show or hide the player controls"
-msgstr ""
+msgstr "Mostrar u ocultar los controles del reproductor."
 
 #: .\videos\templates\videos\_player.html:43
 msgid "Seek"
-msgstr ""
+msgstr "Buscar"
 
 #: .\videos\templates\videos\_player.html:48
 #: .\videos\templates\videos\_player.html:94
 msgid "Next in queue"
-msgstr ""
+msgstr "Siguiente en la cola"
 
 #: .\videos\templates\videos\_player.html:50
 msgid "Back 10 seconds"
-msgstr ""
+msgstr "Atrás 10 segundos"
 
 #: .\videos\templates\videos\_player.html:52
 msgid "Forward 10 seconds"
-msgstr ""
+msgstr "Adelante 10 segundos"
 
 #: .\videos\templates\videos\_player.html:55
 msgid "Mute"
-msgstr ""
+msgstr "Silenciar"
 
 #: .\videos\templates\videos\_player.html:57
 #: .\videos\templates\videos\composition.html:86
 msgid "Volume"
-msgstr ""
+msgstr "Volumen"
 
 #: .\videos\templates\videos\_player.html:58
 msgid "Playback speed"
-msgstr ""
+msgstr "Velocidad de reproducción"
 
 #: .\videos\templates\videos\_player.html:67
 msgid "Picture in picture"
-msgstr ""
+msgstr "Imagen en imagen"
 
 #: .\videos\templates\videos\_player.html:72
 #: .\videos\templates\videos\_queue.html:13
 #: .\videos\templates\videos\detail.html:51
 msgid "Subtitles"
-msgstr ""
+msgstr "Subtítulos"
 
 #: .\videos\templates\videos\_player.html:74
 #: .\videos\templates\videos\detail.html:57
 msgid "Caption language"
-msgstr ""
+msgstr "Idioma de los subtítulos"
 
 #: .\videos\templates\videos\_player.html:76
 #: .\videos\templates\videos\_queue.html:7
 #: .\videos\templates\videos\detail.html:53
 #: .\videos\templates\videos\detail.html:60
 msgid "Off"
-msgstr ""
+msgstr "Apagado"
 
 #: .\videos\templates\videos\_player.html:87
 msgid "Back to the video"
-msgstr ""
+msgstr "Volver al vídeo"
 
 #: .\videos\templates\videos\_player.html:96
 msgid "Show queue"
-msgstr ""
+msgstr "Mostrar cola"
 
 #: .\videos\templates\videos\_player.html:98
 msgid "Close player"
-msgstr ""
+msgstr "Cerrar jugador"
 
 #: .\videos\templates\videos\_queue.html:8
 #: .\videos\templates\videos\detail.html:75
 msgid "No captions for this video yet."
-msgstr ""
+msgstr "Aún no hay subtítulos para este video."
 
 #: .\videos\templates\videos\_queue.html:12
 msgid "Exit fullscreen"
-msgstr ""
+msgstr "Salir de pantalla completa"
 
 #: .\videos\templates\videos\_queue.html:14
 msgid "This video could not be played, so it was skipped."
-msgstr ""
+msgstr "Este vídeo no se pudo reproducir, por lo que se omitió."
 
 #: .\videos\templates\videos\_queue.html:15
 msgid "Play now"
-msgstr ""
+msgstr "Juega ahora"
 
 #: .\videos\templates\videos\_queue.html:16
 #: .\videos\templates\videos\_queue_menu.html:20
 msgid "Play next"
-msgstr ""
+msgstr "Reproducir siguiente"
 
 #: .\videos\templates\videos\_queue.html:19
 msgid "Move to end"
-msgstr ""
+msgstr "Mover al final"
 
 #: .\videos\templates\videos\_queue.html:20
 msgid "Remove from queue"
-msgstr ""
+msgstr "Quitar de la cola"
 
 #: .\videos\templates\videos\_queue.html:21
 msgid "Watch on the video page"
-msgstr ""
+msgstr "Ver en la página del vídeo"
 
 #: .\videos\templates\videos\_queue.html:22
 msgid "Now playing"
-msgstr ""
+msgstr "Ahora jugando"
 
 #: .\videos\templates\videos\_queue.html:23
 #: .\videos\templates\videos\_queue_menu.html:14
 #: .\videos\templates\videos\_queue_menu.html:15
 msgid "Queue options"
-msgstr ""
+msgstr "Opciones de cola"
 
 #: .\videos\templates\videos\_queue.html:24
 msgid "In queue"
-msgstr ""
+msgstr "En cola"
 
 #: .\videos\templates\videos\_queue.html:25
 msgid "Will play next"
-msgstr ""
+msgstr "jugará el próximo"
 
 #: .\videos\templates\videos\_queue.html:26
 msgid "Added to the queue"
-msgstr ""
+msgstr "Agregado a la cola"
 
 #: .\videos\templates\videos\_queue.html:27
 msgid "The queue has been cleared."
-msgstr ""
+msgstr "La cola ha sido despejada."
 
 #: .\videos\templates\videos\_queue.html:28
 msgid "Clear the queue?"
-msgstr ""
+msgstr "¿Limpiar la cola?"
 
 #: .\videos\templates\videos\_queue.html:29
 msgid ""
 "Every video in the queue will be removed. The videos themselves are not "
 "affected."
-msgstr ""
+msgstr "Se eliminarán todos los vídeos de la cola. Los vídeos en sí no se ven afectados."
 
 #: .\videos\templates\videos\_queue.html:30
 #: .\videos\templates\videos\_queue.html:40
 #: .\videos\templates\videos\detail.html:398
 msgid "Clear queue"
-msgstr ""
+msgstr "Limpiar cola"
 
 #: .\videos\templates\videos\_queue.html:39
 #: .\videos\templates\videos\playlist_detail.html:55
 msgid "Play all"
-msgstr ""
+msgstr "Reproducir todo"
 
 #: .\videos\templates\videos\_queue.html:46
 msgid "Your queue is empty. Use the â°+ button on any video to add it."
-msgstr ""
+msgstr "Tu cola está vacía. Utilice el botón â°+ en cualquier vídeo para agregarlo."
 
 #: .\videos\templates\videos\_queue_menu.html:23
 msgid "Add to queue"
-msgstr ""
+msgstr "Añadir a la cola"
 
 #: .\videos\templates\videos\channel.html:57
 #: .\videos\templates\videos\list.html:54
 msgid "No Videos Yet"
-msgstr ""
+msgstr "Aún no hay vídeos"
 
 #: .\videos\templates\videos\channel.html:58
 msgid "This channel hasn't uploaded any videos yet."
-msgstr ""
+msgstr "Este canal aún no ha subido ningún vídeo."
 
 #: .\videos\templates\videos\composition.html:13
 #: .\videos\templates\videos\playlist_not_found.html:11
 msgid "Back to videos"
-msgstr ""
+msgstr "Volver a vídeos"
 
 #: .\videos\templates\videos\composition.html:14
 #: .\videos\templates\videos\composition.html:30
 #: .\videos\templates\videos\composition.html:33
 msgid "Media"
-msgstr ""
+msgstr "Medios de comunicación"
 
 #: .\videos\templates\videos\composition.html:16
 msgid "Untitled project"
-msgstr ""
+msgstr "Proyecto sin título"
 
 #: .\videos\templates\videos\composition.html:16
 msgid "Project name"
-msgstr ""
+msgstr "Nombre del proyecto"
 
 #: .\videos\templates\videos\composition.html:18
 msgid "Undo"
-msgstr ""
+msgstr "Deshacer"
 
 #: .\videos\templates\videos\composition.html:19
 msgid "Redo"
-msgstr ""
+msgstr "Rehacer"
 
 #: .\videos\templates\videos\composition.html:21
 msgid "Canvas"
-msgstr ""
+msgstr "Lienzo"
 
 #: .\videos\templates\videos\composition.html:26
 #: .\videos\templates\videos\composition.html:70
 #: .\videos\templates\videos\composition.html:72
 msgid "Properties"
-msgstr ""
+msgstr "Propiedades"
 
 #: .\videos\templates\videos\composition.html:27
 msgid "Export"
-msgstr ""
+msgstr "Exportar"
 
 #: .\videos\templates\videos\composition.html:37
 msgid "Hover or tap a video to preview it. Drag it or press + to add it."
-msgstr ""
+msgstr "Coloca el cursor sobre un video o toca para obtener una vista previa. Arrástrelo o presione + para agregarlo."
 
 #: .\videos\templates\videos\composition.html:48
 msgid "Export ready"
-msgstr ""
+msgstr "Listo para exportar"
 
 #: .\videos\templates\videos\composition.html:52
 msgid "Save to device"
-msgstr ""
+msgstr "Guardar en dispositivo"
 
 #: .\videos\templates\videos\composition.html:53
 msgid "Back to editing"
-msgstr ""
+msgstr "Volver a editar"
 
 #: .\videos\templates\videos\composition.html:54
 msgid "Discard"
-msgstr ""
+msgstr "Desechar"
 
 #: .\videos\templates\videos\composition.html:60
 msgid "Go to start"
-msgstr ""
+msgstr "ir a empezar"
 
 #: .\videos\templates\videos\composition.html:62
 msgid "Go to end"
-msgstr ""
+msgstr "ir al final"
 
 #: .\videos\templates\videos\composition.html:73
 msgid "Select a clip on the timeline to edit it."
-msgstr ""
+msgstr "Seleccione un clip en la línea de tiempo para editarlo."
 
 #: .\videos\templates\videos\composition.html:76
 msgid "In point (s)"
-msgstr ""
+msgstr "En punto(s)"
 
 #: .\videos\templates\videos\composition.html:79
 msgid "Out point (s)"
-msgstr ""
+msgstr "Punto(s) de salida"
 
 #: .\videos\templates\videos\composition.html:82
 msgid "Start on timeline (s)"
-msgstr ""
+msgstr "Comenzar en la(s) línea(s) de tiempo"
 
 #: .\videos\templates\videos\composition.html:90
 #: .\videos\templates\videos\composition.html:98
 msgid "Split"
-msgstr ""
+msgstr "Dividir"
 
 #: .\videos\templates\videos\composition.html:96
 msgid "Timeline"
-msgstr ""
+msgstr "Línea de tiempo"
 
 #: .\videos\templates\videos\composition.html:98
 msgid "Split at playhead"
-msgstr ""
+msgstr "Dividir en el cabezal de reproducción"
 
 #: .\videos\templates\videos\composition.html:101
 msgid "Zoom out"
-msgstr ""
+msgstr "alejar"
 
 #: .\videos\templates\videos\composition.html:102
 msgid "Zoom"
-msgstr ""
+msgstr "Zoom"
 
 #: .\videos\templates\videos\composition.html:103
 msgid "Zoom in"
-msgstr ""
+msgstr "Dar un golpe de zoom"
 
 #: .\videos\templates\videos\composition.html:114
 msgid "Tap + on a video in Media to add it."
-msgstr ""
+msgstr "Toca + en un video en Medios para agregarlo."
 
 #: .\videos\templates\videos\composition.html:115
 msgid "Tap + on a sound in Audio to add it."
-msgstr ""
+msgstr "Toque + en un sonido en Audio para agregarlo."
 
 #: .\videos\templates\videos\detail.html:79
 #: .\videos\templates\videos\detail.html:691
 #: .\videos\templates\videos\detail.html:700
 msgid "Generate captions"
-msgstr ""
+msgstr "Generar subtítulos"
 
 #: .\videos\templates\videos\detail.html:92
 msgid "Preparing the audio (MP3) for this videoâ¦"
-msgstr ""
+msgstr "Preparando el audio (MP3) para este vídeo..."
 
 #: .\videos\templates\videos\detail.html:98
 msgid "The audio could not be generated."
-msgstr ""
+msgstr "No se pudo generar el audio."
 
 #: .\videos\templates\videos\detail.html:99
 msgid "Try again"
-msgstr ""
+msgstr "Intentar otra vez"
 
 #: .\videos\templates\videos\detail.html:103
 msgid "This video has no audio track."
-msgstr ""
+msgstr "Este vídeo no tiene pista de audio."
 
 #: .\videos\templates\videos\detail.html:109
 msgid "Extract the MP3 from this YouTube video?"
-msgstr ""
+msgstr "¿Extraer el MP3 de este vídeo de YouTube?"
 
 #: .\videos\templates\videos\detail.html:110
 msgid "Get MP3"
-msgstr ""
+msgstr "Obtener MP3"
 
 #: .\videos\templates\videos\detail.html:117
 msgid "Playback mode"
-msgstr ""
+msgstr "Modo de reproducción"
 
 #: .\videos\templates\videos\detail.html:126
 msgid "Download video"
-msgstr ""
+msgstr "Descargar vídeo"
 
 #: .\videos\templates\videos\detail.html:133
 #: .\videos\templates\videos\detail.html:136
 msgid "Save offline"
-msgstr ""
+msgstr "Guardar sin conexión"
 
 #: .\videos\templates\videos\detail.html:134
 msgid "Saved offline"
-msgstr ""
+msgstr "Guardado sin conexión"
 
 #: .\videos\templates\videos\detail.html:135
 #: .\videos\templates\videos\offline.html:19
 msgid "Remove download"
-msgstr ""
+msgstr "Eliminar descarga"
 
 #: .\videos\templates\videos\detail.html:136
 msgid "Could not update the offline copy. Check your connection."
-msgstr ""
+msgstr "No se pudo actualizar la copia sin conexión. Comprueba tu conexión."
 
 #: .\videos\templates\videos\detail.html:177
 msgid "Save to playlist"
-msgstr ""
+msgstr "Guardar en lista de reproducción"
 
 #: .\videos\templates\videos\detail.html:190
 msgid "No playlists yet."
-msgstr ""
+msgstr "Aún no hay listas de reproducción."
 
 #: .\videos\templates\videos\detail.html:196
 #: .\videos\templates\videos\playlists.html:19
 msgid "New playlist name"
-msgstr ""
+msgstr "Nuevo nombre de la lista de reproducción"
 
 #: .\videos\templates\videos\detail.html:199
 #: .\videos\templates\videos\detail.html:201
 #: .\videos\templates\videos\playlists.html:20
 #: .\videos\templates\videos\playlists.html:22
 msgid "Cover photo"
-msgstr ""
+msgstr "Foto de portada"
 
 #: .\videos\templates\videos\detail.html:208
 msgid "Share this video"
-msgstr ""
+msgstr "Comparte este vídeo"
 
 #: .\videos\templates\videos\detail.html:212
 msgid "Video link"
-msgstr ""
+msgstr "Enlace de vídeo"
 
 #: .\videos\templates\videos\detail.html:217
 msgid "MP3 link"
-msgstr ""
+msgstr "enlace MP3"
 
 #: .\videos\templates\videos\detail.html:245
 msgid "Chapters"
-msgstr ""
+msgstr "Capítulos"
 
 #: .\videos\templates\videos\detail.html:264
 msgid "Automatic subtitles"
-msgstr ""
+msgstr "Subtítulos automáticos"
 
 #: .\videos\templates\videos\detail.html:266
 msgid "Not configured"
-msgstr ""
+msgstr "No configurado"
 
 #: .\videos\templates\videos\detail.html:276
 msgid ""
 "Transcribe the audio and translate it automatically, without uploading a "
 "file."
-msgstr ""
+msgstr "Transcribe el audio y tradúcelo automáticamente, sin subir ningún archivo."
 
 #: .\videos\templates\videos\detail.html:281
 msgid "Generate subtitles"
-msgstr ""
+msgstr "Generar subtítulos"
 
 #: .\videos\templates\videos\detail.html:281
 msgid "Regenerate subtitles"
-msgstr ""
+msgstr "Regenerar subtítulos"
 
 #: .\videos\templates\videos\detail.html:295
 msgid "Add a commentâ¦"
-msgstr ""
+msgstr "Añade un comentario..."
 
 #: .\videos\templates\videos\detail.html:316
 msgid "No comments yet. Be the first!"
-msgstr ""
+msgstr "Aún no hay comentarios. ¡Sé el primero!"
 
 #: .\videos\templates\videos\detail.html:322
 #: .\videos\templates\videos\my_notes.html:4
 #: .\videos\templates\videos\my_notes.html:12
 msgid "My notes"
-msgstr ""
+msgstr "mis notas"
 
 #: .\videos\templates\videos\detail.html:327
 msgid "Timestamp (seconds)"
-msgstr ""
+msgstr "Marca de tiempo (segundos)"
 
 #: .\videos\templates\videos\detail.html:329
 msgid "Take a note on this videoâ¦"
-msgstr ""
+msgstr "Toma nota de este vídeo..."
 
 #: .\videos\templates\videos\detail.html:330
 msgid "Add note"
-msgstr ""
+msgstr "Agregar nota"
 
 #: .\videos\templates\videos\detail.html:332
 msgid "Tip: set the timestamp to jump back to this moment later."
-msgstr ""
+msgstr "Consejo: configura la marca de tiempo para volver a este momento más tarde."
 
 #: .\videos\templates\videos\detail.html:348
 msgid "No notes yet. Add your first one above."
-msgstr ""
+msgstr "Aún no hay notas. Agrega el primero arriba."
 
 #: .\videos\templates\videos\detail.html:352
 msgid "Sign in to take notes on this video."
-msgstr ""
+msgstr "Inicia sesión para tomar notas sobre este vídeo."
 
 #: .\videos\templates\videos\detail.html:358
 msgid "Delete video"
-msgstr ""
+msgstr "Eliminar vídeo"
 
 #: .\videos\templates\videos\detail.html:362
 msgid "Subtitles & lyrics"
-msgstr ""
+msgstr "Subtítulos y letras"
 
 #: .\videos\templates\videos\detail.html:364
 msgid ""
 "Upload a .vtt, .srt or .txt file for each language. Viewers can turn them on "
 "or off."
-msgstr ""
+msgstr "Cargue un archivo .vtt, .srt o .txt para cada idioma. Los espectadores pueden activarlos o desactivarlos."
 
 #: .\videos\templates\videos\detail.html:368
 msgid "Subtitle language"
-msgstr ""
+msgstr "Idioma de los subtítulos"
 
 #: .\videos\templates\videos\detail.html:374
 msgid "Upload subtitle"
-msgstr ""
+msgstr "Subir subtítulo"
 
 #: .\videos\templates\videos\detail.html:385
 msgid "No subtitles yet."
-msgstr ""
+msgstr "Aún no hay subtítulos."
 
 #: .\videos\templates\videos\detail.html:394
 #: .\videos\templates\videos\detail.html:404
 msgid "Up next"
-msgstr ""
+msgstr "A continuación"
 
 #: .\videos\templates\videos\detail.html:596
 msgid ""
 "This permanently removes the recording, its MP3 and its thumbnail from "
 "Cloudflare storage. Visitors who saved it offline keep their local copy "
 "until they remove it."
-msgstr ""
+msgstr "Esto elimina permanentemente la grabación, su MP3 y su miniatura del almacenamiento de Cloudflare. Los visitantes que lo guardaron sin conexión conservan su copia local hasta que la eliminen."
 
 #: .\videos\templates\videos\detail.html:606
 #: .\videos\templates\videos\detail.html:613
 #: .\videos\templates\videos\detail.html:651
 msgid "Failed to delete."
-msgstr ""
+msgstr "No se pudo eliminar."
 
 #: .\videos\templates\videos\detail.html:633
 #: .\videos\templates\videos\detail.html:635
 #: .\videos\templates\videos\upload.html:405
 #: .\videos\templates\videos\upload.html:416
 msgid "Upload failed"
-msgstr ""
+msgstr "Error al subir"
 
 #: .\videos\templates\videos\detail.html:641
 msgid "Remove this subtitle track?"
-msgstr ""
+msgstr "¿Eliminar esta pista de subtítulos?"
 
 #: .\videos\templates\videos\detail.html:642
 msgid "The subtitles and lyrics for this language will be deleted."
-msgstr ""
+msgstr "Se eliminarán los subtítulos y las letras de este idioma."
 
 #: .\videos\templates\videos\detail.html:695
 #: .\videos\templates\videos\detail.html:723
 msgid "Transcribing and translatingâ¦"
-msgstr ""
+msgstr "Transcribiendo y traduciendo..."
 
 #: .\videos\templates\videos\detail.html:786
 #: .\videos\templates\videos\detail.html:794
 msgid "Could not update the playlist. Please try again."
-msgstr ""
+msgstr "No se pudo actualizar la lista de reproducción. Por favor inténtalo de nuevo."
 
 #: .\videos\templates\videos\detail.html:893
 msgid "MP3 link copied"
-msgstr ""
+msgstr "Enlace MP3 copiado"
 
 #: .\videos\templates\videos\detail.html:894
 msgid "Link copied"
-msgstr ""
+msgstr "Enlace copiado"
 
 #: .\videos\templates\videos\detail.html:897
 msgid "Copy this link:"
-msgstr ""
+msgstr "Copia este enlace:"
 
 #: .\videos\templates\videos\detail.html:989
 #: .\videos\templates\videos\detail.html:994
 #: .\videos\templates\videos\playlists.html:130
 #: .\videos\templates\videos\playlists.html:135
 msgid "Could not create the playlist."
-msgstr ""
+msgstr "No se pudo crear la lista de reproducción."
 
 #: .\videos\templates\videos\detail.html:1146
 msgid "Delete this note?"
-msgstr ""
+msgstr "¿Eliminar esta nota?"
 
 #: .\videos\templates\videos\detail.html:1147
 msgid "The note will be removed and cannot be recovered."
-msgstr ""
+msgstr "La nota se eliminará y no se podrá recuperar."
 
 #: .\videos\templates\videos\edit.html:4
 #: .\videos\templates\videos\edit.html:14
 msgid "Edit Video"
-msgstr ""
+msgstr "Editar vídeo"
 
 #: .\videos\templates\videos\edit.html:25
 msgid "Current thumbnail"
-msgstr ""
+msgstr "Miniatura actual"
 
 #: .\videos\templates\videos\list.html:55
 msgid "New videos will appear here once the administrator uploads them."
-msgstr ""
+msgstr "Los nuevos videos aparecerán aquí una vez que el administrador los cargue."
 
 #: .\videos\templates\videos\my_activity.html:4
 #: .\videos\templates\videos\my_activity.html:12
 msgid "My activity"
-msgstr ""
+msgstr "mi actividad"
 
 #: .\videos\templates\videos\my_activity.html:13
 msgid "A timeline of what you have watched, liked, commented on and saved."
-msgstr ""
+msgstr "Una cronología de lo que vio, le gustó, comentó y guardó."
 
 #: .\videos\templates\videos\my_activity.html:46
 msgid "No activity yet"
-msgstr ""
+msgstr "Aún no hay actividad"
 
 #: .\videos\templates\videos\my_activity.html:47
 msgid "Start watching videos and your activity will appear here."
-msgstr ""
+msgstr "Comienza a ver videos y tu actividad aparecerá aquí."
 
 #: .\videos\templates\videos\my_notes.html:13
 msgid ""
 "Every note you have taken, newest first. Click a timestamp to open the video "
 "at that moment."
-msgstr ""
+msgstr "Cada nota que has tomado, la más nueva primero. Haga clic en una marca de tiempo para abrir el video en ese momento."
 
 #: .\videos\templates\videos\my_notes.html:26
 msgid "Open video"
-msgstr ""
+msgstr "Abrir vídeo"
 
 #: .\videos\templates\videos\my_notes.html:34
 msgid "No notes yet"
-msgstr ""
+msgstr "Aún no hay notas"
 
 #: .\videos\templates\videos\my_notes.html:35
 msgid "Open a video and use the 'My notes' box to write one."
-msgstr ""
+msgstr "Abra un vídeo y utilice el cuadro "Mis notas" para escribir uno."
 
 #: .\videos\templates\videos\offline.html:12
 msgid "Offline listening"
-msgstr ""
+msgstr "Escucha sin conexión"
 
 #: .\videos\templates\videos\offline.html:14
 msgid "Audio you saved plays here even without an internet connection."
-msgstr ""
+msgstr "El audio que guardaste se reproduce aquí incluso sin conexión a Internet."
 
 #: .\videos\templates\videos\offline.html:18
 msgid "You have not saved any audio yet."
-msgstr ""
+msgstr "Aún no has guardado ningún audio."
 
 #: .\videos\templates\videos\offline.html:22
 msgid ""
 "Tip: open a video and press âSave offlineâ to keep its MP3 on this device."
-msgstr ""
+msgstr "Consejo: abre un vídeo y presiona "Guardar sin conexión" para conservar su MP3 en este dispositivo."
 
 #: .\videos\templates\videos\playlist_detail.html:15
 msgid "Playlist cover"
-msgstr ""
+msgstr "Portada de la lista de reproducción"
 
 #: .\videos\templates\videos\playlist_detail.html:28
 #: .\videos\templates\videos\playlists.html:47
 msgid "Private"
-msgstr ""
+msgstr "Privado"
 
 #: .\videos\templates\videos\playlist_detail.html:47
 #: .\videos\templates\videos\playlist_detail.html:144
 msgid "Delete playlist"
-msgstr ""
+msgstr "Eliminar lista de reproducción"
 
 #: .\videos\templates\videos\playlist_detail.html:88
 msgid "This playlist is empty"
-msgstr ""
+msgstr "Esta lista de reproducción está vacía"
 
 #: .\videos\templates\videos\playlist_detail.html:89
 msgid "Use the âSaveâ button on any video to add it here."
-msgstr ""
+msgstr "Utilice el botón "Guardar" en cualquier vídeo para agregarlo aquí."
 
 #: .\videos\templates\videos\playlist_detail.html:142
 msgid "Delete this playlist?"
-msgstr ""
+msgstr "¿Eliminar esta lista de reproducción?"
 
 #: .\videos\templates\videos\playlist_detail.html:143
 msgid "The playlist is removed. The videos in it are not deleted."
-msgstr ""
+msgstr "Se elimina la lista de reproducción. Los videos que contiene no se eliminan."
 
 #: .\videos\templates\videos\playlist_detail.html:156
 msgid "Remove this video?"
-msgstr ""
+msgstr "¿Quitar este vídeo?"
 
 #: .\videos\templates\videos\playlist_detail.html:157
 #, python-format
 msgid "Remove â%(title)sâ from this playlist?"
-msgstr ""
+msgstr "¿Eliminar â%(title)sâ de esta lista de reproducción?"
 
 #: .\videos\templates\videos\playlist_detail.html:157
 msgid "this video"
-msgstr ""
+msgstr "este vídeo"
 
 #: .\videos\templates\videos\playlist_not_found.html:4
 #: .\videos\templates\videos\playlist_not_found.html:9
 msgid "Playlist unavailable"
-msgstr ""
+msgstr "Lista de reproducción no disponible"
 
 #: .\videos\templates\videos\playlist_not_found.html:10
 msgid "This playlist does not exist or is private."
-msgstr ""
+msgstr "Esta lista de reproducción no existe o es privada."
 
 #: .\videos\templates\videos\playlists.html:4
 #: .\videos\templates\videos\playlists.html:13
 msgid "My Playlists"
-msgstr ""
+msgstr "Mis listas de reproducción"
 
 #: .\videos\templates\videos\playlists.html:57
 msgid "No playlists yet"
-msgstr ""
+msgstr "Aún no hay listas de reproducción"
 
 #: .\videos\templates\videos\playlists.html:58
 msgid "Create your first playlist to organise videos."
-msgstr ""
+msgstr "Crea tu primera lista de reproducción para organizar vídeos."
 
 #: .\videos\templates\videos\search.html:4
 #, python-format
 msgid "Search results for %(query)s"
-msgstr ""
+msgstr "Resultados de la búsqueda para %(query)s"
 
 #: .\videos\templates\videos\search.html:15
 msgid "Search by title, name or year"
-msgstr ""
+msgstr "Buscar por título, nombre o año"
 
 #: .\videos\templates\videos\search.html:22
 msgid ""
 "Type a few words from a title, the uploader's name, or a year such as 2000."
-msgstr ""
+msgstr "Escribe algunas palabras de un título, el nombre de quien subió el video o un año como 2000."
 
 #: .\videos\templates\videos\search.html:26
 #, python-format
@@ -3437,322 +3437,322 @@ msgstr[1] ""
 
 #: .\videos\templates\videos\search.html:27
 msgid "for"
-msgstr ""
+msgstr "para"
 
 #: .\videos\templates\videos\search.html:73
 msgid "No results"
-msgstr ""
+msgstr "Sin resultados"
 
 #: .\videos\templates\videos\search.html:74
 msgid "Nothing matched. Try a different word, or a year such as 2000."
-msgstr ""
+msgstr "Nada coincidía. Pruebe con una palabra diferente o un año como 2000."
 
 #: .\videos\templates\videos\search.html:82
 msgid "Not the one you wanted? The rest may be on YouTube."
-msgstr ""
+msgstr "¿No es el que querías? El resto puede estar en YouTube."
 
 #: .\videos\templates\videos\search.html:84
 msgid "Still looking? This video may be on YouTube."
-msgstr ""
+msgstr "¿Sigues buscando? Este vídeo puede estar en YouTube."
 
 #: .\videos\templates\videos\search.html:91
 #, python-format
 msgid "Search YouTube for %(query)s"
-msgstr ""
+msgstr "Buscar en YouTube %(query)s"
 
 #: .\videos\templates\videos\search.html:95
 msgid "Opens YouTube in a new tab."
-msgstr ""
+msgstr "Abre YouTube en una nueva pestaña."
 
 #: .\videos\templates\videos\upload.html:4
 #: .\videos\templates\videos\upload.html:22
 #: .\videos\templates\videos\upload.html:100
 #: .\videos\templates\videos\upload.html:253
 msgid "Upload Video"
-msgstr ""
+msgstr "Subir vídeo"
 
 #: .\videos\templates\videos\upload.html:15
 #: .\videos\templates\videos\upload.html:254
 msgid "Uploading Video..."
-msgstr ""
+msgstr "Subiendo vídeo..."
 
 #: .\videos\templates\videos\upload.html:16
 msgid "Please don't close this page"
-msgstr ""
+msgstr "Por favor no cierres esta página"
 
 #: .\videos\templates\videos\upload.html:26
 msgid ""
 "Video storage is not configured yet. Add your Cloudflare R2 credentials to "
 "the .env file."
-msgstr ""
+msgstr "El almacenamiento de vídeo aún no está configurado. Agregue sus credenciales de Cloudflare R2 al archivo .env."
 
 #: .\videos\templates\videos\upload.html:73
 #: .\videos\templates\videos\upload.html:236
 msgid "Click to select a video file"
-msgstr ""
+msgstr "Haga clic para seleccionar un archivo de vídeo"
 
 #: .\videos\templates\videos\upload.html:76
 msgid "MP4, WebM, MOV or AVI. Max 3 GB."
-msgstr ""
+msgstr "MP4, WebM, MOV o AVI. Máximo 3 GB."
 
 #: .\videos\templates\videos\upload.html:77
 msgid "An MP3 audio file is generated automatically."
-msgstr ""
+msgstr "Un archivo de audio MP3 se genera automáticamente."
 
 #: .\videos\templates\videos\upload.html:83
 #: .\videos\templates\videos\upload.html:246
 msgid "Click to select an MP3 file"
-msgstr ""
+msgstr "Haga clic para seleccionar un archivo MP3"
 
 #: .\videos\templates\videos\upload.html:86
 msgid "MP3, WAV, M4A, OGG or AAC. Anything else is converted to MP3."
-msgstr ""
+msgstr "MP3, WAV, M4A, OGG o AAC. Todo lo demás se convierte a MP3."
 
 #: .\videos\templates\videos\upload.html:90
 msgid "Thumbnail (optional)"
-msgstr ""
+msgstr "Miniatura (opcional)"
 
 #: .\videos\templates\videos\upload.html:93
 msgid "Click to select a thumbnail"
-msgstr ""
+msgstr "Haga clic para seleccionar una miniatura"
 
 #: .\videos\templates\videos\upload.html:97
 #: .\videos\templates\videos\upload.html:289
 msgid "Leave empty to auto-generate a thumbnail from your video"
-msgstr ""
+msgstr "Déjelo vacío para generar automáticamente una miniatura de su video."
 
 #: .\videos\templates\videos\upload.html:107
 msgid "Import from YouTube"
-msgstr ""
+msgstr "Importar desde YouTube"
 
 #: .\videos\templates\videos\upload.html:108
 msgid ""
 "Paste a YouTube link to add it to the library. 'Import' downloads the video "
 "into storage so it gets every feature (MP3, subtitles, offline, downloads). "
 "'Add as link' keeps it on YouTube and plays it through the embedded player."
-msgstr ""
+msgstr "Pegue un enlace de YouTube para agregarlo a la biblioteca. 'Importar' descarga el vídeo en el almacenamiento para que obtenga todas las funciones (MP3, subtítulos, sin conexión, descargas). 'Agregar como enlace' lo mantiene en YouTube y lo reproduce a través del reproductor integrado."
 
 #: .\videos\templates\videos\upload.html:111
 msgid "YouTube link"
-msgstr ""
+msgstr "enlace de youtube"
 
 #: .\videos\templates\videos\upload.html:121
 msgid "Enter video description (optional)"
-msgstr ""
+msgstr "Ingrese la descripción del video (opcional)"
 
 #: .\videos\templates\videos\upload.html:124
 msgid "Mode"
-msgstr ""
+msgstr "Modo"
 
 #: .\videos\templates\videos\upload.html:126
 msgid "Import (download into storage)"
-msgstr ""
+msgstr "Importar (descargar en almacenamiento)"
 
 #: .\videos\templates\videos\upload.html:127
 msgid "Add as YouTube link (embed only)"
-msgstr ""
+msgstr "Agregar como enlace de YouTube (solo para insertar)"
 
 #: .\videos\templates\videos\upload.html:130
 #: .\videos\templates\videos\upload.html:166
 msgid "Add YouTube video"
-msgstr ""
+msgstr "Agregar vídeo de YouTube"
 
 #: .\videos\templates\videos\upload.html:143 .\videos\views.py:553
 msgid "Paste a YouTube link first."
-msgstr ""
+msgstr "Primero pegue un enlace de YouTube."
 
 #: .\videos\templates\videos\upload.html:145
 msgid "Workingâ¦"
-msgstr ""
+msgstr "Trabajando..."
 
 #: .\videos\templates\videos\upload.html:257
 msgid "Upload Audio"
-msgstr ""
+msgstr "Subir Audio"
 
 #: .\videos\templates\videos\upload.html:258
 msgid "Uploading Audio..."
-msgstr ""
+msgstr "Subiendo audio..."
 
 #: .\videos\templates\videos\upload.html:288
 msgid ""
 "An audio upload has no picture of its own, so choose one to show on the card"
-msgstr ""
+msgstr "Una carga de audio no tiene imagen propia, así que elige una para mostrarla en la tarjeta."
 
 #: .\videos\templates\videos\upload.html:324
 msgid "That picture could not be prepared. Please choose a smaller image."
-msgstr ""
+msgstr "Esa imagen no se pudo preparar. Elija una imagen más pequeña."
 
 #: .\videos\templates\videos\upload.html:363
 msgid "Upload in progress"
-msgstr ""
+msgstr "Carga en progreso"
 
 #: .\videos\templates\videos\upload.html:399
 msgid "Upload complete!"
-msgstr ""
+msgstr "¡Subida completa!"
 
 #: .\videos\templates\videos\upload.html:409
 msgid "This file is too large for the server. Please choose a smaller file."
-msgstr ""
+msgstr "Este archivo es demasiado grande para el servidor. Elija un archivo más pequeño."
 
 #: .\videos\templates\videos\upload.html:410
 msgid "The upload was refused by the server. Please try again."
-msgstr ""
+msgstr "El servidor rechazó la carga. Por favor inténtalo de nuevo."
 
 #: .\videos\views.py:559
 msgid "That does not look like a YouTube link."
-msgstr ""
+msgstr "Eso no parece un enlace de YouTube."
 
 #: .\videos\views.py:595
 msgid "YouTube link added."
-msgstr ""
+msgstr "Se agregó el enlace de YouTube."
 
 #: .\videos\views.py:606
 msgid ""
 "yt-dlp is not installed on this server, so importing is unavailable. Use "
 "'Add as YouTube link' instead, or install yt-dlp."
-msgstr ""
+msgstr "yt-dlp no está instalado en este servidor, por lo que la importación no está disponible. Utilice 'Agregar como enlace de YouTube' en su lugar o instale yt-dlp."
 
 #: .\videos\views.py:618 .\videos\views.py:1632
 msgid "Video storage is not configured yet."
-msgstr ""
+msgstr "El almacenamiento de vídeo aún no está configurado."
 
 #: .\videos\views.py:673
 #, python-format
 msgid "Could not download that video: %(err)s"
-msgstr ""
+msgstr "No se pudo descargar ese video: %(err)s"
 
 #: .\videos\views.py:680
 msgid "The download did not produce a file."
-msgstr ""
+msgstr "La descarga no produjo ningún archivo."
 
 #: .\videos\views.py:762
 msgid "YouTube video imported."
-msgstr ""
+msgstr "Vídeo de YouTube importado."
 
 #: .\videos\views.py:787 .\videos\views.py:801
 msgid "That picture is too large. Please choose a smaller one."
-msgstr ""
+msgstr "Esa imagen es demasiado grande. Elige uno más pequeño."
 
 #: .\videos\views.py:791 .\videos\views.py:813
 msgid ""
 "That file is not a picture the site can show. Please choose a JPEG or PNG "
 "image."
-msgstr ""
+msgstr "Ese archivo no es una imagen que el sitio pueda mostrar. Elija una imagen JPEG o PNG."
 
 #: .\videos\views.py:799
 msgid "That thumbnail is not a picture. Please choose an image."
-msgstr ""
+msgstr "Esa miniatura no es una imagen. Por favor elige una imagen."
 
 #: .\videos\views.py:808
 msgid "That picture could not be read. Please choose another one."
-msgstr ""
+msgstr "Esa imagen no se pudo leer. Por favor elige otro."
 
 #: .\videos\views.py:835
 msgid "The file was saved, but its picture could not be stored."
-msgstr ""
+msgstr "El archivo se guardó, pero su imagen no se pudo almacenar."
 
 #: .\videos\views.py:906
 msgid "Audio uploaded successfully"
-msgstr ""
+msgstr "Audio subido correctamente"
 
 #: .\videos\views.py:958
 msgid "Video uploaded successfully"
-msgstr ""
+msgstr "Vídeo subido correctamente"
 
 #: .\videos\views.py:1151
 msgid "Video deleted"
-msgstr ""
+msgstr "Vídeo eliminado"
 
 #: .\videos\views.py:1158
 msgid "You must be signed in to vote."
-msgstr ""
+msgstr "Debes estar registrado para votar."
 
 #: .\videos\views.py:1166
 msgid "Invalid vote"
-msgstr ""
+msgstr "voto nulo"
 
 #: .\videos\views.py:1232
 msgid "Choose a valid language."
-msgstr ""
+msgstr "Elija un idioma válido."
 
 #: .\videos\views.py:1238
 msgid "Please choose a subtitle file."
-msgstr ""
+msgstr "Elija un archivo de subtítulos."
 
 #: .\videos\views.py:1244
 msgid "Only .vtt, .srt or .txt files are supported."
-msgstr ""
+msgstr "Sólo se admiten archivos .vtt, .srt o .txt."
 
 #: .\videos\views.py:1263
 msgid "Subtitle saved"
-msgstr ""
+msgstr "Subtítulo guardado"
 
 #: .\videos\views.py:1273
 msgid "Subtitle removed"
-msgstr ""
+msgstr "Subtítulo eliminado"
 
 #: .\videos\views.py:1287
 #, python-format
 msgid ""
 "Automatic subtitles are not configured. Set %(key)s in the .env file to "
 "enable them."
-msgstr ""
+msgstr "Los subtítulos automáticos no están configurados. Establezca %(key)s en el archivo .env para habilitarlos."
 
 #: .\videos\views.py:1300
 msgid ""
 "This video has no audio track yet. Generate its MP3 first, then create the "
 "subtitles."
-msgstr ""
+msgstr "Este vídeo aún no tiene pista de audio. Primero genera su MP3, luego crea los subtítulos."
 
 #: .\videos\views.py:1314
 msgid "A subtitle run is already in progress for this video."
-msgstr ""
+msgstr "Ya se están realizando subtítulos para este vídeo."
 
 #: .\videos\views.py:1355 .\videos\views.py:1674
 msgid "Write something first."
-msgstr ""
+msgstr "Escribe algo primero."
 
 #: .\videos\views.py:1389 .\videos\views.py:1714 .\videos\views.py:1775
 msgid "You must be signed in."
-msgstr ""
+msgstr "Debes estar registrado."
 
 #: .\videos\views.py:1395
 msgid "You cannot delete this comment."
-msgstr ""
+msgstr "No puedes eliminar este comentario."
 
 #: .\videos\views.py:1422
 msgid "Give your playlist a name."
-msgstr ""
+msgstr "Dale un nombre a tu lista de reproducción."
 
 #: .\videos\views.py:1525 .\videos\views.py:1542 .\videos\views.py:1569
 #: .\videos\views.py:1602
 msgid "Playlist not found."
-msgstr ""
+msgstr "Lista de reproducción no encontrada."
 
 #: .\videos\views.py:1533
 msgid "Playlist deleted"
-msgstr ""
+msgstr "Lista de reproducción eliminada"
 
 #: .\videos\views.py:1559
 msgid "Playlist updated"
-msgstr ""
+msgstr "Lista de reproducción actualizada"
 
 #: .\videos\views.py:1607
 msgid "Removed from playlist"
-msgstr ""
+msgstr "Eliminado de la lista de reproducción"
 
 #: .\videos\views.py:1617
 msgid "This video is not from YouTube."
-msgstr ""
+msgstr "Este vídeo no es de YouTube."
 
 #: .\videos\views.py:1627
 msgid "yt-dlp is not installed on this server."
-msgstr ""
+msgstr "yt-dlp no está instalado en este servidor."
 
 #: .\videos\views.py:1666
 msgid "You must be signed in to take notes."
-msgstr ""
+msgstr "Debes iniciar sesión para tomar notas."
 
 #: .\videos\views.py:1719
 msgid "You cannot delete this note."
-msgstr ""
+msgstr "No puedes eliminar esta nota."

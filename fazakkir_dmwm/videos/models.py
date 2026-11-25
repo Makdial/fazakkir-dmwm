@@ -214,6 +214,41 @@ class Video(models.Model):
                 logger.warning("Could not remove R2 object %r", path, exc_info=True)
 
 
+class Category(models.Model):
+    """A grouping of videos, managed by administrators.
+
+    Videos can belong to several categories, so the relation is many-to-many:
+    the admin picks which videos go into each category from the category page.
+    """
+
+    name = models.CharField(max_length=80, unique=True)
+    slug = models.SlugField(max_length=90, unique=True, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    videos = models.ManyToManyField(
+        "Video", related_name="categories", blank=True
+    )
+
+    class Meta:
+        ordering = ["order", "name"]
+        verbose_name_plural = "categories"
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+
+            base = slugify(self.name) or "category"
+            slug = base
+            i = 2
+            while Category.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = "%s-%d" % (base, i)
+                i += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+
 class SubtitleTrack(models.Model):
     """A subtitle or lyrics track attached to a video.
 
