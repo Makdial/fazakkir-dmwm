@@ -1077,3 +1077,25 @@ video::cue {
     cursor: pointer;
     z-index: 2;
 }
+
+.fz-yt-host .fz-yt-expand {
+    position: absolute;
+    top: 6px;
+    inset-inline-start: 6px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
+}
+
+/* Only show expand/close buttons when in mini mode */
+.fz-yt-host.is-docked .fz-yt-expand,
+.fz-yt-host.is-docked .fz-yt-close {
+    display: none;
+}

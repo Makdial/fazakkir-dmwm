@@ -142,6 +142,16 @@
         else undock();
     }
 
+    var expandBtn = document.getElementById("fzYtExpand");
+    if (expandBtn) {
+        expandBtn.addEventListener("click", function () {
+            if (currentUrl) {
+                if (window.FZ && window.FZ.nav) window.FZ.nav.navigate(currentUrl);
+                else window.location.href = currentUrl;
+            }
+        });
+    }
+
     if (closeBtn) {
         closeBtn.addEventListener("click", function () {
             if (player && typeof player.stopVideo === "function") {
