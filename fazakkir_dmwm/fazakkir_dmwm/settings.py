@@ -225,6 +225,8 @@ LANGUAGES = [
     ('fr', 'Français'),
     ('ar', 'العربية'),
     ('wo', 'Wolof'),
+    ('es', 'Español'),
+    ('it', 'Italiano'),
 ]
 
 # Right-to-left languages. The base template flips <html dir="rtl"> and the
@@ -349,7 +351,7 @@ STORAGE_ALERT_EMAIL = os.environ.get("STORAGE_ALERT_EMAIL", "makhoutech@gmail.co
 # See videos/transcription.py for all providers.
 SUBTITLE_PROVIDER = os.environ.get("SUBTITLE_PROVIDER", "openai")
 SUBTITLE_SOURCE_LANGUAGE = os.environ.get("SUBTITLE_SOURCE_LANGUAGE", "ar")
-SUBTITLE_TARGET_LANGUAGES = os.environ.get("SUBTITLE_TARGET_LANGUAGES", "fr,en")
+SUBTITLE_TARGET_LANGUAGES = os.environ.get("SUBTITLE_TARGET_LANGUAGES", "fr,en,es,it")
 
 # The back end that turns the transcribed cues into the target languages.
 # Empty means "use SUBTITLE_PROVIDER when it can translate". Set it to
