@@ -17,7 +17,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext, gettext as _
 from django.views.decorators.http import require_POST
 
@@ -28,7 +28,7 @@ from videos.audio_tasks import (
     eligible_audio_queryset,
     start_audio_sweep,
 )
-from videos.models import Comment, Video
+from videos.models import Category, Comment, Video
 from videos.transcription import (
     audio_sweep_status as subtitle_sweep_status,
     subtitle_progress,
@@ -294,6 +294,53 @@ def cleanup(request):
             "freed_display": format_bytes(freed),
         }
     )
+
+
+@read_required
+def category_manage(request):
+    categories = Category.objects.all().prefetch_related("videos")
+    videos = Video.objects.all().order_by("title")
+    return render(
+        request,
+        "dashboard/categories.html",
+        {
+            "active_tab": "categories",
+            "categories": categories,
+            "videos": videos,
+        },
+    )
+
+
+@write_required
+@require_POST
+def category_create(request):
+    name = (request.POST.get("name") or "").strip()
+    if not name:
+        return redirect("dashboard:categories")
+    order = _to_int(request.POST.get("order"), 0)
+    Category.objects.create(name=name, order=order)
+    return redirect("dashboard:categories")
+
+
+@write_required
+@require_POST
+def category_update(request, category_id):
+    category = get_object_or_404(Category, pk=category_id)
+    name = (request.POST.get("name") or "").strip()
+    if name:
+        category.name = name
+    category.order = _to_int(request.POST.get("order"), category.order)
+    category.save()
+    category.videos.set(request.POST.getlist("videos"))
+    return redirect("dashboard:categories")
+
+
+@write_required
+@require_POST
+def category_delete(request, category_id):
+    category = get_object_or_404(Category, pk=category_id)
+    category.delete()
+    return redirect("dashboard:categories")
 
 
 @write_required
