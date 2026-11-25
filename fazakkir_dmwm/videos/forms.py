@@ -148,6 +148,17 @@ class VideoEditForm(forms.Form):
             }
         ),
     )
+    youtube_url = forms.URLField(
+        required=False,
+        label=_("YouTube link"),
+        widget=forms.URLInput(
+            attrs={
+                "class": "form-input",
+                "placeholder": _("https://www.youtube.com/watch?v=..."),
+            }
+        ),
+        help_text=_("Only used for link-only YouTube recordings."),
+    )
     thumbnail_file = forms.FileField(
         required=False,
         label=_("Replace thumbnail"),

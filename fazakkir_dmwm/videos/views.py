@@ -1092,6 +1092,8 @@ def video_edit(request, video_id):
 
         video.title = form.cleaned_data["title"].strip()
         video.description = form.cleaned_data["description"]
+        if "youtube_url" in form.cleaned_data:
+            video.youtube_url = (form.cleaned_data.get("youtube_url") or "").strip()
 
         new_thumbnail = form.cleaned_data.get("thumbnail_file")
         new_video = form.cleaned_data.get("video_file")
@@ -1182,7 +1184,11 @@ def video_edit(request, video_id):
         {
             "video": video,
             "form": VideoEditForm(
-                initial={"title": video.title, "description": video.description}
+                initial={
+                    "title": video.title,
+                    "description": video.description,
+                    "youtube_url": video.youtube_url,
+                }
             ),
         },
     )

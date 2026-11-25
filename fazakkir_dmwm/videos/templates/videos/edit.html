@@ -45,6 +45,12 @@
             </div>
 
             <div class="form-group">
+                <label for="{{ form.youtube_url.id_for_label }}">{{ form.youtube_url.label }}</label>
+                {{ form.youtube_url }}
+                {% if form.youtube_url.help_text %}<p class="form-help">{{ form.youtube_url.help_text }}</p>{% endif %}
+            </div>
+
+            <div class="form-group">
                 <label for="{{ form.thumbnail_file.id_for_label }}">{{ form.thumbnail_file.label }}</label>
                 {{ form.thumbnail_file }}
                 <p class="form-help">{{ form.thumbnail_file.help_text }}</p>
