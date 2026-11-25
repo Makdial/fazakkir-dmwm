@@ -1,74 +1,42 @@
-// Background playback + lock-screen controls for YouTube embeds.
+// Shared player for link-only YouTube recordings.
 //
-// Imported (native) videos use the site's own player and already get this for
-// free. Link-only YouTube recordings are played through YouTube's embedded
-// player, so we drive it through the IFrame API and register a Media Session
-// so the title, thumbnail and play/pause/seek controls show up on the lock
-// screen and keep working while the tab is in the background.
+// Unlike the native player, the YouTube IFrame API creates its own iframe, so
+// we keep one persistent player (in #fzYtHost) and move that container between
+// the watch page's slot and a floating mini window. Playback survives page
+// navigation the same way the native player does.
 (function () {
     "use strict";
 
-    var slots = document.querySelectorAll(".youtube-embed-slot iframe");
-    if (!slots.length) return;
+    var host = document.getElementById("fzYtHost");
+    if (!host) return;
 
-    var pending = [];
-    slots.forEach(function (iframe) {
-        pending.push(iframe);
-    });
+    var closeBtn = document.getElementById("fzYtClose");
+    var player = null;
+    var currentId = null;
+    var docked = false;
 
-    function setupPlayer(iframe) {
-        if (!window.YT || !window.YT.Player) return;
-        var player = new window.YT.Player(iframe, {
-            events: {
-                onReady: function (e) {
-                    bindMediaSession(e.target, iframe);
-                },
-                onStateChange: function (e) {
-                    syncState();
-                    // When the YouTube video finishes, move on to the first
-                    // "Up next" recording automatically.
-                    if (e && e.data === 0) {
-                        var next = document.querySelector(".related-card");
-                        if (next && next.href) {
-                            var url = next.href;
-                            if (url.indexOf("autoplay=") === -1) {
-                                url += (url.indexOf("?") === -1 ? "?" : "&") + "autoplay=1";
-                            }
-                            if (window.FZ && window.FZ.nav && typeof window.FZ.nav.navigate === "function") {
-                                window.FZ.nav.navigate(url);
-                            } else {
-                                window.location.href = url;
-                            }
-                        }
-                    }
-                },
-            },
-        });
-        iframe._ytPlayer = player;
+    function loadApi(cb) {
+        if (window.YT && window.YT.Player) { cb(); return; }
+        var prev = window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady = function () {
+            if (typeof prev === "function") prev();
+            cb();
+        };
+        if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+            var tag = document.createElement("script");
+            tag.src = "https://www.youtube.com/iframe_api";
+            document.head.appendChild(tag);
+        }
     }
 
-    function syncState() {
+    function bindMediaSession(p, slot) {
         if (!navigator.mediaSession) return;
-        // Find the first player and report its state.
-        var iframe = pending[0];
-        var player = iframe && iframe._ytPlayer;
-        if (!player || typeof player.getPlayerState !== "function") return;
-        var state = player.getPlayerState();
-        try {
-            navigator.mediaSession.playbackState =
-                state === 1 ? "playing" : (state === 2 ? "paused" : "none");
-        } catch (e) {}
-    }
-
-    function bindMediaSession(player, iframe) {
-        if (!navigator.mediaSession) return;
-        var title = document.querySelector(".video-details h1");
-        var thumb = document.querySelector(".video-details") ? null : null;
+        var titleEl = document.querySelector(".video-details h1");
         var img = document.querySelector('meta[property="og:image"]');
         var artwork = img ? [{ src: img.getAttribute("content"), sizes: "512x512", type: "image/jpeg" }] : [];
         try {
             navigator.mediaSession.metadata = new MediaMetadata({
-                title: title ? title.textContent.trim() : document.title,
+                title: titleEl ? titleEl.textContent.trim() : document.title,
                 artist: "YouTube",
                 album: "Fazakkir",
                 artwork: artwork,
@@ -77,35 +45,114 @@
 
         var seekBy = function (delta) {
             try {
-                var t = player.getCurrentTime();
-                var d = player.getDuration();
-                player.seekTo(Math.max(0, Math.min(d, t + delta)), true);
+                var t = p.getCurrentTime();
+                var d = p.getDuration();
+                p.seekTo(Math.max(0, Math.min(d, t + delta)), true);
             } catch (e) {}
         };
         var handlers = {
-            play: function () { try { player.playVideo(); } catch (e) {} },
-            pause: function () { try { player.pauseVideo(); } catch (e) {} },
+            play: function () { try { p.playVideo(); } catch (e) {} },
+            pause: function () { try { p.pauseVideo(); } catch (e) {} },
             seekbackward: function () { seekBy(-10); },
             seekforward: function () { seekBy(10); },
-            stop: function () { try { player.stopVideo(); } catch (e) {} },
         };
         Object.keys(handlers).forEach(function (action) {
             try { navigator.mediaSession.setActionHandler(action, handlers[action]); } catch (e) {}
         });
     }
 
-    function loadApiAndInit() {
-        if (window.YT && window.YT.Player) {
-            pending.forEach(setupPlayer);
-            return;
-        }
-        var tag = document.createElement("script");
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
-        window.onYouTubeIframeAPIReady = function () {
-            pending.forEach(setupPlayer);
-        };
+    function syncState() {
+        if (!navigator.mediaSession || !player || typeof player.getPlayerState !== "function") return;
+        var state = player.getPlayerState();
+        try {
+            navigator.mediaSession.playbackState =
+                state === 1 ? "playing" : (state === 2 ? "paused" : "none");
+        } catch (e) {}
     }
 
-    loadApiAndInit();
+    function dock(slot) {
+        var container = slot.querySelector(".youtube-player") || slot.querySelector(".video-player") || slot;
+        if (host.parentNode !== container) container.appendChild(host);
+        host.hidden = false;
+        host.classList.remove("is-mini");
+        host.classList.add("is-docked");
+
+        var id = slot.getAttribute("data-youtube-id");
+        var url = slot.getAttribute("data-youtube-url");
+        if (!id) return;
+
+        var autoplay = (location.search.indexOf("autoplay=1") !== -1);
+
+        loadApi(function () {
+            if (player && typeof player.loadVideoById === "function") {
+                if (currentId !== id) {
+                    currentId = id;
+                    try { player.loadVideoById(id); } catch (e) { player.cueVideoById(id); }
+                }
+            } else {
+                currentId = id;
+                player = new YT.Player("fzYtPlayer", {
+                    videoId: id,
+                    playerVars: { rel: 0, modestbranding: 1, origin: location.origin },
+                    events: {
+                        onReady: function (e) {
+                            bindMediaSession(e.target, slot);
+                            if (autoplay) { try { e.target.playVideo(); } catch (e2) {} }
+                        },
+                        onStateChange: function (e) {
+                            syncState();
+                            if (e && e.data === 0) {
+                                var next = document.querySelector(".related-card");
+                                if (next && next.href) {
+                                    var u = next.href;
+                                    if (u.indexOf("autoplay=") === -1) {
+                                        u += (u.indexOf("?") === -1 ? "?" : "&") + "autoplay=1";
+                                    }
+                                    if (window.FZ && window.FZ.nav && typeof window.FZ.nav.navigate === "function") {
+                                        window.FZ.nav.navigate(u);
+                                    } else {
+                                        window.location.href = u;
+                                    }
+                                }
+                            }
+                        },
+                    },
+                });
+            }
+        });
+    }
+
+    function undock() {
+        if (host.parentNode !== document.body) document.body.appendChild(host);
+        if (currentId) {
+            host.hidden = false;
+            host.classList.remove("is-docked");
+            host.classList.add("is-mini");
+        } else {
+            host.hidden = true;
+        }
+    }
+
+    function onPage() {
+        var slot = document.querySelector(".youtube-embed-slot");
+        if (slot) dock(slot);
+        else undock();
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+            if (player && typeof player.stopVideo === "function") {
+                try { player.stopVideo(); } catch (e) {}
+            }
+            currentId = null;
+            host.hidden = true;
+        });
+    }
+
+    document.addEventListener("fz:page", onPage);
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", onPage);
+    } else {
+        onPage();
+    }
 })();
