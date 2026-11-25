@@ -545,10 +545,16 @@ def audio_generate(request, video_id):
 
 @write_required
 def video_upload_page(request):
+    from .models import Category
+
     return render(
         request,
         "videos/upload.html",
-        {"form": VideoUploadForm(), "storage_ready": is_configured()},
+        {
+            "form": VideoUploadForm(),
+            "storage_ready": is_configured(),
+            "categories": Category.objects.all(),
+        },
     )
 
 
@@ -566,6 +572,15 @@ def youtube_import(request):
     title = (request.POST.get("title") or "").strip()
     description = (request.POST.get("description") or "").strip()
     mode = (request.POST.get("mode") or "import").strip().lower()
+    category_id = (request.POST.get("category") or "").strip()
+    category = None
+    if category_id:
+        try:
+            from .models import Category
+
+            category = Category.objects.get(pk=category_id)
+        except (Category.DoesNotExist, ValueError):
+            category = None
 
     if not youtube_url:
         return JsonResponse(
@@ -606,6 +621,8 @@ def youtube_import(request):
             media_type="video",
             youtube_url=youtube_url,
         )
+        if category is not None:
+            category.videos.add(video)
         log_activity(
             request.user, Activity.VERB_UPLOADED, video=video, title=video.title
         )
@@ -765,7 +782,8 @@ def youtube_import(request):
         duration_seconds=duration,
         youtube_url=youtube_url,
     )
-
+    if category is not None:
+        category.videos.add(video)
     _notify_storage_after_upload()
     log_activity(request.user, Activity.VERB_UPLOADED, video=video, title=video.title)
 
@@ -917,6 +935,8 @@ def video_upload(request):
             audio_status="ready",
             duration_seconds=duration,
         )
+        if form.cleaned_data.get("category"):
+            form.cleaned_data["category"].videos.add(video)
         _notify_storage_after_upload()
         log_activity(request.user, Activity.VERB_UPLOADED, video=video, title=video.title)
         payload = {

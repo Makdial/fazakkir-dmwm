@@ -685,9 +685,16 @@
 /* Category filter bar, like YouTube's chip row above the grid. */
 .category-bar {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
     margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+
+.category-bar::-webkit-scrollbar {
+    display: none;
 }
 
 .category-chip {

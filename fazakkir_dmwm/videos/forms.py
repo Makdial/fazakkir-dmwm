@@ -1,6 +1,8 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from .models import Category
+
 MAX_VIDEO_SIZE = 3 * 1024 * 1024 * 1024  # 3 GB
 MAX_IMAGE_SIZE = 8 * 1024 * 1024  # 8 MB
 ALLOWED_VIDEO_TYPES = [
@@ -51,6 +53,14 @@ class VideoUploadForm(forms.Form):
                 "rows": 4,
             }
         ),
+    )
+
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        label=_("Category"),
+        empty_label=_("No category"),
+        widget=forms.Select(attrs={"class": "form-input"}),
     )
     video_file = forms.FileField(
         label=_("Video File"),
