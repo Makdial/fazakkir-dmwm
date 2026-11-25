@@ -227,6 +227,9 @@ class Category(models.Model):
     videos = models.ManyToManyField(
         "Video", related_name="categories", blank=True
     )
+    # Ordered list of video ids for this category, so the dashboard can
+    # reorder the videos without a separate through model.
+    video_order = models.JSONField(default=list, blank=True)
 
     class Meta:
         ordering = ["order", "name"]

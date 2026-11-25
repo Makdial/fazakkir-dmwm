@@ -358,6 +358,17 @@ def video_list(request):
     # Old uploads have no length yet; measure the ones on this page in the
     # background so the badge fills in without the administrator doing anything.
     schedule_missing_durations(videos)
+
+    if selected:
+        try:
+            category = categories.get(slug=selected)
+            order = category.video_order or []
+            if order:
+                rank = {int(v): i for i, v in enumerate(order)}
+                videos = sorted(videos, key=lambda v: rank.get(v.id, len(order)))
+        except Category.DoesNotExist:
+            pass
+
     return render(
         request,
         "videos/list.html",

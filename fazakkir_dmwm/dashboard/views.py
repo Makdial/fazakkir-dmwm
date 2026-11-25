@@ -331,7 +331,11 @@ def category_update(request, category_id):
         category.name = name
     category.order = _to_int(request.POST.get("order"), category.order)
     category.save()
-    category.videos.set(request.POST.getlist("videos"))
+    ordered = request.POST.getlist("ordered_videos")
+    ids = [int(v) for v in ordered if str(v).isdigit()]
+    category.videos.set(ids)
+    category.video_order = ids
+    category.save(update_fields=["video_order"])
     return redirect("dashboard:categories")
 
 
