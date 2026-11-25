@@ -165,6 +165,36 @@
 
     {# Outside <main> on purpose: these survive the page changes made by nav.js. #}
     {% include "videos/_player.html" %}
+
+    <div class="scroll-arrows" id="scrollArrows" hidden aria-label="{% trans 'Scroll' %}">
+        <button type="button" id="scrollTopBtn" aria-label="{% trans 'Scroll to top' %}">↑</button>
+        <button type="button" id="scrollBottomBtn" aria-label="{% trans 'Scroll to bottom' %}">↓</button>
+    </div>
+    <script>
+    (function () {
+        var arrows = document.getElementById("scrollArrows");
+        var topBtn = document.getElementById("scrollTopBtn");
+        var bottomBtn = document.getElementById("scrollBottomBtn");
+        if (!arrows || !topBtn || !bottomBtn) return;
+        function update() {
+            var y = window.scrollY || 0;
+            var max = document.documentElement.scrollHeight - window.innerHeight;
+            if (y > 200 && max > 0) {
+                arrows.hidden = false;
+            } else {
+                arrows.hidden = true;
+            }
+        }
+        topBtn.addEventListener("click", function () {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+        bottomBtn.addEventListener("click", function () {
+            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+        });
+        window.addEventListener("scroll", update, { passive: true });
+        update();
+    })();
+    </script>
     {% include "videos/_queue.html" %}
 
     <script src="{% static 'js/theme.js' %}"></script>

@@ -37,6 +37,38 @@ img, video {
     max-width: 100%;
 }
 
+.scroll-arrows {
+    position: fixed;
+    inset-inline-start: 16px;
+    inset-block-end: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 999;
+}
+
+.scroll-arrows[hidden] {
+    display: none;
+}
+
+.scroll-arrows button {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-color);
+}
+
+.scroll-arrows button:hover {
+    background: var(--bg-tertiary);
+}
+
 /* Main Content Container */
 .main-content {
     max-width: 1200px;
