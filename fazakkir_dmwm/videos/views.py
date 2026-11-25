@@ -565,6 +565,21 @@ def youtube_import(request):
 
     # Link-only mode: no download, play through YouTube's embed.
     if mode == "link":
+        # Fill in anything the uploader left blank straight from YouTube's
+        # metadata, so a bare link still gets a title and a description.
+        if not title or not description:
+            try:
+                import yt_dlp
+
+                with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
+                    info = ydl.extract_info(youtube_url, download=False)
+                if not title:
+                    title = (info.get("title") or "YouTube video").strip()
+                if not description:
+                    description = (info.get("description") or "").strip()
+            except Exception:  # noqa: BLE001
+                if not title:
+                    title = "YouTube video"
         video = Video.objects.create(
             user=request.user,
             title=title[:120],
