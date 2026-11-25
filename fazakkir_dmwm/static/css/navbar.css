@@ -141,6 +141,19 @@
     color: #fff;
 }
 
+.lang-select {
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: var(--radius-md, 8px);
+    cursor: pointer;
+    max-width: 150px;
+}
+
 /* --- Theme toggle -------------------------------------------------------- */
 
 .theme-toggle {

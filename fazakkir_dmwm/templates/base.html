@@ -90,13 +90,15 @@
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 {% get_current_language as CURRENT_LANGUAGE %}
                 {% get_available_languages as AVAILABLE_LANGUAGES %}
-                <div class="lang-toggle" role="group" aria-label="{% trans 'Language' %}">
+                <select name="language" class="lang-select"
+                        aria-label="{% trans 'Language' %}"
+                        onchange="this.form.submit()">
                     {% for code, name in AVAILABLE_LANGUAGES %}
-                        <button type="submit" name="language" value="{{ code }}"
-                                class="lang-option{% if code == CURRENT_LANGUAGE %} active{% endif %}"
-                                title="{{ name }}">{{ code|upper }}</button>
+                        <option value="{{ code }}"{% if code == CURRENT_LANGUAGE %} selected{% endif %}>
+                            {{ name }} ({{ code|upper }})
+                        </option>
                     {% endfor %}
-                </div>
+                </select>
             </form>
 
             <button type="button" class="theme-toggle" id="theme-toggle"
