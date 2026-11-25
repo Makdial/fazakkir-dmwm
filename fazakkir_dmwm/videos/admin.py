@@ -26,10 +26,11 @@ class VideoAdmin(admin.ModelAdmin):
         "dislikes",
         "created_at",
     )
-    list_filter = ("created_at", "user", "audio_status")
+    list_filter = ("created_at", "user", "audio_status", "categories")
     search_fields = ("title", "description", "user__username")
     readonly_fields = ("views", "likes", "dislikes", "created_at", "updated_at")
     date_hierarchy = "created_at"
+    filter_horizontal = ("categories",)
 
     @admin.display(description="MP3")
     def audio_status(self, obj):
