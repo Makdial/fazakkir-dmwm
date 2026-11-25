@@ -9,6 +9,9 @@
     <a href="{% url 'dashboard:video_order' %}" class="dash-tab{% if active_tab == 'order' %} active{% endif %}">
         {% trans "Home order" %}
     </a>
+    <a href="{% url 'admin:videos_category_changelist' %}" class="dash-tab">
+        {% trans "Categories" %}
+    </a>
     <a href="{% url 'dashboard:comments' %}" class="dash-tab{% if active_tab == 'comments' %} active{% endif %}">
         {% trans "Comments" %}
     </a>
