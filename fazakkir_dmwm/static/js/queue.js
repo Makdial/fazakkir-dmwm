@@ -355,6 +355,7 @@
         var toggle = target.closest("[data-queue-toggle]");
         if (toggle) {
             event.preventDefault();
+            event.stopPropagation();
             toggleMenu(toggle);
             return;
         }
@@ -362,6 +363,7 @@
         var addButton = target.closest("[data-queue-add]");
         if (addButton) {
             event.preventDefault();
+            event.stopPropagation();
             var anchor = addButton.closest("[data-queue-anchor]");
             closeMenus();
             if (anchor) {
@@ -387,7 +389,7 @@
         }
 
         closeMenus();
-    });
+    }, true);
 
     document.addEventListener("keydown", function (event) {
         if (event.key !== "Escape") return;
