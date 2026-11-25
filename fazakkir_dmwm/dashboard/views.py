@@ -332,7 +332,11 @@ def category_update(request, category_id):
     category.order = _to_int(request.POST.get("order"), category.order)
     category.save()
     ordered = request.POST.getlist("ordered_videos")
-    ids = [int(v) for v in ordered if str(v).isdigit()]
+    # The form sends a single comma-separated field; split it so multiple
+    # videos are preserved instead of being discarded as one non-numeric value.
+    if len(ordered) == 1 and "," in ordered[0]:
+        ordered = ordered[0].split(",")
+    ids = [int(v) for v in ordered if str(v).strip().isdigit()]
     category.videos.set(ids)
     category.video_order = ids
     category.save(update_fields=["video_order"])
