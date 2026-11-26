@@ -203,6 +203,15 @@
         options = options || {}
         return fetchPayload(entry)
             .then(data => {
+                // YouTube link videos have no local file to play in the shared
+                // player; open their watch page instead (which also keeps the
+                // mini player from showing a stale video).
+                if (!docked && (!data.video_url || data.is_audio_only) &&
+                        (data.thumbnail_url || "").indexOf("img.youtube.com") !== -1) {
+                    if (window.FZ && window.FZ.nav) window.FZ.nav.navigate(entry.url)
+                    else window.location.href = entry.url
+                    return
+                }
                 setCurrent(data, { autoplay: options.autoplay, resumeAt: options.resumeAt })
             })
             .catch(error => {

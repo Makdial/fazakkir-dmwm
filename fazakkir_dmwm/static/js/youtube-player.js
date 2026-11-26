@@ -105,6 +105,24 @@
                         onStateChange: function (e) {
                             syncState();
                             if (e && e.data === 0) {
+                                // Prefer the queue when something is queued, the
+                                // way the native player does.
+                                if (window.FZ && window.FZ.queue && typeof window.FZ.queue.count === "function" && window.FZ.queue.count() > 0) {
+                                    var nextEntry = window.FZ.queue.take ? window.FZ.queue.take() : null;
+                                    // Fall back to playNextFromQueue if take is unavailable.
+                                    if (!nextEntry && window.FZ.player && typeof window.FZ.player.playNextFromQueue === "function") {
+                                        window.FZ.player.playNextFromQueue();
+                                        return;
+                                    }
+                                    if (nextEntry && nextEntry.url) {
+                                        if (window.FZ && window.FZ.nav && typeof window.FZ.nav.navigate === "function") {
+                                            window.FZ.nav.navigate(nextEntry.url);
+                                        } else {
+                                            window.location.href = nextEntry.url;
+                                        }
+                                        return;
+                                    }
+                                }
                                 var next = document.querySelector(".related-card");
                                 if (next && next.href) {
                                     var u = next.href;
