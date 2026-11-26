@@ -328,6 +328,7 @@
         restoreNow()
         const slot = document.querySelector("[data-player-slot]")
         const source = document.getElementById("fz-video-data")
+        const ytSlot = document.querySelector(".youtube-embed-slot")
         if (slot && source) {
             dock(slot)
             const data = parseJson(source.textContent)
@@ -340,10 +341,25 @@
                 pendingAutoplay = false
                 setCurrent(data, { autoplay: autoplay, resumeAt: resume })
             }
+            updateHost()
+        } else if (ytSlot) {
+            // YouTube link page: the shared native player is not used here.
+            // Stop it (if it was playing in the mini player) and hide it so
+            // the YouTube player in the slot is the only one on screen.
+            if (isPlaying()) {
+                videoPlayer.pause()
+                audioPlayer.pause()
+            }
+            docked = false
+            if (host) {
+                host.hidden = true
+                host.classList.remove("is-mini", "is-docked")
+            }
+            updateNextButtons()
         } else {
             undock()
+            updateHost()
         }
-        updateHost()
         updateNextButtons()
     }
 
