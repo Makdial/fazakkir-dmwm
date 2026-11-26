@@ -341,6 +341,9 @@
         box-shadow: var(--shadow-lg);
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+        overscroll-behavior: contain;
+        z-index: 1000;
     }
 
     .navbar-actions.open {
