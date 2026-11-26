@@ -327,7 +327,7 @@
 .related-thumb {
     flex: none;
     position: relative;
-    width: 168px;
+    width: 200px;
     aspect-ratio: 16 / 9;
     background: var(--yt-thumb-bg);
     border-radius: var(--radius-md);
@@ -960,7 +960,7 @@
     }
 
     .related-thumb {
-        width: 120px;
+        width: 140px;
     }
 
     .upload-card {
