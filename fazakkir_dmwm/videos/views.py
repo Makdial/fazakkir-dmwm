@@ -262,7 +262,7 @@ def video_detail(request, video_id):
     related_videos = list(
         Video.objects.exclude(id=video.id)
         .select_related("user")
-        .order_by("-views", "-created_at")[:12]
+        .order_by("-views", "-created_at")[:24]
     )
 
     user_playlists = []
