@@ -192,14 +192,9 @@
     transition: opacity var(--transition-normal), background var(--transition-fast);
 }
 
-@media (hover: hover) {
-    .video-card-wrap:hover .queue-anchor-card .queue-toggle,
-    .related-card:hover .queue-anchor-card .queue-toggle,
-    .related-thumb:hover .queue-anchor-card .queue-toggle,
-    .queue-anchor-card:focus-within .queue-toggle,
-    .queue-anchor-card .queue-toggle[aria-expanded="true"] {
-        opacity: 1;
-    }
+/* Keep the queue toggle visible at all times so the menu is reachable. */
+.queue-anchor-card .queue-toggle {
+    opacity: 1;
 }
 
 @media (hover: none), (max-width: 768px) {
