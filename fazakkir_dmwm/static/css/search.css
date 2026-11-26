@@ -118,12 +118,23 @@
     align-items: stretch;
     flex: 1 1 240px;
     max-width: 620px;
-    min-width: 0;
+    min-width: 200px;
     height: 40px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-full);
     overflow: hidden;
     background: transparent;
+}
+
+/* On medium screens the navbar is too crowded; hide the inline search and
+   rely on the search icon instead. */
+@media (max-width: 1024px) {
+    .nav-search {
+        display: none;
+    }
+    .nav-search-icon {
+        display: inline-flex;
+    }
 }
 
 .nav-search:focus-within {
@@ -184,7 +195,7 @@
     flex: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .nav-search-icon {
         display: inline-flex;
     }

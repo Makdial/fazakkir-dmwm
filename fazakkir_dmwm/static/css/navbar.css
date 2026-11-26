@@ -197,9 +197,10 @@
     gap: 6px;
     color: var(--text-primary);
     text-decoration: none;
-    padding: 8px 14px;
+    padding: 6px 10px;
     border-radius: var(--radius-full);
     font-weight: 500;
+    font-size: 0.85rem;
     font-size: 0.9rem;
     white-space: nowrap;
     transition: background var(--transition-fast), color var(--transition-fast);
