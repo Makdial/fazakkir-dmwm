@@ -1071,9 +1071,16 @@
         });
     };
     function seekToNote(seconds) {
-        const player = document.querySelector("video");
-        if (player) {
-            try { player.currentTime = seconds; } catch (e) {}
+        if (window.FZ && window.FZ.player && typeof window.FZ.player.seekTo === "function") {
+            window.FZ.player.seekTo(seconds);
+        }
+        if (window.FZ && typeof window.FZ.ytSeekTo === "function") {
+            window.FZ.ytSeekTo(seconds);
+        }
+        // Fallback for the (rare) case where the shared player is not ready.
+        const video = document.getElementById("video-player");
+        if (video) {
+            try { video.currentTime = seconds; video.play(); } catch (e) {}
         }
     };
 

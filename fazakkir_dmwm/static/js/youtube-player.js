@@ -152,6 +152,13 @@
         });
     }
 
+    window.FZ = window.FZ || {};
+    window.FZ.ytSeekTo = function (seconds) {
+        if (player && typeof player.seekTo === "function") {
+            try { player.seekTo(seconds, true); player.playVideo(); } catch (e) {}
+        }
+    };
+
     if (closeBtn) {
         closeBtn.addEventListener("click", function () {
             if (player && typeof player.stopVideo === "function") {

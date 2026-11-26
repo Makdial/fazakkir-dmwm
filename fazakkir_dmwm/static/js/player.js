@@ -1189,6 +1189,11 @@
             dock: dock,
             undock: undock,
             setCurrent: setCurrent,
+            seekTo: function (seconds) {
+                if (activePlayer) {
+                    try { activePlayer.currentTime = seconds; activePlayer.play(); } catch (e) {}
+                }
+            },
         }
     }
 
