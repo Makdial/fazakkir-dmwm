@@ -12,6 +12,7 @@
 
 <div class="watch-layout">
     <div class="watch-main">
+        <button type="button" class="back-btn" onclick="if (window.FZ && window.FZ.nav) window.history.back(); else window.location.href='/'" aria-label="{% trans 'Back' %}">← {% trans "Back" %}</button>
 
         {% comment %}
             The player is not part of this page: base.html renders it once for the whole
