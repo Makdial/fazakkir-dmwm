@@ -326,10 +326,11 @@
     }
 
     .navbar-actions {
-        position: absolute;
-        top: 100%;
+        position: fixed;
+        top: 56px;
         left: 0;
         right: 0;
+        bottom: 0;
         display: none;
         flex-direction: column;
         align-items: stretch;
@@ -338,7 +339,6 @@
         background: var(--bg-secondary);
         border-bottom: 1px solid var(--yt-border);
         box-shadow: var(--shadow-lg);
-        max-height: calc(100vh - 56px);
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
