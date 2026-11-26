@@ -1485,9 +1485,9 @@ def playlist_create(request):
         is_public=request.POST.get("is_public") == "1",
     )
 
-    video_id = request.POST.get("video_id")
-    if video_id:
-        video = Video.objects.filter(id=video_id).first()
+    video_ids = request.POST.get("video_ids") or request.POST.get("video_id") or ""
+    for vid in [v.strip() for v in str(video_ids).split(",") if v.strip()]:
+        video = Video.objects.filter(id=vid).first()
         if video:
             PlaylistItem.objects.get_or_create(playlist=playlist, video=video)
 

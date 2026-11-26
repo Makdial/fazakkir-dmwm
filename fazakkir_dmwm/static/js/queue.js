@@ -345,6 +345,24 @@
             });
         } else if (action === "close-drawer") {
             setDrawer(false);
+        } else if (action === "save-playlist") {
+            var title = window.prompt(labels.savePlaylistPrompt || "Playlist name", "My queue");
+            if (!title) return;
+            var ids = items.map(function (i) { return i.id; }).join(",");
+            var token = (window.FZ && window.FZ.csrfToken) ? window.FZ.csrfToken() : "";
+            var body = new FormData();
+            body.append("title", title);
+            body.append("video_ids", ids);
+            body.append("csrfmiddlewaretoken", token);
+            fetch("/playlists/new/", { method: "POST", body: body, credentials: "same-origin" })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data && data.success && data.playlist && data.playlist.url) {
+                        toast(labels.playlistCreated || "Playlist created");
+                        if (window.FZ && window.FZ.nav) window.FZ.nav.navigate(data.playlist.url);
+                    }
+                })
+                .catch(function () {});
         }
     }
 
@@ -390,6 +408,31 @@
                     toast(data.added ? (labels.addedToWatchLater || "Added to Watch later") : (labels.removedFromWatchLater || "Removed from Watch later"));
                 }
             }).catch(function () {});
+            return;
+        }
+
+        var spButton = target.closest("[data-save-playlist]");
+        if (spButton) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeMenus();
+            var spId = spButton.getAttribute("data-save-playlist");
+            var spTitle = window.prompt(labels.savePlaylistPrompt || "Playlist name", "My playlist");
+            if (!spTitle) return;
+            var spToken = (window.FZ && window.FZ.csrfToken) ? window.FZ.csrfToken() : "";
+            var spBody = new FormData();
+            spBody.append("title", spTitle);
+            spBody.append("video_id", spId);
+            spBody.append("csrfmiddlewaretoken", spToken);
+            fetch("/playlists/new/", { method: "POST", body: spBody, credentials: "same-origin" })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data && data.success && data.playlist && data.playlist.url) {
+                        toast(labels.playlistCreated || "Playlist created");
+                        if (window.FZ && window.FZ.nav) window.FZ.nav.navigate(data.playlist.url);
+                    }
+                })
+                .catch(function () {});
             return;
         }
 

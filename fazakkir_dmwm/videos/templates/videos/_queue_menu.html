@@ -27,6 +27,9 @@
         <button type="button" class="queue-menu-item" role="menuitem" data-watch-later="{{ video.id }}">
             {% trans "Watch later" %}
         </button>
+        <button type="button" class="queue-menu-item" role="menuitem" data-save-playlist="{{ video.id }}">
+            {% trans "Save as playlist" %}
+        </button>
         {% endif %}
     </div>
 </div>
