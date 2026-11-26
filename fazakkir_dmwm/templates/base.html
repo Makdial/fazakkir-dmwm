@@ -115,8 +115,6 @@
                     <li><a href="{% url 'videos:upload' %}" class="nav-link btn-upload">{% trans "Upload" %}</a></li>
                 {% endif %}
                 {% comment %}Every visitor gets a guest account automatically, so these are available without signing in.{% endcomment %}
-                <li><a href="{% url 'videos:playlists' %}" class="nav-link">{% trans "Playlists" %}</a></li>
-<li><a href="{% url 'videos:watch_later' %}" class="nav-link">{% trans "Watch later" %}</a></li>
                 <li>
                     <button type="button" class="nav-link nav-queue-btn" id="fzQueueToggle"
                             aria-controls="fzQueue" aria-expanded="false">
@@ -124,13 +122,21 @@
                     </button>
                 </li>
                 <li><a href="{% url 'shorts:list' %}" class="nav-link">{% trans "Shorts" %}</a></li>
-<li><a href="{% url 'library:book_list' %}" class="nav-link">{% trans "Library" %}</a></li>
-<li><a href="{% url 'library:user_dashboard' %}" class="nav-link">{% trans "Dashboard" %}</a></li>
-<li><a href="{% url 'library:my_library' %}" class="nav-link">{% trans "My Library" %}</a></li>
-<li><a href="{% url 'videos:composition' %}" class="nav-link">{% trans "Composition" %}</a></li>
-                <li><a href="{% url 'videos:offline' %}" class="nav-link">{% trans "Offline" %}</a></li>
-<li><a href="{% url 'videos:my_notes' %}" class="nav-link">{% trans "Notes" %}</a></li>
-<li><a href="{% url 'videos:my_activity' %}" class="nav-link">{% trans "Activity" %}</a></li>
+                <li><details class="nav-more">
+                    <summary class="nav-link nav-more-toggle">{% trans "More" %} ▾</summary>
+                    <ul class="nav-more-menu">
+                        <li><a href="{% url 'videos:playlists' %}" class="nav-link">{% trans "Playlists" %}</a></li>
+                        <li><a href="{% url 'videos:watch_later' %}" class="nav-link">{% trans "Watch later" %}</a></li>
+                        <li><a href="{% url 'library:book_list' %}" class="nav-link">{% trans "Library" %}</a></li>
+                        <li><a href="{% url 'library:user_dashboard' %}" class="nav-link">{% trans "Dashboard" %}</a></li>
+                        <li><a href="{% url 'library:my_library' %}" class="nav-link">{% trans "My Library" %}</a></li>
+                        <li><a href="{% url 'videos:composition' %}" class="nav-link">{% trans "Composition" %}</a></li>
+                        <li><a href="{% url 'videos:offline' %}" class="nav-link">{% trans "Offline" %}</a></li>
+                        <li><a href="{% url 'videos:my_notes' %}" class="nav-link">{% trans "Notes" %}</a></li>
+                        <li><a href="{% url 'videos:activity' %}" class="nav-link">{% trans "Activity" %}</a></li>
+                    </ul>
+                </details></li>
+
                 {% if can_read %}
                     <li><a href="{% url 'dashboard:home' %}" class="nav-link">{% trans "Dashboard" %}</a></li>
                     <li><a href="{% url 'library:admin_dashboard' %}" class="nav-link">{% trans "Library Admin" %}</a></li>
