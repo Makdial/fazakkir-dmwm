@@ -27,7 +27,7 @@
         /^\/\d+\/?$/               // a watch page
     ];
 
-    var STYLE_TIMEOUT_MS = 2500;
+    var STYLE_TIMEOUT_MS = 1000;
 
     var leaveHandlers = [];
     var sequence = 0;
