@@ -642,6 +642,11 @@ def youtube_import(request):
         )
         if category is not None:
             category.videos.add(video)
+            order = list(category.video_order or [])
+            if video.id not in order:
+                order.append(video.id)
+            category.video_order = order
+            category.save(update_fields=["video_order"])
         # Start extracting the MP3 in the background so link-only YouTube
         # recordings get audio without a manual click.
         try:
@@ -811,6 +816,11 @@ def youtube_import(request):
     )
     if category is not None:
         category.videos.add(video)
+        order = list(category.video_order or [])
+        if video.id not in order:
+            order.append(video.id)
+        category.video_order = order
+        category.save(update_fields=["video_order"])
     _notify_storage_after_upload()
     log_activity(request.user, Activity.VERB_UPLOADED, video=video, title=video.title)
 
@@ -963,7 +973,13 @@ def video_upload(request):
             duration_seconds=duration,
         )
         if form.cleaned_data.get("category"):
-            form.cleaned_data["category"].videos.add(video)
+            category = form.cleaned_data["category"]
+            category.videos.add(video)
+            order = list(category.video_order or [])
+            if video.id not in order:
+                order.append(video.id)
+            category.video_order = order
+            category.save(update_fields=["video_order"])
         _notify_storage_after_upload()
         log_activity(request.user, Activity.VERB_UPLOADED, video=video, title=video.title)
         payload = {
