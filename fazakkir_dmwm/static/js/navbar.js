@@ -17,8 +17,6 @@
     function setOpen(open) {
         toggle.setAttribute("aria-expanded", open ? "true" : "false");
         menu.classList.toggle("open", open);
-        // Prevent the page behind the menu from scrolling on Android.
-        document.body.style.overflow = open ? "hidden" : "";
     }
 
     function isOpen() {
