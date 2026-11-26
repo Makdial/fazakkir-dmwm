@@ -317,7 +317,8 @@
     .queue-anchor-action .queue-menu {
         position: fixed;
         top: 72px;
-        inset-inline-end: 24px;
+        inset-inline-start: 24px;
+        inset-inline-end: auto;
         z-index: 1200;
     }
 }
