@@ -203,14 +203,27 @@
 }
 
 @media (hover: none), (max-width: 768px) {
+    .queue-anchor-card {
+        top: 6px;
+        inset-inline-end: 6px;
+    }
+
     .queue-anchor-card .queue-toggle {
         opacity: 1;
         min-width: 44px;
-        height: 40px;
+        height: 44px;
+        font-size: 1.3rem;
+        line-height: 1;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        border-radius: 50%;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 
     .queue-menu-item {
-        padding: 12px 14px;
+        padding: 14px 20px;
+        font-size: 1rem;
     }
 }
 
