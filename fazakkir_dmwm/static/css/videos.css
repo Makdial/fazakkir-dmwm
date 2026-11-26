@@ -111,6 +111,19 @@
 }
 
 /* Duration badge, bottom-right of the thumbnail, like YouTube's "12:34". */
+/* Audio-available badge on thumbnails, like YouTube's music note. */
+.audio-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
 .video-duration {
     position: absolute;
     right: 8px;

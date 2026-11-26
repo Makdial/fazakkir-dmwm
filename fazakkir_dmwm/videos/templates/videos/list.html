@@ -37,6 +37,9 @@
                     {% if video.duration_seconds %}
                     <span class="video-duration">{{ video.duration_formatted }}</span>
                     {% endif %}
+                    {% if video.has_audio %}
+                    <span class="audio-badge" title="{% trans 'Audio available' %}">🎵</span>
+                    {% endif %}
                     <span class="play-icon">▶</span>
                 </div>
                 <div class="video-info">
