@@ -39,7 +39,7 @@
                 <div class="video-info">
                     <span class="video-card-avatar" aria-hidden="true">{{ video.user.username|slice:":1" }}</span>
                     <div>
-                        <h3 class="video-title">{{ video.title }}</h3>
+                        <h3 class="video-title" title="{{ video.title }}">{{ video.title }}</h3>
                         <p class="video-meta">
                             <span class="video-meta-uploader">{{ video.user.username }}</span>
                             {% blocktrans count counter=video.views %}{{ counter }} view{% plural %}{{ counter }} views{% endblocktrans %}

@@ -47,7 +47,7 @@
                     {% for vid in category.video_order %}
                         {% for video in videos %}
                             {% if video.id == vid %}
-                            <li data-id="{{ video.id }}">
+                            <li data-id="{{ video.id }}" title="{{ video.title }}">
                                 <span class="video-title">{{ video.title }}</span>
                                 <span class="video-actions">
                                     <button type="button" class="move-up" title="{% trans 'Move up' %}">↑</button>
@@ -66,9 +66,9 @@
             <div class="category-column">
                 <h3>{% trans "Add videos / audio" %}</h3>
                 <div class="add-row">
-                    <select class="form-input" data-available="{{ category.id }}" multiple size="6">
+                    <select class="form-input" data-available="{{ category.id }}" multiple size="8" style="width:100%;min-height:160px">
                         {% for video in videos %}
-                        <option value="{{ video.id }}">{{ video.title }}</option>
+                        <option value="{{ video.id }}" title="{{ video.title }}">{{ video.title }}</option>
                         {% endfor %}
                     </select>
                     <button type="button" class="btn-small" data-add="{{ category.id }}">{% trans "Add selected" %}</button>
@@ -94,7 +94,7 @@
 .ordered-list { list-style:none; padding:0; margin:0; min-height:60px; border:1px solid var(--border-color); border-radius:var(--radius-md,8px); background:var(--bg-secondary); }
 .ordered-list li { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid var(--border-color); gap:8px; }
 .ordered-list li:last-child { border-bottom:none; }
-.ordered-list .video-title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ordered-list .video-title { flex:1; min-width:0; overflow:visible; white-space:normal; word-break:break-word; }
 .ordered-list .video-actions { display:flex; gap:4px; }
 .ordered-list .video-actions button { background:var(--bg-tertiary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px; padding:2px 8px; cursor:pointer; font-size:0.85rem; }
 .ordered-list .empty-placeholder { color:var(--text-muted); font-style:italic; justify-content:center; }
