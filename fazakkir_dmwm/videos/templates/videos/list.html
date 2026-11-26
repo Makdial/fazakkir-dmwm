@@ -8,6 +8,9 @@
 {% endblock %}
 
 {% block content %}
+{% if selected_category %}
+<a href="{% url 'videos:list' %}" class="back-btn">&larr; {% trans "All videos" %}</a>
+{% endif %}
 {% if categories %}
 <div class="category-bar">
     <a href="{% url 'videos:list' %}" class="category-chip{% if not selected_category %} active{% endif %}">{% trans "All" %}</a>

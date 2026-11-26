@@ -682,6 +682,25 @@
     margin-top: 24px;
 }
 
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 6px 12px;
+    border-radius: var(--radius-full, 999px);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+}
+
+.back-btn:hover {
+    background: var(--bg-tertiary);
+}
+
 /* Category filter bar, like YouTube's chip row above the grid. */
 .category-bar {
     display: flex;
