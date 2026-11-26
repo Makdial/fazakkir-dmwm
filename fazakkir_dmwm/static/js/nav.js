@@ -231,7 +231,9 @@
         var link = event.target instanceof Element ? event.target.closest("a[href]") : null;
         if (!link || link.hasAttribute("download") || link.hasAttribute("data-no-spa")) return;
         if (link.target && link.target !== "_self") return;
-        if (!isSpaPath(window.location.pathname) || !isSpaUrl(link.href)) return;
+        // Allow jumping to a shared page (such as Home) from any page, so the
+        // app icon / Home link never forces a full reload.
+        if (!isSpaUrl(link.href)) return;
 
         event.preventDefault();
         navigate(link.href, { push: true });
