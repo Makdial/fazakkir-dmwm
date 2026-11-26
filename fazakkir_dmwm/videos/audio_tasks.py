@@ -404,13 +404,19 @@ def _sweep_videos() -> None:
         )
 
     for video_id in video_ids:
+        video = Video.objects.filter(id=video_id).first()
+        if video is None:
+            continue
         # Same lock as the on-play path: skip a video that was handled (or
         # removed) while the sweep was queued.
         if not Video.objects.filter(id=video_id, audio_file_id="").update(
             audio_status="processing"
         ):
             continue
-        succeeded = generate_audio(video_id)
+        if video.youtube_url:
+            succeeded = generate_youtube_audio(video_id)
+        else:
+            succeeded = generate_audio(video_id)
         with _SWEEP_LOCK:
             _SWEEP_STATE["done"] += 1
             _SWEEP_STATE["succeeded" if succeeded else "failed"] += 1
