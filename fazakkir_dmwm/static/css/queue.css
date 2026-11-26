@@ -312,6 +312,16 @@
     box-shadow: var(--shadow-lg);
 }
 
+/* On the watch page the menu opens as a floating panel on the right side (desktop). */
+@media (min-width: 769px) {
+    .queue-anchor-action .queue-menu {
+        position: fixed;
+        top: 72px;
+        inset-inline-end: 24px;
+        z-index: 1200;
+    }
+}
+
 .queue-menu[hidden] {
     display: none;
 }
