@@ -214,6 +214,16 @@
             });
     }
 
+    // Prefetch SPA pages on hover so navigation feels instant.
+    document.addEventListener("mouseover", function (event) {
+        var link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+        if (!link || link.hasAttribute("download") || link.hasAttribute("data-no-spa")) return;
+        if (!isSpaUrl(link.href)) return;
+        if (link.dataset.prefetched === "1") return;
+        link.dataset.prefetched = "1";
+        fetch(link.href, { credentials: "same-origin" }).catch(function () {});
+    });
+
     document.addEventListener("click", function (event) {
         if (event.defaultPrevented || event.button !== 0) return;
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
