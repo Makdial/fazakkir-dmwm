@@ -67,6 +67,7 @@
         </a>
 
         <a href="{% url 'videos:search' %}" class="nav-search-icon" aria-label="{% trans 'Search' %}">🔍</a>
+        <button type="button" class="nav-mic-icon" id="navMicBtn" aria-label="{% trans 'Voice search' %}">🎤</button>
 
         <button type="button" class="nav-toggle" id="navToggle"
                 aria-label="{% trans 'Menu' %}" aria-expanded="false" aria-controls="navMenu">
@@ -173,6 +174,36 @@
         <button type="button" id="scrollBottomBtn" aria-label="{% trans 'Scroll to bottom' %}">↓</button>
     </div>
     <script>
+    (function () {
+        var micBtn = document.getElementById("navMicBtn");
+        if (micBtn) {
+            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                micBtn.style.display = "none";
+            } else {
+                var recognition = new SpeechRecognition();
+                recognition.lang = document.documentElement.lang || "en-US";
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+                micBtn.addEventListener("click", function () {
+                    try { recognition.start(); } catch (e) {}
+                    micBtn.textContent = "🎙️";
+                });
+                recognition.onresult = function (event) {
+                    var transcript = event.results[0][0].transcript;
+                    // Navigate to search with the transcript.
+                    window.location.href = "{% url 'videos:search' %}?q=" + encodeURIComponent(transcript);
+                };
+                recognition.onerror = function () {
+                    micBtn.textContent = "🎤";
+                };
+                recognition.onend = function () {
+                    micBtn.textContent = "🎤";
+                };
+            }
+        }
+    })();
+
     (function () {
         var arrows = document.getElementById("scrollArrows");
         var topBtn = document.getElementById("scrollTopBtn");

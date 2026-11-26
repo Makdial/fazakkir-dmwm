@@ -195,6 +195,27 @@
     flex: none;
 }
 
+.nav-mic-icon {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    font-size: 1.1rem;
+    flex: none;
+    cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+    .nav-mic-icon {
+        display: inline-flex;
+    }
+}
+
 @media (max-width: 1024px) {
     .nav-search-icon {
         display: inline-flex;
