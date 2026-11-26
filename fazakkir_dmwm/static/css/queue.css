@@ -214,6 +214,37 @@
     }
 }
 
+/* On phones the queue menu becomes a bottom sheet, like YouTube. */
+@media (max-width: 768px) {
+    .queue-anchor-card .queue-menu {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        border-radius: 16px 16px 0 0;
+        padding: 8px 0 16px;
+        z-index: 1200;
+        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .queue-anchor-card .queue-menu::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: -1;
+    }
+
+    .queue-anchor-card .queue-menu-item {
+        padding: 14px 20px;
+        font-size: 1rem;
+    }
+}
+
 .queue-glyph-mobile {
     display: none;
 }
