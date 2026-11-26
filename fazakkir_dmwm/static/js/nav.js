@@ -215,13 +215,23 @@
     }
 
     // Prefetch SPA pages on hover so navigation feels instant.
-    document.addEventListener("mouseover", function (event) {
-        var link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+    function prefetchLink(link) {
         if (!link || link.hasAttribute("download") || link.hasAttribute("data-no-spa")) return;
         if (!isSpaUrl(link.href)) return;
         if (link.dataset.prefetched === "1") return;
         link.dataset.prefetched = "1";
         fetch(link.href, { credentials: "same-origin" }).catch(function () {});
+    }
+
+    document.addEventListener("mouseover", function (event) {
+        var link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+        prefetchLink(link);
+    });
+
+    // Prefetch on mousedown too, so even a quick click benefits.
+    document.addEventListener("mousedown", function (event) {
+        var link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+        prefetchLink(link);
     });
 
     document.addEventListener("click", function (event) {
