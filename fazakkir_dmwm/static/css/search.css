@@ -210,10 +210,8 @@
     cursor: pointer;
 }
 
-@media (max-width: 1024px) {
-    .nav-mic-icon {
-        display: inline-flex;
-    }
+.nav-mic-icon {
+    display: inline-flex;
 }
 
 @media (max-width: 1024px) {
