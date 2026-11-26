@@ -178,10 +178,11 @@
         <button type="button" id="scrollTopBtn" aria-label="{% trans 'Scroll to top' %}">↑</button>
         <button type="button" id="scrollBottomBtn" aria-label="{% trans 'Scroll to bottom' %}">↓</button>
     </div>
+    <script>
         (function () {
         var arrows = document.getElementById("scrollArrows");
-        var topBtn = document.getElementById("scrollTopBtn");
-        var bottomBtn = document.getElementById("scrollBottomBtn");
+        <button type="button" id="scrollTopBtn" aria-label="{% trans 'Scroll to top' %}">↑</button>
+        <button type="button" id="scrollBottomBtn" aria-label="{% trans 'Scroll to bottom' %}">↓</button>
         if (!arrows || !topBtn || !bottomBtn) return;
 
         var hideTimer = null;
@@ -271,6 +272,7 @@
     <script src="{% static 'js/card-preview.js' %}"></script>
     <script src="{% static 'js/youtube-player.js' %}"></script>
     {% block extra_js %}{% endblock %}
+    <script>
     <script>
         (function () {
             var splash = document.getElementById("fzSplash");
