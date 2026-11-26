@@ -340,6 +340,7 @@
         box-shadow: var(--shadow-lg);
         max-height: calc(100vh - 56px);
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .navbar-actions.open {
