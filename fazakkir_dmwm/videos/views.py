@@ -92,7 +92,15 @@ def _register_play(request, video):
     # generate one in the background so the Listen / Download MP3 options show
     # up without the administrator having to do anything.
     if not video.has_audio and video.audio_status == "":
-        schedule_audio_generation(video.id)
+        if video.youtube_url:
+            try:
+                from .audio_tasks import schedule_youtube_audio
+
+                schedule_youtube_audio(video.id)
+            except Exception:  # noqa: BLE001
+                pass
+        else:
+            schedule_audio_generation(video.id)
 
     # Lyrics and captions are just as useful as the MP3: generate them on the
     # first play when a back end is configured, so every video ends up with a
@@ -634,6 +642,14 @@ def youtube_import(request):
         )
         if category is not None:
             category.videos.add(video)
+        # Start extracting the MP3 in the background so link-only YouTube
+        # recordings get audio without a manual click.
+        try:
+            from .audio_tasks import schedule_youtube_audio
+
+            schedule_youtube_audio(video.id)
+        except Exception:  # noqa: BLE001
+            pass
         log_activity(
             request.user, Activity.VERB_UPLOADED, video=video, title=video.title
         )
