@@ -54,7 +54,8 @@ def fill_duration(video_id: int) -> float:
         duration = get_duration_from_url(url)
 
     if duration <= 0:
-        _FAILED.add(video_id)
+        if not video.is_youtube:
+            _FAILED.add(video_id)
         return 0.0
 
     # ``duration_seconds=0`` in the filter keeps another worker's result from
