@@ -61,7 +61,9 @@
     <nav class="navbar">
         <a href="{% url 'videos:list' %}" class="nav-back" id="navBack" data-fz-back
            aria-label="{% trans 'Back' %}" title="{% trans 'Back' %}">
-            <span class="nav-back-icon" aria-hidden="true">←</span>
+            <svg class="nav-back-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M19 12H5m7-7-7 7 7 7"/>
+            </svg>
         </a>
 
         <a href="/" class="navbar-brand">
@@ -179,6 +181,19 @@
     {# Outside <main> on purpose: these survive the page changes made by nav.js. #}
     {% include "videos/_player.html" %}
 
+    <div class="scroll-arrows" id="scrollArrows" hidden aria-label="{% trans 'Scroll' %}">
+        <button type="button" id="scrollTopBtn" aria-label="{% trans 'Scroll up' %}" title="{% trans 'Scroll up' %}">
+            <svg class="scroll-arrow-icon scroll-arrow-icon-up" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 19V5m-7 7 7-7 7 7"/>
+            </svg>
+        </button>
+        <button type="button" id="scrollBottomBtn" aria-label="{% trans 'Scroll down' %}" title="{% trans 'Scroll down' %}">
+            <svg class="scroll-arrow-icon scroll-arrow-icon-down" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 5v14m7-7-7 7-7-7"/>
+            </svg>
+        </button>
+    </div>
+
     {% include "videos/_queue.html" %}
 
     <script src="{% static 'js/theme.js' %}"></script>
@@ -188,6 +203,7 @@
     <script src="{% static 'js/offline.js' %}"></script>
     {# Order matters: nav.js creates window.FZ, which queue.js and player.js extend. #}
     <script src="{% static 'js/nav.js' %}"></script>
+    <script src="{% static 'js/scroll-arrows.js' %}"></script>
     <script src="{% static 'js/queue.js' %}"></script>
     <script src="{% static 'js/player.js' %}"></script>
     <script src="{% static 'js/card-preview.js' %}"></script>

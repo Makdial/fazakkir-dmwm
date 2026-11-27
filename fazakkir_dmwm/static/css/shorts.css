@@ -34,6 +34,42 @@ body.shorts-immersive { overflow: hidden; }
 }
 .shorts-topbar-actions a:hover, .shorts-topbar-actions button:hover { background: rgba(255,255,255,0.22); }
 
+/* The back arrow keeps the same crisp icon on a frosted circle, so it stays
+   readable over bright or busy video frames. */
+.shorts-topbar-actions .shorts-back {
+    width: 38px; height: 38px;
+    background: rgba(20,20,20,0.42);
+    border: 1px solid rgba(255,255,255,0.3);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    transition: background var(--transition-fast),
+                border-color var(--transition-fast),
+                transform var(--transition-fast);
+}
+.shorts-topbar-actions .shorts-back:hover {
+    background: rgba(255,255,255,0.24);
+    border-color: rgba(255,255,255,0.5);
+}
+.shorts-topbar-actions .shorts-back:active { transform: scale(0.92); }
+.shorts-topbar-actions .shorts-back:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+.shorts-back-icon {
+    display: block;
+    width: 21px; height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.shorts-back:hover .shorts-back-icon { transform: translateX(-2px); }
+[dir="rtl"] .shorts-back-icon { transform: scaleX(-1); }
+[dir="rtl"] .shorts-back:hover .shorts-back-icon { transform: translateX(2px) scaleX(-1); }
+
 .shorts-feed {
     height: 100dvh;
     width: 100%;

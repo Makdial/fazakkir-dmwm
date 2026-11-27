@@ -37,6 +37,8 @@ img, video {
     max-width: 100%;
 }
 
+/* Floating page up/down controls, present on every page. One click moves six
+   video cards' worth of content; a double click goes all the way to the end. */
 .scroll-arrows {
     position: fixed;
     inset-inline-start: 16px;
@@ -44,7 +46,7 @@ img, video {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    z-index: 999;
+    z-index: 900;
 }
 
 .scroll-arrows[hidden] {
@@ -52,21 +54,78 @@ img, video {
 }
 
 .scroll-arrows button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 44px;
     height: 44px;
-    border: none;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 50%;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    font-size: 1.2rem;
-    line-height: 1;
+    background: rgba(28, 28, 28, 0.88);
+    color: #fff;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    border: 1px solid var(--border-color);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    -webkit-tap-highlight-color: transparent;
+    transition: background var(--transition-fast),
+                border-color var(--transition-fast),
+                transform var(--transition-fast),
+                opacity var(--transition-fast);
 }
 
-.scroll-arrows button:hover {
-    background: var(--bg-tertiary);
+.scroll-arrows button:hover:not(:disabled) {
+    background: rgba(58, 58, 58, 0.96);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.scroll-arrows button:active:not(:disabled) {
+    transform: scale(0.92);
+}
+
+.scroll-arrows button:focus-visible {
+    outline: 2px solid var(--accent-red);
+    outline-offset: 2px;
+}
+
+.scroll-arrows button:disabled {
+    opacity: 0.4;
+    cursor: default;
+    box-shadow: none;
+}
+
+.scroll-arrow-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.scroll-arrows button:hover:not(:disabled) .scroll-arrow-icon-up {
+    transform: translateY(-2px);
+}
+
+.scroll-arrows button:hover:not(:disabled) .scroll-arrow-icon-down {
+    transform: translateY(2px);
+}
+
+/* The Shorts feed has its own full-screen scroller, so page arrows do not
+   apply there. */
+body.shorts-immersive .scroll-arrows {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .scroll-arrows {
+        inset-inline-start: 12px;
+        inset-block-end: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
 }
 
 /* Main Content Container */

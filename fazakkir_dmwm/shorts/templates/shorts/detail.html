@@ -9,7 +9,11 @@
 <div class="shorts-topbar">
     <a href="/shorts/" class="shorts-logo"><img src="{% static 'img/dmwm-logo-usa.jpg' %}" alt="DMWM" class="shorts-logo-img"> Fazakkir <span style="font-size:14px;opacity:.8;margin-left:4px;">Shorts</span></a>
     <div class="shorts-topbar-actions">
-        <a href="/shorts/" data-fz-back title="{% trans 'Back' %}" aria-label="{% trans 'Back' %}">←</a>
+        <a href="/shorts/" class="shorts-back" data-fz-back title="{% trans 'Back' %}" aria-label="{% trans 'Back' %}">
+            <svg class="shorts-back-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M19 12H5m7-7-7 7 7 7"/>
+            </svg>
+        </a>
     </div>
 </div>
 
