@@ -224,7 +224,20 @@ def video_detail(request, video_id):
         pass
 
     if not video.duration_seconds:
-        schedule_missing_durations(Video.objects.filter(id=video.id))
+        if video.is_youtube:
+            try:
+                from .audio import get_youtube_duration
+
+                duration = get_youtube_duration(video.youtube_url)
+                if duration > 0:
+                    Video.objects.filter(id=video.id, duration_seconds=0).update(
+                        duration_seconds=duration
+                    )
+                    video.duration_seconds = duration
+            except Exception:  # noqa: BLE001
+                schedule_missing_durations(Video.objects.filter(id=video.id))
+        else:
+            schedule_missing_durations(Video.objects.filter(id=video.id))
 
     # When a video is opened from a playlist, remember which playlist it came
     # from so the player can queue the rest of that playlist and play them in
