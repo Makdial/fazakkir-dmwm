@@ -31,39 +31,37 @@ class CoreConfig(AppConfig):
             return
 
         def _run():
+            import subprocess
+            import sys
             import time
 
             time.sleep(10)
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            manage_py = os.path.join(base_dir, "manage.py")
+            env = os.environ.copy()
+            env.setdefault("DJANGO_SETTINGS_MODULE", "fazakkir_dmwm.settings")
+            env.setdefault("DEBUG", "0")
+            # Run the audio sweep as a separate process so it is not killed
+            # when a gunicorn worker handles its request and moves on.
             try:
-                from videos.audio_tasks import start_audio_sweep, eligible_audio_queryset
-
-                # Run the audio sweep repeatedly until no eligible videos remain,
-                # so a transient failure (network blip, killed worker) is retried
-                # instead of leaving a video without an MP3.
-                for _ in range(5):
-                    try:
-                        start_audio_sweep()
-                    except Exception:  # noqa: BLE001
-                        pass
-                    # Wait for the sweep thread to finish (poll progress).
-                    for _ in range(120):
-                        time.sleep(2)
-                        try:
-                            if not eligible_audio_queryset().exists():
-                                break
-                        except Exception:  # noqa: BLE001
-                            break
-                    else:
-                        break
-                    if not eligible_audio_queryset().exists():
-                        break
+                subprocess.Popen(
+                    [sys.executable, manage_py, "generateaudio"],
+                    cwd=base_dir,
+                    env=env,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
             except Exception:  # noqa: BLE001
                 pass
+            # Backfill durations the same way.
             try:
-                import django
-                from django.core.management import call_command
-
-                call_command("generatedurations", stdout=open(os.devnull, "w"))
+                subprocess.Popen(
+                    [sys.executable, manage_py, "generatedurations"],
+                    cwd=base_dir,
+                    env=env,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
             except Exception:  # noqa: BLE001
                 pass
 
