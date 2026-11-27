@@ -3756,3 +3756,12 @@ msgstr "Debes iniciar sesión para tomar notas."
 #: .\videos\views.py:1719
 msgid "You cannot delete this note."
 msgstr "No puedes eliminar esta nota."
+
+msgid "Scroll"
+msgstr ""
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""

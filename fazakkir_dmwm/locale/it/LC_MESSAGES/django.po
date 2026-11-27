@@ -3755,3 +3755,12 @@ msgstr ""
 #: .\videos\views.py:1719
 msgid "You cannot delete this note."
 msgstr ""
+
+msgid "Scroll"
+msgstr ""
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""

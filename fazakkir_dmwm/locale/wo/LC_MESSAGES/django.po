@@ -1633,3 +1633,15 @@ msgstr ""
 
 msgid "Deleted video"
 msgstr ""
+
+msgid "Back"
+msgstr ""
+
+msgid "Scroll"
+msgstr ""
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""

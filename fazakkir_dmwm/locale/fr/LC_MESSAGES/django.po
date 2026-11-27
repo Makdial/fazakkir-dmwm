@@ -1636,3 +1636,15 @@ msgstr "Les emplacements sont estimés à partir de l'adresse IP de chaque visit
 
 msgid "Deleted video"
 msgstr "Vidéo supprimée"
+
+msgid "Back"
+msgstr ""
+
+msgid "Scroll"
+msgstr ""
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""

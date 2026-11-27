@@ -1657,3 +1657,15 @@ msgstr "تُقدَّر المواقع من عنوان IP لكل زائر، لذ�
 
 msgid "Deleted video"
 msgstr "فيديو محذوف"
+
+msgid "Back"
+msgstr ""
+
+msgid "Scroll"
+msgstr ""
+
+msgid "Scroll up"
+msgstr ""
+
+msgid "Scroll down"
+msgstr ""
