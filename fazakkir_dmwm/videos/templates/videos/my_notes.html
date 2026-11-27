@@ -17,13 +17,13 @@
         {% for note in notes %}
         <div class="note-card">
             <div class="note-card-head">
-                <a href="{% url 'videos:detail' note.video.id %}" class="note-video-title">{{ note.video.title }}</a>
-                <span class="note-time">⏱ {{ note.timestamp_formatted }}</span>
+                <a href="{% url 'videos:detail' note.video.id %}?t={{ note.timestamp_seconds|floatformat:0 }}" class="note-video-title">{{ note.video.title }}</a>
+                <a href="{% url 'videos:detail' note.video.id %}?t={{ note.timestamp_seconds|floatformat:0 }}" class="note-time">⏱ {{ note.timestamp_formatted }}</a>
             </div>
             <p class="note-text">{{ note.body }}</p>
             <div class="note-card-foot">
                 <span class="note-date">{{ note.created_at|date:"M d, Y H:i" }}</span>
-                <a href="{% url 'videos:detail' note.video.id %}" class="btn-small">{% trans "Open video" %}</a>
+                <a href="{% url 'videos:detail' note.video.id %}?t={{ note.timestamp_seconds|floatformat:0 }}" class="btn-small">{% trans "Open video" %}</a>
             </div>
         </div>
         {% endfor %}

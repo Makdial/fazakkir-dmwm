@@ -41,6 +41,14 @@ def _gate(check, message):
         def _wrapped(request, *args, **kwargs):
             if not request.user.is_authenticated:
                 return redirect_to_login(request.get_full_path())
+            # Guest accounts are automatic visitor sessions, not real staff.
+            # Send them to the sign-in page instead of a bare 403 so the
+            # experience stays friendly.
+            try:
+                if get_profile(request.user).is_guest:
+                    return redirect_to_login(request.get_full_path())
+            except Exception:  # noqa: BLE001
+                pass
             if not check(request.user):
                 raise PermissionDenied(message)
             return view_func(request, *args, **kwargs)

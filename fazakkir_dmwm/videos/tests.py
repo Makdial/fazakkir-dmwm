@@ -506,7 +506,7 @@ class VideoEditTests(TestCase):
     def test_guest_cannot_reach_the_edit_page(self):
         self.client.logout()
         response = self.client.get(reverse("videos:edit", args=[self.video.id]))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 302)
 
     def test_title_and_description_are_saved(self):
         response = self.client.post(
@@ -2118,7 +2118,7 @@ class SubtitleEndpointsTests(TestCase):
         response = self.client.get(
             reverse("videos:subtitles_generate", args=[self.video.id])
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 302)
 
     @mock.patch("videos.views.subtitles_configured", return_value=False)
     @override_settings(SUBTITLE_PROVIDER="openai")

@@ -829,8 +829,27 @@
             : SHARE_TITLE;
     }
 
+    function currentPlaybackTime() {
+        if (window.FZ && typeof window.FZ.ytCurrentTime === "function") {
+            const t = window.FZ.ytCurrentTime();
+            if (t > 0) return Math.floor(t);
+        }
+        const ap = document.getElementById("audio-player");
+        if (ap && ap.currentTime > 0) return Math.floor(ap.currentTime);
+        const vp = document.querySelector("video");
+        if (vp && vp.currentTime > 0) return Math.floor(vp.currentTime);
+        return 0;
+    }
+
     function shareUrl(kind) {
-        return SHARE_LINKS[kind] || "";
+        const base = SHARE_LINKS[kind] || "";
+        if (!base) return "";
+        const t = currentPlaybackTime();
+        if (t > 0) {
+            const sep = base.indexOf("?") >= 0 ? "&" : "?";
+            return base + sep + "t=" + t;
+        }
+        return base;
     }
 
     function toggleShareMenu() {
@@ -1202,6 +1221,31 @@
             })
             .catch(() => alert("{% trans 'Failed.' %}"));
     };
+
+    // Open at a shared timestamp (?t=seconds) when the page is loaded from a
+    // note or a "share at this moment" link.
+    const __sharedTime = (function () {
+        try {
+            const p = new URLSearchParams(window.location.search);
+            const v = parseFloat(p.get("t"));
+            return isFinite(v) && v > 0 ? v : 0;
+        } catch (e) {
+            return 0;
+        }
+    })();
+    if (__sharedTime > 0) {
+        const __trySeek = (left) => {
+            if (left <= 0) return;
+            const ready = (window.FZ && (window.FZ.player || window.FZ.ytSeekTo));
+            if (ready) {
+                seekToNote(__sharedTime);
+            } else {
+                setTimeout(() => __trySeek(left - 1), 400);
+            }
+        };
+        // Give the shared player / YouTube iframe time to dock and load.
+        setTimeout(() => __trySeek(15), 800);
+    }
 
     // Inline handlers in the markup (onclick, onsubmit, onchange) call these by name.
     Object.assign(window, {
