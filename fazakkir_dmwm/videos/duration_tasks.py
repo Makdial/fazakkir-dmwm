@@ -18,7 +18,7 @@ import threading
 from django.conf import settings
 from django.db import close_old_connections
 
-from .audio import get_duration_from_url
+from .audio import get_duration_from_url, get_youtube_duration
 from .models import Video
 from .r2_storage import is_configured
 
@@ -44,12 +44,15 @@ def fill_duration(video_id: int) -> float:
     if video is None or video.duration_seconds:
         return video.duration_seconds if video else 0.0
 
-    url = video.playback_url if video.has_video else video.audio_playback_url
-    if not url:
-        _FAILED.add(video_id)
-        return 0.0
+    if video.is_youtube:
+        duration = get_youtube_duration(video.youtube_url)
+    else:
+        url = video.playback_url if video.has_video else video.audio_playback_url
+        if not url:
+            _FAILED.add(video_id)
+            return 0.0
+        duration = get_duration_from_url(url)
 
-    duration = get_duration_from_url(url)
     if duration <= 0:
         _FAILED.add(video_id)
         return 0.0
@@ -104,6 +107,12 @@ def schedule_duration_fill(video_ids) -> int:
         for video_id in video_ids:
             if video_id in _QUEUED or video_id in _FAILED:
                 continue
+            video = Video.objects.filter(id=video_id).first()
+            # YouTube videos do not need object storage to be measured;
+            # everything else (including unknown ids) still does.
+            if video is None or not video.is_youtube:
+                if not is_configured():
+                    continue
             _QUEUED.add(video_id)
             _QUEUE.append(video_id)
             queued += 1

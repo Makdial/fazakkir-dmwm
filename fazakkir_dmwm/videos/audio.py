@@ -246,3 +246,30 @@ def _remove(path: str) -> None:
         os.remove(path)
     except OSError:
         pass
+
+
+def get_youtube_duration(url: str) -> float:
+    """Return the duration of a YouTube video in seconds, or 0.0.
+
+    Uses yt-dlp (available in production) without downloading the file. Returns
+    0.0 when yt-dlp is missing or the lookup fails, so callers can treat a
+    missing value the same as "not measured yet".
+    """
+    if not url:
+        return 0.0
+    try:
+        import yt_dlp
+    except ImportError:
+        return 0.0
+    try:
+        ydl = yt_dlp.YoutubeDL(
+            {"quiet": True, "no_warnings": True, "skip_download": True}
+        )
+        info = ydl.extract_info(url, download=False)
+        if isinstance(info, dict):
+            duration = info.get("duration")
+            if duration:
+                return float(duration)
+    except Exception:  # noqa: BLE001
+        logger.warning("Could not read the YouTube duration from %s", url, exc_info=True)
+    return 0.0
