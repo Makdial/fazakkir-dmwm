@@ -35,9 +35,28 @@ class CoreConfig(AppConfig):
 
             time.sleep(10)
             try:
-                from videos.audio_tasks import start_audio_sweep
+                from videos.audio_tasks import start_audio_sweep, eligible_audio_queryset
 
-                start_audio_sweep()
+                # Run the audio sweep repeatedly until no eligible videos remain,
+                # so a transient failure (network blip, killed worker) is retried
+                # instead of leaving a video without an MP3.
+                for _ in range(5):
+                    try:
+                        start_audio_sweep()
+                    except Exception:  # noqa: BLE001
+                        pass
+                    # Wait for the sweep thread to finish (poll progress).
+                    for _ in range(120):
+                        time.sleep(2)
+                        try:
+                            if not eligible_audio_queryset().exists():
+                                break
+                        except Exception:  # noqa: BLE001
+                            break
+                    else:
+                        break
+                    if not eligible_audio_queryset().exists():
+                        break
             except Exception:  # noqa: BLE001
                 pass
             try:
