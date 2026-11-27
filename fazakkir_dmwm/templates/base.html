@@ -194,8 +194,7 @@
             var splash = document.getElementById("fzSplash");
             if (!splash) return;
             var hide = function () { splash.classList.add("is-hidden"); setTimeout(function () { splash.remove(); }, 450); };
-            if (document.readyState === "complete") setTimeout(hide, 900);
-            else window.addEventListener("load", function () { setTimeout(hide, 900); });
+            setTimeout(hide, 900);
         })();
     </script>
 </body>
