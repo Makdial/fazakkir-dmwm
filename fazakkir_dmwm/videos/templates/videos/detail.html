@@ -12,8 +12,6 @@
 
 <div class="watch-layout">
     <div class="watch-main">
-        <button type="button" class="back-btn" onclick="if (window.FZ && window.FZ.nav) window.history.back(); else window.location.href='/'" aria-label="{% trans 'Back' %}">← {% trans "Back" %}</button>
-
         {% comment %}
             The player is not part of this page: base.html renders it once for the whole
             site (videos/_player.html), so it can keep playing when the visitor moves to
@@ -518,9 +516,17 @@
         }
         window.setMode = function (next) {
             if (next === "audio" && ytMode === "video") {
-                const iframe = ytVideoFrame.querySelector("iframe");
-                if (iframe && iframe._ytPlayer && typeof iframe._ytPlayer.pauseVideo === "function") {
-                    try { iframe._ytPlayer.pauseVideo(); } catch (e) {}
+                const ytTime = window.FZ && typeof window.FZ.ytCurrentTime === "function"
+                    ? window.FZ.ytCurrentTime() : 0;
+                const ytWasPlaying = window.FZ && typeof window.FZ.ytIsPlaying === "function"
+                    ? window.FZ.ytIsPlaying() : false;
+                if (window.FZ && typeof window.FZ.ytPause === "function") {
+                    window.FZ.ytPause();
+                } else {
+                    const iframe = ytVideoFrame.querySelector("iframe");
+                    if (iframe && iframe._ytPlayer && typeof iframe._ytPlayer.pauseVideo === "function") {
+                        try { iframe._ytPlayer.pauseVideo(); } catch (e) {}
+                    }
                 }
                 ytVideoFrame.hidden = true;
                 ytAudioSlot.hidden = false;
@@ -530,7 +536,10 @@
                         .then(data => {
                             if (window.FZ && window.FZ.player) {
                                 window.FZ.player.dock(ytAudioSlot);
-                                window.FZ.player.setCurrent(data, { autoplay: true });
+                                window.FZ.player.setCurrent(data, {
+                                    autoplay: ytWasPlaying,
+                                    resumeAt: ytTime,
+                                });
                                 const cover = document.getElementById("audioCover");
                                 if (cover && data.thumbnail_url) {
                                     cover.hidden = false;
@@ -543,16 +552,28 @@
                 } else {
                     const ap = document.getElementById("audio-player");
                     if (ap) {
-                        const p = ap.play();
-                        if (p && typeof p.catch === "function") p.catch(() => {});
+                        const resumeAudio = () => {
+                            try { ap.currentTime = ytTime; } catch (e) {}
+                            if (ytWasPlaying) {
+                                const p = ap.play();
+                                if (p && typeof p.catch === "function") p.catch(() => {});
+                            }
+                        };
+                        if (ap.readyState >= 1) resumeAudio();
+                        else ap.addEventListener("loadedmetadata", resumeAudio, { once: true });
                     }
                 }
                 ytMode = "audio";
             } else if (next === "video" && ytMode === "audio") {
                 const ap = document.getElementById("audio-player");
+                const wasPlaying = ap ? !ap.paused : false;
+                const time = ap ? ap.currentTime || 0 : 0;
                 if (ap) ap.pause();
                 ytAudioSlot.hidden = true;
                 ytVideoFrame.hidden = false;
+                if (window.FZ && typeof window.FZ.ytSeekTo === "function") {
+                    window.FZ.ytSeekTo(time, wasPlaying);
+                }
                 ytMode = "video";
             }
             updateYtModeButtons();

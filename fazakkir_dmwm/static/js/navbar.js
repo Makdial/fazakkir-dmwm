@@ -8,6 +8,22 @@
 (function () {
     "use strict";
 
+    // Any element with data-fz-back returns to the previous page. The href is
+    // a sensible fallback for a direct visit with no browser history. Modified
+    // clicks (new tab, new window) keep the normal link behaviour.
+    document.addEventListener("click", function (event) {
+        if (event.defaultPrevented || event.button !== 0) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        var trigger = event.target instanceof Element
+            ? event.target.closest("[data-fz-back]")
+            : null;
+        if (!trigger) return;
+        if (window.history.length > 1) {
+            event.preventDefault();
+            window.history.back();
+        }
+    });
+
     var toggle = document.getElementById("navToggle");
     var menu = document.getElementById("navMenu");
     if (!toggle || !menu) return;

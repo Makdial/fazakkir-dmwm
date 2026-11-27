@@ -171,9 +171,34 @@
     }
 
     window.FZ = window.FZ || {};
-    window.FZ.ytSeekTo = function (seconds) {
+    window.FZ.ytCurrentTime = function () {
+        if (player && typeof player.getCurrentTime === "function") {
+            try { return player.getCurrentTime() || 0; } catch (e) {}
+        }
+        return 0;
+    };
+    window.FZ.ytIsPlaying = function () {
+        if (player && typeof player.getPlayerState === "function") {
+            try {
+                var state = player.getPlayerState();
+                // BUFFERING (3) is part of playback, not a pause, so switching
+                // to the MP3 at that moment should start it.
+                return state === 1 || state === 3;
+            } catch (e) {}
+        }
+        return false;
+    };
+    window.FZ.ytPause = function () {
+        if (player && typeof player.pauseVideo === "function") {
+            try { player.pauseVideo(); } catch (e) {}
+        }
+    };
+    window.FZ.ytSeekTo = function (seconds, shouldPlay) {
         if (player && typeof player.seekTo === "function") {
-            try { player.seekTo(seconds, true); player.playVideo(); } catch (e) {}
+            try {
+                player.seekTo(seconds, true);
+                if (shouldPlay !== false) player.playVideo();
+            } catch (e) {}
         }
     };
 

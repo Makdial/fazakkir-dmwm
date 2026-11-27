@@ -1038,6 +1038,35 @@ class AudioModeCoverTests(TestCase):
         return root.read_text(encoding="utf-8")
 
 
+class PlaybackModeContinuityTests(TestCase):
+    """Switching between picture and MP3 keeps the same playback position."""
+
+    def test_the_native_player_waits_for_the_other_media_before_seeking(self):
+        script = player_script_text()
+        switch = between(script, "function setMode(", "\n    function ")
+        self.assertIn("const time = from ? from.currentTime : 0", switch)
+        self.assertIn("from.pause()", switch)
+        self.assertIn("resumeAtPosition", switch)
+        self.assertIn('addEventListener("loadedmetadata", resumeAtPosition', switch)
+
+    def test_the_watch_page_seeds_the_mp3_with_the_youtube_position(self):
+        root = Path(__file__).resolve().parent.parent
+        page = (
+            root / "videos" / "templates" / "videos" / "detail.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn("window.FZ.ytCurrentTime()", page)
+        self.assertIn("window.FZ.ytIsPlaying()", page)
+        self.assertIn("resumeAt: ytTime", page)
+        self.assertIn("window.FZ.ytSeekTo(time, wasPlaying)", page)
+
+    def test_the_youtube_host_exposes_its_playback_state(self):
+        script = static_text("js/youtube-player.js")
+        self.assertIn("window.FZ.ytCurrentTime = function", script)
+        self.assertIn("window.FZ.ytIsPlaying = function", script)
+        self.assertIn("window.FZ.ytPause = function", script)
+        self.assertIn("window.FZ.ytSeekTo = function (seconds, shouldPlay)", script)
+
+
 class AutoHidingControlsTests(TestCase):
     """The control bar must not sit on top of the picture while it plays."""
 
@@ -5434,6 +5463,54 @@ class NavbarSearchTests(TestCase):
             self.html,
         )
         self.assertIn(">n</span>", self.html)
+
+
+class BackButtonTests(TestCase):
+    """Every page shares one navbar control that returns to the previous page."""
+
+    def test_the_navbar_renders_the_history_back_control(self):
+        body = self.client.get(reverse("videos:list")).content.decode()
+        self.assertIn('id="navBack"', body)
+        self.assertIn("data-fz-back", body)
+        self.assertIn(f'href="{reverse("videos:list")}"', body)
+
+    def test_every_page_renders_the_shared_control(self):
+        user = make_user("backuser")
+        video = make_video(user, title="Back check")
+        pages = [
+            reverse("videos:list"),
+            reverse("videos:search") + "?q=back",
+            reverse("videos:detail", args=[video.id]),
+            reverse("videos:playlists"),
+            reverse("videos:watch_later"),
+            reverse("videos:composition"),
+            reverse("videos:offline"),
+            reverse("videos:my_notes"),
+            reverse("videos:my_activity"),
+            reverse("library:book_list"),
+            reverse("accounts:login"),
+            reverse("shorts:list"),
+        ]
+        for url in pages:
+            body = self.client.get(url, follow=True).content.decode()
+            self.assertIn("data-fz-back", body, f"{url} has no back control")
+
+    def test_shorts_feed_keeps_a_back_control_when_the_navbar_is_hidden(self):
+        body = self.client.get(reverse("shorts:list")).content.decode()
+        self.assertGreaterEqual(
+            body.count("data-fz-back"),
+            2,
+            "the immersive topbar needs its own control because the navbar is hidden",
+        )
+
+    def test_the_control_uses_history_with_a_fallback_link(self):
+        script = (
+            Path(__file__).resolve().parent.parent
+            / "static" / "js" / "navbar.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn('closest("[data-fz-back]")', script)
+        self.assertIn("window.history.back()", script)
+        self.assertIn("event.defaultPrevented", script)
 
 
 class YouTubeCardStyleTests(TestCase):

@@ -20,6 +20,39 @@
     z-index: 1000;
 }
 
+/* Global "previous page" control, sitting where YouTube puts its back arrow. */
+.nav-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 50%;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 1.35rem;
+    line-height: 1;
+    transition: background var(--transition-fast);
+}
+
+.nav-back:hover {
+    background: var(--yt-hover);
+}
+
+.nav-back:focus-visible {
+    outline: 2px solid var(--accent-red);
+    outline-offset: 2px;
+}
+
+.nav-back-icon {
+    display: inline-block;
+}
+
+[dir="rtl"] .nav-back-icon {
+    transform: scaleX(-1);
+}
+
 .navbar-brand {
     display: flex;
     align-items: center;

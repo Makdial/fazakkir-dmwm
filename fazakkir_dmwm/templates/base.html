@@ -59,6 +59,11 @@
         <img src="{% static 'img/al-janna.jpg' %}" alt="">
     </div>
     <nav class="navbar">
+        <a href="{% url 'videos:list' %}" class="nav-back" id="navBack" data-fz-back
+           aria-label="{% trans 'Back' %}" title="{% trans 'Back' %}">
+            <span class="nav-back-icon" aria-hidden="true">←</span>
+        </a>
+
         <a href="/" class="navbar-brand">
             <span class="brand-logo-wrap">
                 <img src="{% static 'img/dmwm-logo-usa.jpg' %}" alt="DMWM" class="brand-logo">

@@ -483,12 +483,20 @@
         setSource(audioPlayer, wantAudio ? item.audio_url : "")
         showActive()
 
-        if (time > 0) {
-            try {
-                activePlayer.currentTime = time
-            } catch (e) { /* not seekable yet; the position is kept as the start */ }
+        // The element for the new mode often has no metadata yet, so assigning
+        // currentTime straight away is ignored. Keep the position and apply it
+        // once the browser knows the new media's duration.
+        const target = activePlayer
+        const resumeAtPosition = () => {
+            if (activePlayer !== target) return
+            if (time > 0) {
+                try { target.currentTime = time } catch (e) {}
+            }
+            if (wasPlaying) playNow()
         }
-        if (wasPlaying) playNow()
+        if (target.readyState >= 1) resumeAtPosition()
+        else target.addEventListener("loadedmetadata", resumeAtPosition, { once: true })
+
         applySubtitle(currentSubtitle)
         refreshAll()
     }
