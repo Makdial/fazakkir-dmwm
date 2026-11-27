@@ -40,5 +40,12 @@ class CoreConfig(AppConfig):
                 start_audio_sweep()
             except Exception:  # noqa: BLE001
                 pass
+            try:
+                import django
+                from django.core.management import call_command
+
+                call_command("generatedurations", stdout=open(os.devnull, "w"))
+            except Exception:  # noqa: BLE001
+                pass
 
         threading.Thread(target=_run, daemon=True).start()

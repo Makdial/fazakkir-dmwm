@@ -99,8 +99,6 @@ def schedule_duration_fill(video_ids) -> int:
     # Never reach out to the network during the test suite.
     if getattr(settings, "TESTING", False):
         return 0
-    if not is_configured():
-        return 0
 
     queued = 0
     with _QUEUE_LOCK:
