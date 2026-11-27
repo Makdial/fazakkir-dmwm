@@ -109,6 +109,11 @@
                     {% else %}
                     <span class="badge {{ row.audio_class }}">{{ row.audio_label }}</span>
                     {% endif %}
+                    {% if can_write and row.video.audio_status == 'failed' %}
+                    <button type="button" class="btn-small btn-outline audio-retry-btn"
+                            data-url="{% url 'videos:audio_generate' row.video.id %}"
+                            onclick="retryAudio(this)">{% trans "Retry" %}</button>
+                    {% endif %}
                 </td>
                 <td>
                     {% if row.caption_class == 'muted' %}
@@ -158,6 +163,17 @@ function deleteVideo(videoId, title) {
         .then(r => r.json())
         .then(data => { if (data.success) location.reload(); else alert(data.error || "{% trans 'Failed.' %}"); })
         .catch(() => alert("{% trans 'Failed.' %}"));
+}
+
+function retryAudio(btn) {
+    btn.disabled = true;
+    fetch(btn.dataset.url, {
+        method: "POST",
+        headers: { "X-CSRFToken": dashCsrf },
+    })
+        .then(r => r.json())
+        .then(() => { setTimeout(() => location.reload(), 2000); })
+        .catch(() => { btn.disabled = false; });
 }
 
 // --- Bulk MP3 generation ---------------------------------------------------
