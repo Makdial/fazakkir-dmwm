@@ -20,6 +20,7 @@
         {% if video.is_youtube and not video.has_video %}
         <div class="watch-player-slot youtube-embed-slot" id="ytVideoFrame"
              data-youtube-id="{{ video.youtube_video_id }}"
+             data-duration-url="{% url 'videos:save_duration' video.id %}"
              data-youtube-url="{{ video.youtube_embed_url }}?origin={{ request.scheme }}://{{ request.get_host }}&enablejsapi=1&rel=0&modestbranding=1{% if request.GET.autoplay %}&autoplay=1{% endif %}">
             <div class="video-player-container youtube-player-container">
                 <div class="video-player youtube-player"></div>

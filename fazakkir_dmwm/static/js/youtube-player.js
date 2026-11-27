@@ -101,6 +101,22 @@
                         onReady: function (e) {
                             bindMediaSession(e.target, slot);
                             if (autoplay) { try { e.target.playVideo(); } catch (e2) {} }
+                            // Record the length the player reports so the
+                            // thumbnail badge can be shown without a server-side
+                            // lookup (which may be unavailable on some hosts).
+                            try {
+                                var dur = e.target.getDuration();
+                                var saveUrl = slot.getAttribute("data-duration-url");
+                                if (dur > 0 && saveUrl && window.FZ && window.FZ.csrfToken) {
+                                    var fd = new FormData();
+                                    fd.append("duration", Math.round(dur));
+                                    fetch(saveUrl, {
+                                        method: "POST",
+                                        headers: { "X-CSRFToken": window.FZ.csrfToken() },
+                                        body: fd,
+                                    }).catch(function () {});
+                                }
+                            } catch (e2) {}
                         },
                         onStateChange: function (e) {
                             syncState();

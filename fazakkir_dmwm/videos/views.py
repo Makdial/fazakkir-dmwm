@@ -1787,6 +1787,28 @@ def log_activity(user, verb, video=None, title="", detail=""):
 
 
 @require_POST
+@require_POST
+def save_duration(request, video_id):
+    """Record a YouTube video's length, as reported by the browser player.
+
+    Used as a fallback when the server-side lookup (yt-dlp) is unavailable,
+    so the thumbnail badge can still be filled in.
+    """
+    video = get_object_or_404(Video, id=video_id)
+    if video.duration_seconds:
+        return JsonResponse({"success": True, "duration": video.duration_seconds})
+    try:
+        duration = float(request.POST.get("duration") or 0)
+    except (TypeError, ValueError):
+        duration = 0.0
+    if duration <= 0:
+        return JsonResponse({"success": False, "error": "invalid"}, status=400)
+    Video.objects.filter(id=video_id, duration_seconds=0).update(
+        duration_seconds=duration
+    )
+    return JsonResponse({"success": True, "duration": duration})
+
+
 def note_add(request, video_id):
     if not request.user.is_authenticated:
         return JsonResponse(
