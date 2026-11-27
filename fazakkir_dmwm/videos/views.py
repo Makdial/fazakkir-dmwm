@@ -224,20 +224,7 @@ def video_detail(request, video_id):
         pass
 
     if not video.duration_seconds:
-        if video.is_youtube:
-            try:
-                from .audio import get_youtube_duration
-
-                duration = get_youtube_duration(video.youtube_url)
-                if duration > 0:
-                    Video.objects.filter(id=video.id, duration_seconds=0).update(
-                        duration_seconds=duration
-                    )
-                    video.duration_seconds = duration
-            except Exception:  # noqa: BLE001
-                schedule_missing_durations(Video.objects.filter(id=video.id))
-        else:
-            schedule_missing_durations(Video.objects.filter(id=video.id))
+        schedule_missing_durations(Video.objects.filter(id=video.id))
 
     # When a video is opened from a playlist, remember which playlist it came
     # from so the player can queue the rest of that playlist and play them in
@@ -378,7 +365,11 @@ def video_list(request):
 
     # Old uploads have no length yet; measure the ones on this page in the
     # background so the badge fills in without the administrator doing anything.
-    schedule_missing_durations(videos)
+    # YouTube link videos are measured through yt-dlp, which does not need
+    # object storage, so include every one still missing a length.
+    schedule_missing_durations(
+        videos | Video.objects.filter(youtube_url__gt="").filter(duration_seconds=0)
+    )
 
     if selected:
         try:
