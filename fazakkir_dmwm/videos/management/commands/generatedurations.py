@@ -6,7 +6,7 @@ It is safe to re-run: only videos with no duration yet are touched.
 """
 from django.core.management.base import BaseCommand
 
-from videos.audio import get_duration_from_url
+from videos.audio import get_duration_from_url, get_youtube_duration
 from videos.models import Video
 
 
@@ -42,6 +42,18 @@ class Command(BaseCommand):
 
         updated = 0
         for video in videos:
+            if video.is_youtube:
+                url = video.youtube_url
+                duration = get_youtube_duration(url)
+                if duration <= 0:
+                    self.stdout.write(self.style.WARNING(f"#{video.id} {video.title!r}: length unknown"))
+                    continue
+                video.duration_seconds = duration
+                video.save(update_fields=["duration_seconds"])
+                updated += 1
+                self.stdout.write(self.style.SUCCESS(f"  -> {video.duration_formatted}"))
+                continue
+
             url = video.playback_url if video.has_video else video.audio_playback_url
             if not url:
                 self.stdout.write(

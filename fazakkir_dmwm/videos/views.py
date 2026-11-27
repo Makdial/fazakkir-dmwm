@@ -620,6 +620,7 @@ def youtube_import(request):
     if mode == "link":
         # Fill in anything the uploader left blank straight from YouTube's
         # metadata, so a bare link still gets a title and a description.
+        duration = 0.0
         if not title or not description:
             try:
                 import yt_dlp
@@ -630,15 +631,36 @@ def youtube_import(request):
                     title = (info.get("title") or "YouTube video").strip()
                 if not description:
                     description = (info.get("description") or "").strip()
+                try:
+                    duration = float(info.get("duration") or 0.0)
+                except (TypeError, ValueError):
+                    duration = 0.0
             except Exception:  # noqa: BLE001
                 if not title:
                     title = "YouTube video"
+        else:
+            # Title and description were provided, but the thumbnail still
+            # needs the length, so look it up without downloading.
+            try:
+                import yt_dlp
+
+                with yt_dlp.YoutubeDL(
+                    {"quiet": True, "no_warnings": True, "skip_download": True}
+                ) as ydl:
+                    info = ydl.extract_info(youtube_url, download=False)
+                try:
+                    duration = float(info.get("duration") or 0.0)
+                except (TypeError, ValueError):
+                    duration = 0.0
+            except Exception:  # noqa: BLE001
+                duration = 0.0
         video = Video.objects.create(
             user=request.user,
             title=title[:120],
             description=description,
             media_type="video",
             youtube_url=youtube_url,
+            duration_seconds=duration,
         )
         if category is not None:
             category.videos.add(video)
