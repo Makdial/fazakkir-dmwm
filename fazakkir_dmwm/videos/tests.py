@@ -5474,6 +5474,12 @@ class BackButtonTests(TestCase):
         self.assertIn("data-fz-back", body)
         self.assertIn(f'href="{reverse("videos:list")}"', body)
 
+    def test_the_back_control_is_hidden_only_on_home(self):
+        home = self.client.get(reverse("videos:list")).content.decode()
+        other = self.client.get(reverse("videos:playlists")).content.decode()
+        self.assertRegex(home, r'id="navBack"[^>]*\shidden[\s>]')
+        self.assertNotRegex(other, r'id="navBack"[^>]*\shidden[\s>]')
+
     def test_every_page_renders_the_shared_control(self):
         user = make_user("backuser")
         video = make_video(user, title="Back check")

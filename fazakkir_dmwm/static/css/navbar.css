@@ -41,6 +41,12 @@
                 transform var(--transition-fast);
 }
 
+/* Home has no previous page, so the server hides the control there and
+   navbar.js keeps it in sync during client-side navigation. */
+.nav-back[hidden] {
+    display: none;
+}
+
 .nav-back:hover {
     background: var(--yt-hover);
     border-color: transparent;

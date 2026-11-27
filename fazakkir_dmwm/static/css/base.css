@@ -37,8 +37,9 @@ img, video {
     max-width: 100%;
 }
 
-/* Floating page up/down controls, present on every page. One click moves six
-   video cards' worth of content; a double click goes all the way to the end. */
+/* Floating page up/down controls, revealed while the page is scrolling. One
+   click moves six video cards' worth of content; a double click goes all the
+   way to the end. */
 .scroll-arrows {
     position: fixed;
     inset-inline-start: 16px;
@@ -51,6 +52,27 @@ img, video {
 
 .scroll-arrows[hidden] {
     display: none;
+}
+
+.scroll-arrows:not([hidden]) {
+    animation: scroll-arrows-reveal 0.16s ease-out;
+}
+
+@keyframes scroll-arrows-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scroll-arrows:not([hidden]) {
+        animation: none;
+    }
 }
 
 .scroll-arrows button {

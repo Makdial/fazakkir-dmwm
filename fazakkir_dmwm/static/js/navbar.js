@@ -24,6 +24,19 @@
         }
     });
 
+    // Home is the start of the site, so the back arrow is hidden there. The
+    // navbar survives client-side navigation, which means the control has to
+    // follow the address bar instead of being decided once at render time.
+    function syncBackControl() {
+        var back = document.getElementById("navBack");
+        if (!back) return;
+        var path = window.location.pathname.replace(/\/+$/, "") || "/";
+        back.hidden = path === "/";
+    }
+    syncBackControl();
+    document.addEventListener("fz:page", syncBackControl);
+    window.addEventListener("popstate", syncBackControl);
+
     var toggle = document.getElementById("navToggle");
     var menu = document.getElementById("navMenu");
     if (!toggle || !menu) return;
