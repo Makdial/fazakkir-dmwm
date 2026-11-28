@@ -2009,12 +2009,38 @@ def ask_send(request):
     for _score, s, text in top_shorts:
         short_lines.append(f"- {s.title}" + (f": {s.description[:200]}" if s.description else ""))
 
-    # Web search for additional reputable sources about the orators.
+    # Gather reputable web references about the orators: Wikipedia summaries
+    # plus a DuckDuckGo search. This keeps answers grounded in public sources.
     web_results = []
+    orator_names = [
+        "Serigne Cheikh Ahmad Tidiane Sy Al Maktoum",
+        "Serigne Moustapha Sy",
+        "Serigne Cheikh Ahmad Tidiane Sy Capitaine",
+    ]
     try:
         import httpx
 
-        search_query = f"{question} Serigne Cheikh Ahmad Tidiane Sy Al Maktoum OR Serigne Moustapha Sy OR Serigne Cheikh Ahmad Tidiane Sy Capitaine"
+        # Wikipedia summaries (English + French) for each orator.
+        for name in orator_names:
+            for lang in ("en", "fr"):
+                try:
+                    slug = name.replace(" ", "_")
+                    resp = httpx.get(
+                        f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{slug}",
+                        timeout=8.0,
+                        headers={"User-Agent": "Fazakkir/1.0"},
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        extract = (data.get("extract") or "").strip()
+                        url = (data.get("content_urls") or {}).get("desktop", {}).get("page") or f"https://{lang}.wikipedia.org/wiki/{slug}"
+                        if extract:
+                            web_results.append({"title": f"{name} (Wikipedia, {lang})", "url": url, "snippet": extract[:400]})
+                except Exception:  # noqa: BLE001
+                    pass
+
+        # DuckDuckGo search for additional sources (including reecoutes.com).
+        search_query = f"{question} {' OR '.join(orator_names)} reecoutes.com"
         resp = httpx.get(
             "https://api.duckduckgo.com/",
             params={"q": search_query, "format": "json", "no_html": "1", "skip_disambig": "1"},
@@ -2022,10 +2048,8 @@ def ask_send(request):
         )
         if resp.status_code == 200:
             data = resp.json()
-            # Abstract
             if data.get("Abstract") and data.get("AbstractURL"):
                 web_results.append({"title": data.get("Heading") or "Reference", "url": data["AbstractURL"], "snippet": data["Abstract"][:300]})
-            # Related topics
             for topic in (data.get("RelatedTopics") or [])[:5]:
                 if isinstance(topic, dict) and topic.get("FirstURL") and topic.get("Text"):
                     web_results.append({"title": topic["Text"][:80], "url": topic["FirstURL"], "snippet": topic["Text"][:200]})
@@ -2059,9 +2083,12 @@ def ask_send(request):
         "You are an assistant for the Fazakkir platform. You answer questions "
         "ONLY about the Islamic teachings of three orators: Serigne Cheikh Ahmad "
         "Tidiane Sy Al Maktoum, Serigne Moustapha Sy, and Serigne Cheikh Ahmad "
-        "Tidiane Sy Capitaine. You must stay strictly within their teachings and "
-        "the content published on this site (videos, speeches, books, and shorts), "
-        "and you may also draw on reputable internet sources about them. "
+        "Tidiane Sy Capitaine. These three are Tijani (Tidiane) scholars, NOT "
+        "Mouride. Never describe them as Mouride. "
+        "You must stay strictly within their teachings and the content published "
+        "on this site (videos, speeches, books, and shorts), and you may also "
+        "draw on reputable internet sources about them (such as Wikipedia and "
+        "reecoutes.com). "
         "If a question is outside this scope, politely decline and redirect to "
         "these topics. "
         "Answer in the language requested by the user. Be concise, respectful, "
