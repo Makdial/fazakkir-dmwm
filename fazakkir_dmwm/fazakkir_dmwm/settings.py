@@ -52,9 +52,9 @@ if not DEBUG and SECRET_KEY.startswith("django-insecure-"):
 # Comma-separated hostnames, e.g. "example.com,www.example.com".
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.environ.get("ALLOWED_HOSTS", "").split(",")
+    for host in os.environ.get("ALLOWED_HOSTS", "fazakkirdmwm.com,www.fazakkirdmwm.com").split(",")
     if host.strip()
-] or (["*"] if DEBUG else [])
+] or (["*"] if DEBUG else ["fazakkirdmwm.com", "www.fazakkirdmwm.com"])
 
 # Comma-separated schemes://host[:port] entries, needed behind HTTPS in
 # production for the CSRF cookie and secure form submission to line up.
