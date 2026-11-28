@@ -245,7 +245,8 @@ def _format_source(item: RetrievedChunk, citation: str) -> tuple[str, dict]:
     else:
         header = f"[{citation}] INTERNAL — SHORT: {chunk.title}"
 
-    text = f"{header}\nURL: {chunk.display_url}\nText: {chunk.content}"
+    language_line = f"\nLanguage: {chunk.language}" if chunk.language else ""
+    text = f"{header}{language_line}\nURL: {chunk.display_url}\nText: {chunk.content}"
     reference = {
         "citation": citation,
         "type": chunk.source_type,
