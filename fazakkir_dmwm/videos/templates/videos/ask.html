@@ -12,8 +12,8 @@
 {% block content %}
 <div class="ask-page">
     <header class="ask-hero">
-        <div class="ask-hero-icon" aria-hidden="true">✨</div>
-        <h1>{% trans "AI Ask" %}</h1>
+        <img src="/static/img/dmwm-logo-ask.jpg" alt="DMWM" class="ask-hero-logo">
+        <h1>{% trans "Ask DMWM" %}</h1>
         <p class="ask-hero-sub">
             {% trans "Ask about the teachings of Serigne Cheikh Ahmad Tidiane Sy Al Maktoum, Serigne Moustapha Sy and Serigne Cheikh Ahmad Tidiane Sy Capitaine. Answers are drawn from the videos, speeches and books published on this site." %}
         </p>
@@ -86,7 +86,12 @@
 .ask-page { max-width: 900px; margin: 0 auto; padding-bottom: 24px; }
 
 .ask-hero { text-align: center; padding: 28px 16px 20px; }
-.ask-hero-icon { font-size: 2.6rem; line-height: 1; margin-bottom: 8px; }
+.ask-hero-logo {
+    width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
+    margin: 0 auto 12px; display: block;
+    border: 3px solid var(--border-color, #ddd);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
 .ask-hero h1 { margin: 0 0 8px; font-size: 2rem; }
 .ask-hero-sub { max-width: 720px; margin: 0 auto 14px; opacity: 0.8; line-height: 1.5; }
 .ask-hero-orators { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 16px; }
