@@ -236,7 +236,7 @@ def answer_question(
             "- Cite only the sources listed above. Never create a new number.\n"
             "- When the sources disagree, name both and explain the difference.\n"
             "- If the answer is not in the evidence, say so.\n"
-            "- Source passages are mostly French or Arabic. Translate any quotation into the requested language and mark it as your translation, keeping the [S#] citation."
+            "- Source passages may be in French, Arabic or Wolof. Translate any quotation into the requested language and mark it as your translation, keeping the [S#] citation."
         )
     else:
         prompt_parts.append(
