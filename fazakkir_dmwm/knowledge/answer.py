@@ -166,16 +166,35 @@ def _call_provider(
     return answer, ""
 
 
-def training_examples(limit: int = 5) -> list[tuple[str, str]]:
-    """Return editor-approved (question, answer) pairs for few-shot prompting."""
-    rows = (
-        AskInteraction.objects.filter(
-            use_as_example=True,
-        )
+def training_examples(question: str = "", limit: int = 3) -> list[tuple[str, str]]:
+    """Return editor-approved (question, answer) pairs for few-shot prompting.
+
+    When a question is supplied, the most relevant examples are chosen by
+    keyword overlap so the model sees corrections that actually apply instead
+    of an arbitrary list.
+    """
+    rows = list(
+        AskInteraction.objects.filter(use_as_example=True)
         .exclude(corrected_answer="")
-        .order_by("-created_at")[:limit]
+        .order_by("-created_at")[:50]
     )
-    return [(row.question, row.corrected_answer) for row in rows]
+    if not rows:
+        return []
+    if not question:
+        return [(row.question, row.corrected_answer) for row in rows[:limit]]
+
+    question_tokens = set(question.lower().split())
+    scored = []
+    for row in rows:
+        text = (row.question + " " + row.corrected_answer).lower()
+        tokens = set(text.split())
+        overlap = len(question_tokens & tokens)
+        scored.append((overlap, row))
+    scored.sort(key=lambda item: item[0], reverse=True)
+    chosen = [row for overlap, row in scored if overlap > 0][:limit]
+    if not chosen:
+        chosen = [row for _, row in scored[:limit]]
+    return [(row.question, row.corrected_answer) for row in chosen]
 
 
 def answer_question(
@@ -246,9 +265,9 @@ def answer_question(
     has_evidence = bool(context["text"].strip())
 
     system = ask_settings.effective_prompt
-    examples = training_examples()
+    examples = training_examples(question)
     if examples:
-        system += "\n\nAPPROVED EXAMPLES (follow this style and content):\n"
+        system += "\n\nADMIN-APPROVED CORRECTIONS (use these as the authoritative answer when the question is similar; do not contradict them):\n"
         for question, answer in examples:
             system += f"Q: {question}\nA: {answer}\n\n"
     if has_external:
