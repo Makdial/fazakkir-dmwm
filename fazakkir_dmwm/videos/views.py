@@ -1815,8 +1815,6 @@ def debug_run_audio(request):
     import subprocess, sys, os
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # views.py is in videos/, so go up two levels to fazakkir_dmwm
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     manage_py = os.path.join(base_dir, "manage.py")
     env = os.environ.copy()
     env.setdefault("DJANGO_SETTINGS_MODULE", "fazakkir_dmwm.settings")
