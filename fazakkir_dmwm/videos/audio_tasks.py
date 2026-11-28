@@ -97,6 +97,22 @@ def generate_youtube_audio(video_id: int) -> bool:
         import yt_dlp
 
         ydl_opts = {"quiet": True, "no_warnings": True, "skip_download": True}
+        # YouTube now requires authentication for automated access. Allow the
+        # operator to supply a cookies.txt (base64-encoded) via env var.
+        cookies_b64 = os.environ.get("YOUTUBE_COOKIES", "").strip()
+        cookies_file = os.environ.get("YOUTUBE_COOKIES_FILE", "").strip()
+        if cookies_b64 and not cookies_file:
+            import base64
+
+            cookies_file = os.path.join(tmpdir, "cookies.txt")
+            try:
+                with open(cookies_file, "wb") as f:
+                    f.write(base64.b64decode(cookies_b64))
+            except Exception:  # noqa: BLE001
+                cookies_file = ""
+        if cookies_file and os.path.isfile(cookies_file):
+            ydl_opts["cookiefile"] = cookies_file
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video.youtube_url, download=False)
         audio_url = None
