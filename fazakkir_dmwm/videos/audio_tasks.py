@@ -362,9 +362,13 @@ def eligible_audio_queryset():
 
     Excludes videos already known to have no audio stream (``none``) so a bulk
     run does not waste time re-checking them; failures (``failed``) and
-    untouched videos (``""``) are included.
+    untouched videos (``""``) are included. YouTube link videos are always
+    included, because their ``none`` status may come from a transient failure
+    rather than a genuinely silent clip.
     """
-    return Video.objects.filter(audio_file_id="").exclude(audio_status="none")
+    return Video.objects.filter(audio_file_id="").exclude(
+        audio_status="none", youtube_url=""
+    )
 
 
 # Progress of the dashboard's "Generate missing MP3s" sweep. Shared across

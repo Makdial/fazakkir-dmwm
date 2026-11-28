@@ -6,7 +6,7 @@ backfilling older videos or retrying failures in bulk.
 """
 from django.core.management.base import BaseCommand
 
-from videos.audio_tasks import generate_audio
+from videos.audio_tasks import generate_audio, generate_youtube_audio
 from videos.models import Video
 
 
@@ -35,7 +35,11 @@ class Command(BaseCommand):
         if options["ids"]:
             queryset = queryset.filter(id__in=options["ids"])
         if not options["include_no_audio"]:
-            queryset = queryset.exclude(audio_status="none")
+            # YouTube videos may have been marked "none" by a transient failure;
+            # keep them eligible so the sweep can retry.
+            queryset = queryset.exclude(
+                audio_status="none", youtube_url=""
+            )
 
         videos = list(queryset.order_by("id"))
         if not videos:
@@ -50,7 +54,11 @@ class Command(BaseCommand):
             Video.objects.filter(id=video.id, audio_file_id="").update(
                 audio_status="processing"
             )
-            if generate_audio(video.id):
+            if video.youtube_url:
+                succeeded = generate_youtube_audio(video.id)
+            else:
+                succeeded = generate_audio(video.id)
+            if succeeded:
                 successes += 1
                 video.refresh_from_db()
                 self.stdout.write(
