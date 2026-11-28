@@ -288,6 +288,12 @@
     font-size: 0.76rem; cursor: pointer; text-align: start;
 }
 .ask-followup:hover { border-color: var(--accent-red, #1976d2); color: var(--accent-red, #1976d2); }
+.ask-table-wrap { overflow-x: auto; margin: 8px 0; border-radius: 8px; }
+.ask-table { border-collapse: collapse; width: 100%; font-size: 0.86rem; line-height: 1.45; }
+.ask-table th, .ask-table td { border: 1px solid var(--border-color, #ddd); padding: 6px 9px; text-align: start; vertical-align: top; }
+.ask-table th { background: var(--bg-secondary, #f0f0f0); font-weight: 700; }
+.ask-table tbody tr:nth-child(even) td { background: rgba(0,0,0,0.03); }
+.ask-hr { border: none; border-top: 1px solid var(--border-color, #ddd); margin: 10px 0; }
 
 .ask-feedback { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; font-size: 0.76rem; opacity: 0.8; }
 .ask-feedback-label { opacity: 0.75; }
@@ -446,23 +452,81 @@
         return safe;
     }
 
-    function renderAnswer(bubble, text, refs, key) {
-        if (!refs || !refs.length) {
-            bubble.textContent = text;
-            return;
+    function renderTable(tableLines, refs, key) {
+        const rows = tableLines.map(function (line) {
+            return line.replace(/^\|/, "").replace(/\|$/, "").split("|").map(function (cell) {
+                return cell.trim();
+            });
+        });
+        let header = null;
+        let bodyRows = rows;
+        if (rows.length > 1 && rows[1].every(function (cell) {
+            return /^:?-+:?$/.test(cell);
+        })) {
+            header = rows[0];
+            bodyRows = rows.slice(2);
         }
+        let out = '<div class="ask-table-wrap"><table class="ask-table">';
+        if (header) {
+            out += "<thead><tr>" + header.map(function (cell) {
+                return "<th>" + citationLink(cell, refs, key) + "</th>";
+            }).join("") + "</tr></thead>";
+        }
+        out += "<tbody>";
+        bodyRows.forEach(function (row) {
+            out += "<tr>" + row.map(function (cell) {
+                return "<td>" + citationLink(cell, refs, key) + "</td>";
+            }).join("") + "</tr>";
+        });
+        out += "</tbody></table></div>";
+        return out;
+    }
+
+    function renderAnswer(bubble, text, refs, key) {
         const lines = String(text || "").split("\n");
-        bubble.innerHTML = lines.map(function (line) {
-            const trimmed = line.trim();
-            if (!trimmed) return '<div class="ask-gap"></div>';
+        let html = "";
+        let i = 0;
+        const total = lines.length;
+        while (i < total) {
+            const trimmed = lines[i].trim();
+            if (!trimmed) {
+                html += '<div class="ask-gap"></div>';
+                i += 1;
+                continue;
+            }
+            if (trimmed.startsWith("|")) {
+                const tableLines = [];
+                while (i < total && lines[i].trim().startsWith("|")) {
+                    tableLines.push(lines[i].trim());
+                    i += 1;
+                }
+                html += renderTable(tableLines, refs, key);
+                continue;
+            }
+            if (/^[-*_]{3,}$/.test(trimmed)) {
+                html += '<hr class="ask-hr">';
+                i += 1;
+                continue;
+            }
             if (/^#{1,4}\s+/.test(trimmed)) {
-                return '<div class="ask-answer-heading">' + citationLink(trimmed.replace(/^#{1,4}\s+/, ""), refs, key) + "</div>";
+                html += '<div class="ask-answer-heading">' + citationLink(trimmed.replace(/^#{1,4}\s+/, ""), refs, key) + "</div>";
+                i += 1;
+                continue;
             }
             if (/^[-*•]\s+/.test(trimmed)) {
-                return '<div class="ask-answer-bullet">' + citationLink(trimmed.replace(/^[-*•]\s+/, ""), refs, key) + "</div>";
+                html += '<div class="ask-answer-bullet">' + citationLink(trimmed.replace(/^[-*•]\s+/, ""), refs, key) + "</div>";
+                i += 1;
+                continue;
             }
-            return '<div class="ask-answer-line">' + citationLink(trimmed, refs, key) + "</div>";
-        }).join("");
+            if (/^\d+\.\s+/.test(trimmed)) {
+                html += '<div class="ask-answer-bullet">' + citationLink(trimmed.replace(/^\d+\.\s+/, ""), refs, key) + "</div>";
+                i += 1;
+                continue;
+            }
+            html += '<div class="ask-answer-line">' + citationLink(trimmed, refs, key) + "</div>";
+            i += 1;
+        }
+        bubble.innerHTML = html;
     }
 
     function renderSources(refs, key) {
