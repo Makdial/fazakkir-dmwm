@@ -1919,15 +1919,20 @@ def ask_send(request):
             status=503,
         )
 
-    # Prefer OpenAI when configured, otherwise fall back to Groq's free tier.
-    if openai_key:
+    # Prefer Groq (free tier) when its key is set, otherwise OpenAI.
+    if groq_key:
+        api_url = "https://api.groq.com/openai/v1/chat/completions"
+        api_key = groq_key
+        model = os.environ.get("GROQ_ASK_MODEL", "openai/gpt-oss-20b")
+    elif openai_key:
         api_url = "https://api.openai.com/v1/chat/completions"
         api_key = openai_key
         model = os.environ.get("OPENAI_ASK_MODEL", "gpt-4o-mini")
     else:
-        api_url = "https://api.groq.com/openai/v1/chat/completions"
-        api_key = groq_key
-        model = os.environ.get("GROQ_ASK_MODEL", "openai/gpt-oss-20b")
+        return JsonResponse(
+            {"success": False, "error": _("The AI assistant is not configured.")},
+            status=503,
+        )
 
     # Gather the site's content (videos + books) and pick the most relevant
     # entries for the question, so the model can ground its answer in the
