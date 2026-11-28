@@ -1951,3 +1951,31 @@ def watch_later_toggle(request, video_id):
         )
     playlist.save(update_fields=["updated_at"])
     return JsonResponse({"success": True, "added": added})
+@require_GET
+def debug_audio_one(request):
+    """Temporary: extract audio for one YouTube video and return the result."""
+    video_id = request.GET.get("id")
+    if not video_id:
+        return JsonResponse({"error": "missing id"}, status=400)
+    try:
+        video_id = int(video_id)
+    except ValueError:
+        return JsonResponse({"error": "bad id"}, status=400)
+    from videos.models import Video
+    from videos.audio_tasks import generate_youtube_audio
+
+    video = Video.objects.filter(id=video_id).first()
+    if video is None:
+        return JsonResponse({"error": "not found"}, status=404)
+    before = video.audio_status
+    result = generate_youtube_audio(video_id)
+    video.refresh_from_db()
+    return JsonResponse(
+        {
+            "result": result,
+            "before": before,
+            "after_status": video.audio_status,
+            "audio_file_id": video.audio_file_id,
+            "audio_error": video.audio_error,
+        }
+    )
