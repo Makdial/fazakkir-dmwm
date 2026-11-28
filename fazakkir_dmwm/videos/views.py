@@ -1912,11 +1912,22 @@ def ask_send(request):
 
     language = (request.POST.get("language") or request.LANGUAGE_CODE or "en").strip()
     openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not openai_key:
+    groq_key = os.environ.get("GROQ_API_KEY", "").strip()
+    if not openai_key and not groq_key:
         return JsonResponse(
             {"success": False, "error": _("The AI assistant is not configured.")},
             status=503,
         )
+
+    # Prefer OpenAI when configured, otherwise fall back to Groq's free tier.
+    if openai_key:
+        api_url = "https://api.openai.com/v1/chat/completions"
+        api_key = openai_key
+        model = os.environ.get("OPENAI_ASK_MODEL", "gpt-4o-mini")
+    else:
+        api_url = "https://api.groq.com/openai/v1/chat/completions"
+        api_key = groq_key
+        model = os.environ.get("GROQ_ASK_MODEL", "llama-3.3-70b-versatile")
 
     # Gather the site's content (videos + books) and pick the most relevant
     # entries for the question, so the model can ground its answer in the
@@ -2000,10 +2011,10 @@ def ask_send(request):
         import httpx
 
         resp = httpx.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers={"Authorization": f"Bearer {openai_key}"},
+            api_url,
+            headers={"Authorization": f"Bearer {api_key}"},
             json={
-                "model": os.environ.get("OPENAI_ASK_MODEL", "gpt-4o-mini"),
+                "model": model,
                 "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user_content},

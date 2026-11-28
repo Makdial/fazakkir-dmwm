@@ -362,6 +362,8 @@ SUBTITLE_TRANSLATION_PROVIDER = os.environ.get("SUBTITLE_TRANSLATION_PROVIDER", 
 
 # --- OpenAI provider --------------------------------------------------------
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+# Free alternative for AI Ask: Groq's free tier (https://console.groq.com).
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 # whisper-1 is used because it is the model that returns per-segment
 # timestamps; gpt-4o-transcribe does not support timestamp_granularities.
 SUBTITLE_TRANSCRIBE_MODEL = os.environ.get("SUBTITLE_TRANSCRIBE_MODEL", "whisper-1")
