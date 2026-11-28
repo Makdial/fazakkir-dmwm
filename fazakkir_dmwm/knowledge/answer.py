@@ -166,6 +166,18 @@ def _call_provider(
     return answer, ""
 
 
+def training_examples(limit: int = 5) -> list[tuple[str, str]]:
+    """Return editor-approved (question, answer) pairs for few-shot prompting."""
+    rows = (
+        AskInteraction.objects.filter(
+            use_as_example=True,
+        )
+        .exclude(corrected_answer="")
+        .order_by("-created_at")[:limit]
+    )
+    return [(row.question, row.corrected_answer) for row in rows]
+
+
 def answer_question(
     *,
     question: str,
@@ -234,6 +246,11 @@ def answer_question(
     has_evidence = bool(context["text"].strip())
 
     system = ask_settings.effective_prompt
+    examples = training_examples()
+    if examples:
+        system += "\n\nAPPROVED EXAMPLES (follow this style and content):\n"
+        for question, answer in examples:
+            system += f"Q: {question}\nA: {answer}\n\n"
     if has_external:
         system += (
             "\n\nSome evidence is marked EXTERNAL. Use it only to supplement "

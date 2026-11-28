@@ -281,6 +281,11 @@
                         <form method="post" action="{% url 'dashboard:ai_interaction' item.pk %}" class="ai-source-form">
                             {% csrf_token %}
                             <input type="text" name="admin_notes" class="form-input" value="{{ item.admin_notes }}" placeholder="{% trans 'Answer, correction or note' %}">
+                            <textarea name="corrected_answer" class="form-input" rows="2" placeholder="{% trans 'Corrected answer (used for training)' %}">{{ item.corrected_answer }}</textarea>
+                            <label class="ai-inline-check">
+                                <input type="checkbox" name="use_as_example" {% if item.use_as_example %}checked{% endif %}>
+                                {% trans "Use as example" %}
+                            </label>
                             <label class="ai-inline-check">
                                 <input type="checkbox" name="is_resolved" {% if item.is_resolved %}checked{% endif %}>
                                 {% trans "Resolved" %}

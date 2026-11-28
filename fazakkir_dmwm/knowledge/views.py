@@ -269,6 +269,15 @@ def review_interaction(request, interaction_id: int):
     item = get_object_or_404(AskInteraction, pk=interaction_id)
     item.is_resolved = request.POST.get("is_resolved") == "on"
     item.admin_notes = (request.POST.get("admin_notes") or "").strip()
-    item.save(update_fields=["is_resolved", "admin_notes"])
+    item.corrected_answer = (request.POST.get("corrected_answer") or "").strip()
+    item.use_as_example = request.POST.get("use_as_example") == "on"
+    item.save(
+        update_fields=[
+            "is_resolved",
+            "admin_notes",
+            "corrected_answer",
+            "use_as_example",
+        ]
+    )
     messages.success(request, _("Question updated."))
     return redirect("dashboard:ai")

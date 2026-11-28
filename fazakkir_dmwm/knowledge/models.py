@@ -284,6 +284,11 @@ class AskInteraction(models.Model):
     used_external = models.BooleanField(default=False)
     is_resolved = models.BooleanField(default=False)
     admin_notes = models.TextField(blank=True, default="")
+    # A corrected, editor-approved answer. When ``use_as_example`` is set the
+    # pair (question, corrected_answer) is injected into the prompt as a
+    # few-shot example so the assistant learns the approved wording.
+    corrected_answer = models.TextField(blank=True, default="")
+    use_as_example = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
