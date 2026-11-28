@@ -31,7 +31,11 @@ class ChatProvider:
 
 
 def chat_provider() -> ChatProvider | None:
-    """Pick the configured chat provider, preferring Groq's free tier."""
+    """Pick the configured chat provider.
+
+    Preference order favours the free, higher-quality providers (Gemini and
+    OpenRouter) over Groq, then falls back to OpenAI.
+    """
     groq_key = (
         getattr(settings, "GROQ_API_KEY", "")
         or os.environ.get("GROQ_API_KEY", "")
@@ -40,18 +44,15 @@ def chat_provider() -> ChatProvider | None:
         getattr(settings, "GEMINI_API_KEY", "")
         or os.environ.get("GEMINI_API_KEY", "")
     ).strip()
+    openrouter_key = (
+        getattr(settings, "OPENROUTER_API_KEY", "")
+        or os.environ.get("OPENROUTER_API_KEY", "")
+    ).strip()
     openai_key = (
         getattr(settings, "OPENAI_API_KEY", "")
         or os.environ.get("OPENAI_API_KEY", "")
     ).strip()
 
-    if groq_key:
-        return ChatProvider(
-            name="groq",
-            url="https://api.groq.com/openai/v1/chat/completions",
-            key=groq_key,
-            model=os.environ.get("GROQ_ASK_MODEL", "openai/gpt-oss-20b"),
-        )
     if gemini_key:
         return ChatProvider(
             name="gemini",
@@ -59,12 +60,26 @@ def chat_provider() -> ChatProvider | None:
             key=gemini_key,
             model=getattr(settings, "GEMINI_ASK_MODEL", "gemini-2.0-flash"),
         )
+    if openrouter_key:
+        return ChatProvider(
+            name="openrouter",
+            url="https://openrouter.ai/api/v1/chat/completions",
+            key=openrouter_key,
+            model=getattr(settings, "OPENROUTER_ASK_MODEL", "meta-llama/llama-3.3-70b-instruct:free"),
+        )
+    if groq_key:
+        return ChatProvider(
+            name="groq",
+            url="https://api.groq.com/openai/v1/chat/completions",
+            key=groq_key,
+            model=getattr(settings, "GROQ_ASK_MODEL", "openai/gpt-oss-20b"),
+        )
     if openai_key:
         return ChatProvider(
             name="openai",
             url="https://api.openai.com/v1/chat/completions",
             key=openai_key,
-            model=os.environ.get("OPENAI_ASK_MODEL", "gpt-4o-mini"),
+            model=getattr(settings, "OPENAI_ASK_MODEL", "gpt-4o-mini"),
         )
     return None
 
