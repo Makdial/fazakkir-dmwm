@@ -3816,3 +3816,432 @@ msgstr ""
 
 msgid "Ask DMWM"
 msgstr ""
+
+msgid "A batch indexes up to 5 books, 10 videos and 10 shorts. Run it repeatedly until the coverage cards reach the total. The management command can index everything without a request timeout."
+msgstr ""
+
+msgid "AI knowledge"
+msgstr "Conocimiento de IA"
+
+msgid "Action"
+msgstr "Acción"
+
+msgid "Add a comment…"
+msgstr ""
+
+msgid "Add selected"
+msgstr ""
+
+msgid "Add videos / audio"
+msgstr ""
+
+msgid "Added items appear on the left. Reorder them with the arrows, then Save."
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "All videos"
+msgstr ""
+
+msgid "Allow external research"
+msgstr "Permitir investigación externa"
+
+msgid "Allowed"
+msgstr "Permitido"
+
+msgid "An audio upload has no picture of its own, so choose one to show on the card"
+msgstr ""
+
+msgid "An email is sent to %(email)s once the storage passes the alert threshold."
+msgstr ""
+
+msgid "Answer policy"
+msgstr "Política de respuesta"
+
+msgid "Answer, correction or note"
+msgstr "Respuesta, corrección o nota"
+
+msgid "Answers are generated from the site's content and verified external sources. They may not be exhaustive, and the assistant is not a substitute for a qualified scholar. Always refer to the original videos and books."
+msgstr "Las respuestas se generan a partir del contenido del sitio y de fuentes externas verificadas. Pueden no ser exhaustivas y el asistente no sustituye a un erudito cualificado. Consulte siempre los vídeos y libros originales."
+
+msgid "Approved"
+msgstr "Aprobado"
+
+msgid "Ask DMWM has no chat provider yet. Add GROQ_API_KEY (free tier) or OPENAI_API_KEY and restart the app."
+msgstr "Ask DMWM aún no tiene proveedor de chat. Añada GROQ_API_KEY (plan gratuito) u OPENAI_API_KEY y reinicie la aplicación."
+
+msgid "Ask DMWM is disabled in the AI knowledge dashboard."
+msgstr "Ask DMWM está desactivado en el panel de conocimiento de IA."
+
+msgid "Ask anything about the orators' teachings, a video, a speech, or a book. Answers cite the passages and pages they rely on."
+msgstr "Pregunte sobre las enseñanzas de los oradores, un vídeo, un discurso o un libro. Las respuestas citan los pasajes y páginas en que se basan."
+
+msgid "Assistant is enabled"
+msgstr "El asistente está activado"
+
+msgid "Audio available"
+msgstr ""
+
+msgid "Authority"
+msgstr "Autoridad"
+
+msgid "Book file (PDF, EPUB, DOCX, TXT, Markdown)"
+msgstr "Archivo del libro (PDF, EPUB, DOCX, TXT, Markdown)"
+
+msgid "Books indexed"
+msgstr "Libros indexados"
+
+msgid "Can you give the exact source and page?"
+msgstr "¿Puede indicar la fuente y la página exactas?"
+
+msgid "Category name"
+msgstr ""
+
+msgid "Chat answers use %(name)s (%(model)s)."
+msgstr "Las respuestas usan %(name)s (%(model)s)."
+
+msgid "Cloudflare R2 is not configured, so the media usage cannot be measured. Add the R2 credentials to your .env file."
+msgstr ""
+
+msgid "Control the videos, the users, the comments and the storage in one place."
+msgstr ""
+
+msgid "Create a category"
+msgstr ""
+
+msgid "Create categories and drag videos into them. Order matters on the main page."
+msgstr ""
+
+msgid "Current file kept unless a new one is uploaded."
+msgstr "El archivo actual se conserva a menos que suba uno nuevo."
+
+msgid "Decision"
+msgstr "Decisión"
+
+msgid "Delete this category?"
+msgstr ""
+
+msgid "Display order"
+msgstr ""
+
+msgid "Domain"
+msgstr "Dominio"
+
+msgid "Download %(format)s"
+msgstr "Descargar %(format)s"
+
+msgid "Edition"
+msgstr "Edición"
+
+msgid "Editorial notes"
+msgstr "Notas editoriales"
+
+msgid "Embeddings in the index:"
+msgstr "Embeddings en el índice:"
+
+msgid "Enter your email address and we will send you a link to choose a new one."
+msgstr ""
+
+msgid "Every note you have taken, newest first. Click a timestamp to open the video at that moment."
+msgstr ""
+
+msgid "Every object in Cloudflare R2 that no video references is deleted permanently. Videos, their MP3s and their thumbnails are kept, and offline copies on visitors' devices are not affected."
+msgstr ""
+
+msgid "Every video in the queue will be removed. The videos themselves are not affected."
+msgstr ""
+
+msgid "External"
+msgstr "Externo"
+
+msgid "External research"
+msgstr "Investigación externa"
+
+msgid "External web sources"
+msgstr "Fuentes web externas"
+
+msgid "Follow-up"
+msgstr "Pregunta de seguimiento"
+
+msgid "Generating MP3s…"
+msgstr ""
+
+msgid "Generating subtitles…"
+msgstr ""
+
+msgid "Helpful"
+msgstr "Útil"
+
+msgid "How do scholars explain this?"
+msgstr "¿Cómo explican esto los eruditos?"
+
+msgid "How many users (guests and registered) use the app each day, and which recordings they play."
+msgstr ""
+
+msgid "If an account exists for %(email)s, a message with a reset link is on its way. The link expires shortly, so use it soon."
+msgstr ""
+
+msgid "If you did not ask for this, you can ignore this message and nothing will change."
+msgstr ""
+
+msgid "In this category"
+msgstr ""
+
+msgid "Index next batch"
+msgstr "Indexar el siguiente lote"
+
+msgid "Index, review and operate the Ask DMWM retrieval-augmented assistant."
+msgstr "Indexe, revisa y opera el asistente de recuperación Ask DMWM."
+
+msgid "Indexed passages"
+msgstr "Pasajes indexados"
+
+msgid "Indexing"
+msgstr "Indexación"
+
+msgid "Leave blank to use the built-in prompt shown as the placeholder."
+msgstr "Déjelo vacío para usar el prompt integrado que se muestra como ejemplo."
+
+msgid "Local hashing embeddings are active. They keep the site working without an API key, but adding OPENAI_API_KEY and rebuilding the index enables true multilingual semantic search."
+msgstr "Los embeddings locales por hash están activos. Mantienen el sitio funcionando sin clave de API, pero añadir OPENAI_API_KEY y reconstruir el índice habilita una verdadera búsqueda semántica multilingüe."
+
+msgid "Locations are estimated from each visitor's IP address, so each pin marks a country, not a street."
+msgstr ""
+
+msgid "Mark reviewed"
+msgstr "Marcar como revisado"
+
+msgid "Maximum evidence characters"
+msgstr "Máximo de caracteres de pruebas"
+
+msgid "More"
+msgstr ""
+
+msgid "No"
+msgstr "No"
+
+msgid "No books or videos found."
+msgstr "No se encontraron libros ni vídeos."
+
+msgid "No categories yet. Create one above."
+msgstr ""
+
+msgid "No category"
+msgstr ""
+
+msgid "No chat provider is configured. Add GROQ_API_KEY (free tier) or OPENAI_API_KEY."
+msgstr "No hay proveedor de chat configurado. Añada GROQ_API_KEY (plan gratuito) u OPENAI_API_KEY."
+
+msgid "No feedback yet."
+msgstr "Aún no hay comentarios."
+
+msgid "No questions yet."
+msgstr "Aún no hay preguntas."
+
+msgid "No unanswered questions."
+msgstr "No hay preguntas sin respuesta."
+
+msgid "No videos yet. Add some from the right."
+msgstr ""
+
+msgid "Not helpful"
+msgstr "No útil"
+
+msgid "On"
+msgstr "Activado"
+
+msgid "Only domains on the server allowlist or approved here can reach the model. Add a domain to override the default decision."
+msgstr "Solo los dominios de la lista permitida del servidor o aprobados aquí pueden llegar al modelo. Añada un dominio para anular la decisión predeterminada."
+
+msgid "Passages"
+msgstr "Pasajes"
+
+msgid "Paste a YouTube link to add it to the library. 'Import' downloads the video into storage so it gets every feature (MP3, subtitles, offline, downloads). 'Add as link' keeps it on YouTube and plays it through the embedded player."
+msgstr ""
+
+msgid "Perspective (optional)"
+msgstr "Perspectiva (opcional)"
+
+msgid "Perspective / notes"
+msgstr "Perspectiva / notas"
+
+msgid "Preparing the audio (MP3) for this video…"
+msgstr ""
+
+msgid "Primary"
+msgstr "Primario"
+
+msgid "Provider status"
+msgstr "Estado del proveedor"
+
+msgid "Question"
+msgstr "Pregunta"
+
+msgid "Read-only staff can view the dashboard; read & write staff can also delete videos and free space."
+msgstr ""
+
+msgid "Read-only staff can view this page; read & write staff can also upload, moderate and manage users."
+msgstr ""
+
+msgid "Recent answers"
+msgstr "Respuestas recientes"
+
+msgid "Recent feedback"
+msgstr "Comentarios recientes"
+
+msgid "Reindex"
+msgstr "Reindexar"
+
+msgid "Remove “%(title)s” from this playlist?"
+msgstr ""
+
+msgid "Resolved"
+msgstr "Resuelto"
+
+msgid "Retry"
+msgstr ""
+
+msgid "Reviewed"
+msgstr "Revisado"
+
+msgid "Save as playlist"
+msgstr ""
+
+msgid "Save domain"
+msgstr "Guardar dominio"
+
+msgid "Save policy"
+msgstr "Guardar política"
+
+msgid "Searching the library, transcripts and web…"
+msgstr "Buscando en la biblioteca, las transcripciones y la web…"
+
+msgid "Send feedback"
+msgstr "Enviar comentarios"
+
+msgid "Show original"
+msgstr "Mostrar original"
+
+msgid "Source"
+msgstr "Fuente"
+
+msgid "Source review and coverage"
+msgstr "Revisión de fuentes y cobertura"
+
+msgid "Sources and evidence"
+msgstr "Fuentes y pruebas"
+
+msgid "Starting…"
+msgstr ""
+
+msgid "System prompt"
+msgstr "Prompt del sistema"
+
+msgid "Take a note on this video…"
+msgstr ""
+
+msgid "Temperature"
+msgstr "Temperatura"
+
+msgid "Thank you for the feedback."
+msgstr "Gracias por sus comentarios."
+
+msgid "The address does not match any account. Check it and try again, or ask an administrator to add an email address to your profile."
+msgstr ""
+
+msgid "The alert triggers at %(threshold)s percent or more, and again when the storage is completely full."
+msgstr ""
+
+msgid "The index is empty. Index a first batch below."
+msgstr "El índice está vacío. Indexe un primer lote abajo."
+
+msgid "The prompt is stored in the database, so it can be updated without changing code. The citation and safety rules are part of the default prompt."
+msgstr "El prompt se guarda en la base de datos, por lo que puede actualizarse sin cambiar el código. Las reglas de citación y seguridad forman parte del prompt predeterminado."
+
+msgid "The ten latest questions, including successful answers, are kept for review in the Django admin and here."
+msgstr "Las diez últimas preguntas, incluidas las respuestas correctas, se guardan para su revisión en el administrador de Django y aquí."
+
+msgid "This permanently removes the recording, its MP3 and its thumbnail from Cloudflare storage. This cannot be undone."
+msgstr ""
+
+msgid "This permanently removes the recording, its MP3 and its thumbnail from Cloudflare storage. Visitors who saved it offline keep their local copy until they remove it."
+msgstr ""
+
+msgid "This reset link is invalid, most likely because it has already been used or has expired. Please request a new one."
+msgstr ""
+
+msgid "This sign-in is for administrators only. Regular visitors are given an automatic guest account and do not need to sign in."
+msgstr ""
+
+msgid "Tip: open a video and press “Save offline” to keep its MP3 on this device."
+msgstr ""
+
+msgid "Transcribe the audio and translate it automatically, without uploading a file."
+msgstr ""
+
+msgid "Transcribing and translating…"
+msgstr ""
+
+msgid "Translate"
+msgstr "Traducir"
+
+msgid "Translating…"
+msgstr "Traduciendo…"
+
+msgid "Translation unavailable"
+msgstr "Traducción no disponible"
+
+msgid "Type a few words from a title, the uploader's name, or a year such as 2000."
+msgstr ""
+
+msgid "Unanswered questions and errors"
+msgstr "Preguntas sin respuesta y errores"
+
+msgid "Unapproved sources are excluded from retrieval. Authority controls how strongly a passage is ranked."
+msgstr "Las fuentes no aprobadas se excluyen de la recuperación. La autoridad determina la fuerza con que se clasifica un pasaje."
+
+msgid "Upload a .vtt, .srt or .txt file for each language. Viewers can turn them on or off."
+msgstr ""
+
+msgid "Use the “Save” button on any video to add it here."
+msgstr ""
+
+msgid "Verdict"
+msgstr "Veredicto"
+
+msgid "Video storage is not configured yet. Add your Cloudflare R2 credentials to the .env file."
+msgstr ""
+
+msgid "Videos indexed"
+msgstr "Vídeos indexados"
+
+msgid "Was this answer helpful?"
+msgstr "¿Le resultó útil esta respuesta?"
+
+msgid "What do the books say about patience?"
+msgstr "¿Qué dicen los libros sobre la paciencia?"
+
+msgid "What do the library books say about this?"
+msgstr "¿Qué dicen los libros de la biblioteca sobre esto?"
+
+msgid "What was missing or wrong? (optional)"
+msgstr "¿Qué faltaba o era incorrecto? (opcional)"
+
+msgid "When"
+msgstr "Cuándo"
+
+msgid "Why this source is trusted"
+msgstr "Por qué se confía en esta fuente"
+
+msgid "Working…"
+msgstr ""
+
+msgid "Yes"
+msgstr "Sí"
+
+msgid "Your queue is empty. Use the ☰+ button on any video to add it."
+msgstr ""
+
+msgid "web research"
+msgstr "investigación web"

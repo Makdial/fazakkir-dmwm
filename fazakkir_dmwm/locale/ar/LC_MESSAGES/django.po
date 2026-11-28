@@ -1720,3 +1720,780 @@ msgstr ""
 
 msgid "Ask DMWM"
 msgstr ""
+
+msgid "A batch indexes up to 5 books, 10 videos and 10 shorts. Run it repeatedly until the coverage cards reach the total. The management command can index everything without a request timeout."
+msgstr ""
+
+msgid "A timeline of what you have watched, liked, commented on and saved."
+msgstr ""
+
+msgid "AI knowledge"
+msgstr "معرفة الذكاء الاصطناعي"
+
+msgid "Action"
+msgstr "إجراء"
+
+msgid "Activity"
+msgstr ""
+
+msgid "Add"
+msgstr ""
+
+msgid "Add YouTube video"
+msgstr ""
+
+msgid "Add as YouTube link (embed only)"
+msgstr ""
+
+msgid "Add note"
+msgstr ""
+
+msgid "Add selected"
+msgstr ""
+
+msgid "Add to favorites"
+msgstr ""
+
+msgid "Add videos / audio"
+msgstr ""
+
+msgid "Added items appear on the left. Reorder them with the arrows, then Save."
+msgstr ""
+
+msgid "Admin Dashboard"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "All books"
+msgstr ""
+
+msgid "All categories"
+msgstr ""
+
+msgid "All languages"
+msgstr ""
+
+msgid "All statuses"
+msgstr ""
+
+msgid "All videos"
+msgstr ""
+
+msgid "Allow download"
+msgstr ""
+
+msgid "Allow external research"
+msgstr "السماح بالبحث الخارجي"
+
+msgid "Allowed"
+msgstr "مسموح"
+
+msgid "Answer policy"
+msgstr "سياسة الإجابة"
+
+msgid "Answer, correction or note"
+msgstr "إجابة أو تصحيح أو ملاحظة"
+
+msgid "Answers are generated from the site's content and verified external sources. They may not be exhaustive, and the assistant is not a substitute for a qualified scholar. Always refer to the original videos and books."
+msgstr "تُولَّد الإجابات من محتوى الموقع ومصادر خارجية موثوقة. وقد لا تكون شاملة، والمساعد ليس بديلاً عن عالم مؤهل. ارجع دائمًا إلى الفيديوهات والكتب الأصلية."
+
+msgid "Approved"
+msgstr "معتمد"
+
+msgid "Archived"
+msgstr ""
+
+msgid "Are you sure you want to delete"
+msgstr ""
+
+msgid "Ask DMWM has no chat provider yet. Add GROQ_API_KEY (free tier) or OPENAI_API_KEY and restart the app."
+msgstr "لا يوجد مزوّد محادثة لـ Ask DMWM بعد. أضف GROQ_API_KEY (الخطة المجانية) أو OPENAI_API_KEY ثم أعد تشغيل التطبيق."
+
+msgid "Ask DMWM is disabled in the AI knowledge dashboard."
+msgstr "Ask DMWM معطّل في لوحة معرفة الذكاء الاصطناعي."
+
+msgid "Ask anything about the orators' teachings, a video, a speech, or a book. Answers cite the passages and pages they rely on."
+msgstr "اسأل عن تعاليم الخطباء، أو فيديو، أو خطاب، أو كتاب. تستشهد الإجابات بالمقاطع والصفحات التي تعتمد عليها."
+
+msgid "Assistant is enabled"
+msgstr "المساعد مفعّل"
+
+msgid "Audio available"
+msgstr ""
+
+msgid "Authority"
+msgstr "الحجية"
+
+msgid "Back to books"
+msgstr ""
+
+msgid "Book file (PDF, EPUB, DOCX, TXT, Markdown)"
+msgstr "ملف الكتاب (PDF أو EPUB أو DOCX أو TXT أو Markdown)"
+
+msgid "Bookmark this page"
+msgstr ""
+
+msgid "Books"
+msgstr ""
+
+msgid "Books in progress"
+msgstr ""
+
+msgid "Books indexed"
+msgstr "الكتب المفهرسة"
+
+msgid "Browse, read and translate books from around the world."
+msgstr ""
+
+msgid "Can you give the exact source and page?"
+msgstr "هل يمكنك إعطاء المصدر والصفحة بدقة؟"
+
+msgid "Categories"
+msgstr ""
+
+msgid "Category"
+msgstr ""
+
+msgid "Category name"
+msgstr ""
+
+msgid "Chapters"
+msgstr ""
+
+msgid "Chat answers use %(name)s (%(model)s)."
+msgstr "تُستخدم إجابات الدردشة عبر %(name)s (%(model)s)."
+
+msgid "Collections"
+msgstr ""
+
+msgid "Continue reading"
+msgstr ""
+
+msgid "Cover image"
+msgstr ""
+
+msgid "Create a category"
+msgstr ""
+
+msgid "Create categories and drag videos into them. Order matters on the main page."
+msgstr ""
+
+msgid "Current cover kept unless a new one is uploaded."
+msgstr ""
+
+msgid "Current file kept unless a new one is uploaded."
+msgstr "يُحتفظ بالملف الحالي ما لم يتم رفع ملف جديد."
+
+msgid "Dark reading"
+msgstr ""
+
+msgid "Decision"
+msgstr "القرار"
+
+msgid "Delete book"
+msgstr ""
+
+msgid "Delete collection"
+msgstr ""
+
+msgid "Delete this category?"
+msgstr ""
+
+msgid "Delete this note?"
+msgstr ""
+
+msgid "Digital Library"
+msgstr ""
+
+msgid "Display order"
+msgstr ""
+
+msgid "Domain"
+msgstr "النطاق"
+
+msgid "Download %(format)s"
+msgstr "تنزيل %(format)s"
+
+msgid "Downloads"
+msgstr ""
+
+msgid "Draft"
+msgstr ""
+
+msgid "Edit book"
+msgstr ""
+
+msgid "Edition"
+msgstr "الطبعة"
+
+msgid "Editorial notes"
+msgstr "ملاحظات تحريرية"
+
+msgid "Embeddings in the index:"
+msgstr "التضمينات في الفهرس:"
+
+msgid "Enter video description (optional)"
+msgstr ""
+
+msgid "Every note you have taken, newest first. Click a timestamp to open the video at that moment."
+msgstr ""
+
+msgid "Export saved"
+msgstr ""
+
+msgid "External"
+msgstr "خارجي"
+
+msgid "External research"
+msgstr "البحث الخارجي"
+
+msgid "External web sources"
+msgstr "مصادر الويب الخارجية"
+
+msgid "Extract the MP3 from this YouTube video?"
+msgstr ""
+
+msgid "Favorites"
+msgstr ""
+
+msgid "Featured"
+msgstr ""
+
+msgid "Filter"
+msgstr ""
+
+msgid "Fit"
+msgstr ""
+
+msgid "Follow-up"
+msgstr "سؤال متابعة"
+
+msgid "Get MP3"
+msgstr ""
+
+msgid "Helpful"
+msgstr "مفيد"
+
+msgid "Highlights"
+msgstr ""
+
+msgid "How do scholars explain this?"
+msgstr "كيف يشرح العلماء هذا؟"
+
+msgid "ISBN"
+msgstr ""
+
+msgid "Import (download into storage)"
+msgstr ""
+
+msgid "Import from YouTube"
+msgstr ""
+
+msgid "In this category"
+msgstr ""
+
+msgid "Index next batch"
+msgstr "فهرسة الدفعة التالية"
+
+msgid "Index, review and operate the Ask DMWM retrieval-augmented assistant."
+msgstr "افهرسة وراجع وشغّل مساعد الاسترجاع المعزز Ask DMWM."
+
+msgid "Indexed passages"
+msgstr "المقاطع المفهرسة"
+
+msgid "Indexing"
+msgstr "الفهرسة"
+
+msgid "Leave blank to use the built-in prompt shown as the placeholder."
+msgstr "اتركه فارغًا لاستخدام المطالبة المدمجة المعروضة كنص توضيحي."
+
+msgid "Library Admin"
+msgstr ""
+
+msgid "Loading..."
+msgstr ""
+
+msgid "Local hashing embeddings are active. They keep the site working without an API key, but adding OPENAI_API_KEY and rebuilding the index enables true multilingual semantic search."
+msgstr "التضمينات المحلية القائمة على التجزئة مفعّلة. تُبقي الموقع يعمل دون مفتاح API، لكن إضافة OPENAI_API_KEY وإعادة بناء الفهرس تفعّل بحثًا دلاليًا متعدد اللغات حقيقيًا."
+
+msgid "Manage Books"
+msgstr ""
+
+msgid "Manage books"
+msgstr ""
+
+msgid "Manage categories"
+msgstr ""
+
+msgid "Manage collections"
+msgstr ""
+
+msgid "Mark reviewed"
+msgstr "وضع علامة تمت المراجعة"
+
+msgid "Maximum evidence characters"
+msgstr "الحد الأقصى لأحرف الأدلة"
+
+msgid "Mode"
+msgstr ""
+
+msgid "More"
+msgstr ""
+
+msgid "Most active readers"
+msgstr ""
+
+msgid "Most popular books"
+msgstr ""
+
+msgid "Most read"
+msgstr ""
+
+msgid "My Collections"
+msgstr ""
+
+msgid "My Dashboard"
+msgstr ""
+
+msgid "My Library"
+msgstr ""
+
+msgid "My activity"
+msgstr ""
+
+msgid "My library"
+msgstr ""
+
+msgid "My notes"
+msgstr ""
+
+msgid "New collection name"
+msgstr ""
+
+msgid "Newest"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "No"
+msgstr "لا"
+
+msgid "No activity yet"
+msgstr ""
+
+msgid "No books found."
+msgstr ""
+
+msgid "No books or videos found."
+msgstr "لم يُعثر على كتب أو فيديوهات."
+
+msgid "No books."
+msgstr ""
+
+msgid "No categories yet. Create one above."
+msgstr ""
+
+msgid "No categories."
+msgstr ""
+
+msgid "No category"
+msgstr ""
+
+msgid "No chat provider is configured. Add GROQ_API_KEY (free tier) or OPENAI_API_KEY."
+msgstr "لا يوجد مزوّد دردشة مُعدّ. أضف GROQ_API_KEY (الخطة المجانية) أو OPENAI_API_KEY."
+
+msgid "No collections yet."
+msgstr ""
+
+msgid "No data."
+msgstr ""
+
+msgid "No favorites yet."
+msgstr ""
+
+msgid "No feedback yet."
+msgstr "لا توجد ملاحظات بعد."
+
+msgid "No highlights."
+msgstr ""
+
+msgid "No notes yet"
+msgstr ""
+
+msgid "No notes yet. Add your first one above."
+msgstr ""
+
+msgid "No questions yet."
+msgstr "لا توجد أسئلة بعد."
+
+msgid "No reading in progress."
+msgstr ""
+
+msgid "No recommendations yet."
+msgstr ""
+
+msgid "No reviews yet."
+msgstr ""
+
+msgid "No saved translations."
+msgstr ""
+
+msgid "No translations yet."
+msgstr ""
+
+msgid "No translations."
+msgstr ""
+
+msgid "No unanswered questions."
+msgstr "لا توجد أسئلة بلا إجابة."
+
+msgid "No videos yet. Add some from the right."
+msgstr ""
+
+msgid "Not helpful"
+msgstr "غير مفيد"
+
+msgid "Notes"
+msgstr ""
+
+msgid "On"
+msgstr "مفعّل"
+
+msgid "Only domains on the server allowlist or approved here can reach the model. Add a domain to override the default decision."
+msgstr "لا تصل إلى النموذج إلا النطاقات الموجودة في قائمة السماح بالخادم أو المعتمدة هنا. أضف نطاقًا لتجاوز القرار الافتراضي."
+
+msgid "Open PDF directly"
+msgstr ""
+
+msgid "Open a video and use the 'My notes' box to write one."
+msgstr ""
+
+msgid "Open video"
+msgstr ""
+
+msgid "Original only"
+msgstr ""
+
+msgid "Page"
+msgstr ""
+
+msgid "Page count"
+msgstr ""
+
+msgid "Pages"
+msgstr ""
+
+msgid "Passages"
+msgstr "المقاطع"
+
+msgid "Paste a YouTube link first."
+msgstr ""
+
+msgid "Paste a YouTube link to add it to the library. 'Import' downloads the video into storage so it gets every feature (MP3, subtitles, offline, downloads). 'Add as link' keeps it on YouTube and plays it through the embedded player."
+msgstr ""
+
+msgid "Perspective (optional)"
+msgstr "المنظور (اختياري)"
+
+msgid "Perspective / notes"
+msgstr "المنظور / ملاحظات"
+
+msgid "Prev"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Primary"
+msgstr "أساسي"
+
+msgid "Progress"
+msgstr ""
+
+msgid "Provider status"
+msgstr "حالة المزوّد"
+
+msgid "Published"
+msgstr ""
+
+msgid "Published year"
+msgstr ""
+
+msgid "Publisher"
+msgstr ""
+
+msgid "Question"
+msgstr "السؤال"
+
+msgid "Rating"
+msgstr ""
+
+msgid "Rating (1-5)"
+msgstr ""
+
+msgid "Read"
+msgstr ""
+
+msgid "Read now"
+msgstr ""
+
+msgid "Reading sessions"
+msgstr ""
+
+msgid "Reads"
+msgstr ""
+
+msgid "Recent answers"
+msgstr "الإجابات الأخيرة"
+
+msgid "Recent feedback"
+msgstr "الملاحظات الأخيرة"
+
+msgid "Recent translations"
+msgstr ""
+
+msgid "Recently uploaded"
+msgstr ""
+
+msgid "Recommended reading"
+msgstr ""
+
+msgid "Registered users"
+msgstr ""
+
+msgid "Reindex"
+msgstr "إعادة الفهرسة"
+
+msgid "Related books"
+msgstr ""
+
+msgid "Remove from favorites"
+msgstr ""
+
+msgid "Resolved"
+msgstr "تم الحل"
+
+msgid "Retry"
+msgstr ""
+
+msgid "Reviewed"
+msgstr "تمت المراجعة"
+
+msgid "Reviews"
+msgstr ""
+
+msgid "Save as playlist"
+msgstr ""
+
+msgid "Save domain"
+msgstr "حفظ النطاق"
+
+msgid "Save policy"
+msgstr "حفظ السياسة"
+
+msgid "Save review"
+msgstr ""
+
+msgid "Saved Highlights"
+msgstr ""
+
+msgid "Saved highlights"
+msgstr ""
+
+msgid "Saved only"
+msgstr ""
+
+msgid "Saved translations"
+msgstr ""
+
+msgid "Search books, authors, tags..."
+msgstr ""
+
+msgid "Search..."
+msgstr ""
+
+msgid "Searching the library, transcripts and web…"
+msgstr "جارٍ البحث في المكتبة والنصوص المكتوبة والويب…"
+
+msgid "Send feedback"
+msgstr "إرسال الملاحظات"
+
+msgid "Show original"
+msgstr "إظهار الأصل"
+
+msgid "Side by side"
+msgstr ""
+
+msgid "Sign in to take notes on this video."
+msgstr ""
+
+msgid "Source"
+msgstr "المصدر"
+
+msgid "Source review and coverage"
+msgstr "مراجعة المصادر والتغطية"
+
+msgid "Sources and evidence"
+msgstr "المصادر والأدلة"
+
+msgid "Start watching videos and your activity will appear here."
+msgstr ""
+
+msgid "System prompt"
+msgstr "مطالبة النظام"
+
+msgid "Tags"
+msgstr ""
+
+msgid "Take a note on this video…"
+msgstr ""
+
+msgid "Temperature"
+msgstr "درجة الحرارة"
+
+msgid "Thank you for the feedback."
+msgstr "شكرًا على ملاحظاتك."
+
+msgid "The index is empty. Index a first batch below."
+msgstr "الفهرس فارغ. افهرسة الدفعة الأولى أدناه."
+
+msgid "The note will be removed and cannot be recovered."
+msgstr ""
+
+msgid "The prompt is stored in the database, so it can be updated without changing code. The citation and safety rules are part of the default prompt."
+msgstr "تُخزَّن المطالبة في قاعدة البيانات، لذا يمكن تحديثها دون تغيير الشيفرة. وقواعد الاستشهاد والسلامة جزء من المطالبة الافتراضية."
+
+msgid "The ten latest questions, including successful answers, are kept for review in the Django admin and here."
+msgstr "تُحفظ آخر عشرة أسئلة، بما فيها الإجابات الناجحة، للمراجعة في إدارة Django وهنا."
+
+msgid "Timestamp (seconds)"
+msgstr ""
+
+msgid "Tip: set the timestamp to jump back to this moment later."
+msgstr ""
+
+msgid "Title A-Z"
+msgstr ""
+
+msgid "Top rated"
+msgstr ""
+
+msgid "Total books"
+msgstr ""
+
+msgid "Translate"
+msgstr "ترجمة"
+
+msgid "Translate on select"
+msgstr ""
+
+msgid "Translate to"
+msgstr ""
+
+msgid "Translated only"
+msgstr ""
+
+msgid "Translating…"
+msgstr "جارٍ الترجمة…"
+
+msgid "Translation"
+msgstr ""
+
+msgid "Translation History"
+msgstr ""
+
+msgid "Translation unavailable"
+msgstr "الترجمة غير متاحة"
+
+msgid "Translations"
+msgstr ""
+
+msgid "Unanswered questions and errors"
+msgstr "الأسئلة بلا إجابة والأخطاء"
+
+msgid "Unapproved sources are excluded from retrieval. Authority controls how strongly a passage is ranked."
+msgstr "تُستبعد المصادر غير المعتمدة من الاسترجاع. وتحدد الحجية قوة ترتيب المقطع."
+
+msgid "Unsave"
+msgstr ""
+
+msgid "Upload a new book"
+msgstr ""
+
+msgid "Upload book"
+msgstr ""
+
+msgid "Use native viewer"
+msgstr ""
+
+msgid "Verdict"
+msgstr "الحكم"
+
+msgid "Videos indexed"
+msgstr "الفيديوهات المفهرسة"
+
+msgid "View all"
+msgstr ""
+
+msgid "View mode"
+msgstr ""
+
+msgid "Was this answer helpful?"
+msgstr "هل كانت هذه الإجابة مفيدة؟"
+
+msgid "Watch later"
+msgstr ""
+
+msgid "Welcome back"
+msgstr ""
+
+msgid "What do the books say about patience?"
+msgstr "ماذا تقول الكتب عن الصبر؟"
+
+msgid "What do the library books say about this?"
+msgstr "ماذا تقول كتب المكتبة عن هذا؟"
+
+msgid "What was missing or wrong? (optional)"
+msgstr "ما الذي كان ناقصًا أو خاطئًا؟ (اختياري)"
+
+msgid "When"
+msgstr "متى"
+
+msgid "Why this source is trusted"
+msgstr "لماذا تُعدّ هذه المصادر موثوقة"
+
+msgid "Working…"
+msgstr ""
+
+msgid "Year"
+msgstr ""
+
+msgid "Yes"
+msgstr "نعم"
+
+msgid "Yes, delete"
+msgstr ""
+
+msgid "YouTube link"
+msgstr ""
+
+msgid "Your bookmarks"
+msgstr ""
+
+msgid "books"
+msgstr ""
+
+msgid "pages"
+msgstr ""
+
+msgid "reads"
+msgstr ""
+
+msgid "remove"
+msgstr ""
+
+msgid "web research"
+msgstr "بحث ويب"

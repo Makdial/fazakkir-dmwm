@@ -110,6 +110,7 @@ INSTALLED_APPS = [
     'dashboard',
     'core',
     'library',
+    'knowledge',
 ]
 
 MIDDLEWARE = [
@@ -364,6 +365,35 @@ SUBTITLE_TRANSLATION_PROVIDER = os.environ.get("SUBTITLE_TRANSLATION_PROVIDER", 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 # Free alternative for AI Ask: Groq's free tier (https://console.groq.com).
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+# Models used by the Ask DMWM assistant.
+GROQ_ASK_MODEL = os.environ.get("GROQ_ASK_MODEL", "openai/gpt-oss-20b")
+OPENAI_ASK_MODEL = os.environ.get("OPENAI_ASK_MODEL", "gpt-4o-mini")
+
+# --- Ask DMWM knowledge base ------------------------------------------------
+# Embeddings power semantic search. "auto" uses OpenAI when OPENAI_API_KEY is
+# set and falls back to the built-in local hashing embedding otherwise. Set to
+# "local" to force offline mode or "openai" to require the API.
+EMBEDDING_PROVIDER = os.environ.get("EMBEDDING_PROVIDER", "auto")
+EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "text-embedding-3-small")
+EMBEDDING_DIMENSIONS = int(os.environ.get("EMBEDDING_DIMENSIONS", "384"))
+# Upper bound on the number of chunks scanned for vector similarity when the
+# keyword prefilter returns too few candidates. Raise it on a large library.
+KNOWLEDGE_VECTOR_SCAN_LIMIT = int(os.environ.get("KNOWLEDGE_VECTOR_SCAN_LIMIT", "4000"))
+# Maximum Ask DMWM questions per account per hour (staff are exempt). Set to 0
+# to disable the guard.
+AI_ASK_HOURLY_LIMIT = int(os.environ.get("AI_ASK_HOURLY_LIMIT", "40"))
+# Domains allowed in external research. Administrators can add or block
+# individual domains from /manage/ai/ without a deployment.
+_default_web_domains = (
+    "wikipedia.org,britannica.com,reecoutes.com,quran.com,sunnah.com,"
+    "al-islam.org,seekersguidance.org,yaqeeninstitute.org,dar-alifta.org,"
+    "unesco.org,un.org"
+)
+AI_WEB_ALLOWED_DOMAINS = [
+    domain.strip().lower()
+    for domain in os.environ.get("AI_WEB_ALLOWED_DOMAINS", _default_web_domains).split(",")
+    if domain.strip()
+]
 # whisper-1 is used because it is the model that returns per-segment
 # timestamps; gpt-4o-transcribe does not support timestamp_granularities.
 SUBTITLE_TRANSCRIBE_MODEL = os.environ.get("SUBTITLE_TRANSCRIBE_MODEL", "whisper-1")

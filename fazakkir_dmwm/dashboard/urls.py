@@ -1,11 +1,28 @@
 from django.urls import path
 
+from knowledge import views as knowledge_views
+
 from . import views
 
 app_name = "dashboard"
 
 urlpatterns = [
     path("", views.home, name="home"),
+    path("ai/", knowledge_views.manage, name="ai"),
+    path("ai/prompt/", knowledge_views.save_prompt, name="ai_prompt"),
+    path("ai/index/", knowledge_views.reindex, name="ai_index"),
+    path("ai/source/", knowledge_views.review_source, name="ai_source"),
+    path("ai/web-source/", knowledge_views.review_web_source, name="ai_web_source"),
+    path(
+        "ai/feedback/<int:feedback_id>/",
+        knowledge_views.review_feedback,
+        name="ai_feedback",
+    ),
+    path(
+        "ai/interaction/<int:interaction_id>/",
+        knowledge_views.review_interaction,
+        name="ai_interaction",
+    ),
     path("videos/", views.video_manage, name="videos"),
     path("categories/", views.category_manage, name="categories"),
     path("categories/create/", views.category_create, name="category_create"),

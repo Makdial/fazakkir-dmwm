@@ -13,25 +13,27 @@
 <div class="ask-page">
     <header class="ask-hero">
         <img src="/static/img/dmwm-logo-ask.jpg" alt="DMWM" class="ask-hero-logo">
-        <h1>{% trans "Ask DMWM" %}</h1>
-        <p class="ask-hero-sub">
-            {% trans "Ask about the teachings of Serigne Cheikh Ahmad Tidiane Sy Al Maktoum, Serigne Moustapha Sy and Serigne Cheikh Ahmad Tidiane Sy Capitaine. Answers are drawn from the videos, speeches and books published on this site." %}
-        </p>
-        <div class="ask-hero-orators">
-            <div class="ask-orator">
-                <img src="/static/img/orators/sy-al-maktoum.jpg" alt="Serigne Cheikh Ahmad Tidiane Sy Al Maktoum" class="ask-orator-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                <span class="ask-orator-fallback" aria-hidden="true">SC</span>
-                <span class="ask-orator-name">Serigne Cheikh Ahmad Tidiane Sy Al Maktoum</span>
-            </div>
-            <div class="ask-orator">
-                <img src="/static/img/orators/moustapha-sy.jpg" alt="Serigne Moustapha Sy" class="ask-orator-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                <span class="ask-orator-fallback" aria-hidden="true">SM</span>
-                <span class="ask-orator-name">Serigne Moustapha Sy</span>
-            </div>
-            <div class="ask-orator">
-                <img src="/static/img/orators/sy-capitaine.jpg" alt="Serigne Cheikh Ahmad Tidiane Sy Capitaine" class="ask-orator-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                <span class="ask-orator-fallback" aria-hidden="true">CC</span>
-                <span class="ask-orator-name">Serigne Cheikh Ahmad Tidiane Sy Capitaine</span>
+        <div class="ask-hero-copy">
+            <h1>{% trans "Ask DMWM" %}</h1>
+            <p class="ask-hero-sub">
+                {% trans "Ask about the teachings of Serigne Cheikh Ahmad Tidiane Sy Al Maktoum, Serigne Moustapha Sy and Serigne Cheikh Ahmad Tidiane Sy Capitaine. Answers are drawn from the videos, speeches and books published on this site." %}
+            </p>
+            <div class="ask-hero-orators">
+                <div class="ask-orator">
+                    <img src="/static/img/orators/sy-al-maktoum.jpg" alt="Serigne Cheikh Ahmad Tidiane Sy Al Maktoum" class="ask-orator-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                    <span class="ask-orator-fallback" aria-hidden="true">SC</span>
+                    <span class="ask-orator-name">Serigne Cheikh Ahmad Tidiane Sy Al Maktoum</span>
+                </div>
+                <div class="ask-orator">
+                    <img src="/static/img/orators/moustapha-sy.jpg" alt="Serigne Moustapha Sy" class="ask-orator-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                    <span class="ask-orator-fallback" aria-hidden="true">SM</span>
+                    <span class="ask-orator-name">Serigne Moustapha Sy</span>
+                </div>
+                <div class="ask-orator">
+                    <img src="/static/img/orators/sy-capitaine.jpg" alt="Serigne Cheikh Ahmad Tidiane Sy Capitaine" class="ask-orator-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                    <span class="ask-orator-fallback" aria-hidden="true">CC</span>
+                    <span class="ask-orator-name">Serigne Cheikh Ahmad Tidiane Sy Capitaine</span>
+                </div>
             </div>
         </div>
     </header>
@@ -51,139 +53,259 @@
         </button>
     </div>
 
-    <div class="ask-chat" id="askChat">
-        <div class="ask-empty" id="askEmpty">
-            <div class="ask-empty-icon" aria-hidden="true">💬</div>
-            <p class="ask-empty-title">{% trans "Start a conversation" %}</p>
-            <p class="ask-empty-hint">{% trans "Ask anything about the orators' teachings, a video, a speech, or a book." %}</p>
-            <div class="ask-suggestions" id="askSuggestions">
-                <button type="button" class="ask-suggestion" data-q="{% trans 'Who is Serigne Cheikh Ahmad Tidiane Sy Al Maktoum?' %}">{% trans "Who is Serigne Cheikh Ahmad Tidiane Sy Al Maktoum?" %}</button>
-                <button type="button" class="ask-suggestion" data-q="{% trans 'What are the main teachings of Serigne Moustapha Sy?' %}">{% trans 'What are the main teachings of Serigne Moustapha Sy?' %}</button>
-                <button type="button" class="ask-suggestion" data-q="{% trans 'Tell me about the speeches available on the site.' %}">{% trans 'Tell me about the speeches available on the site.' %}</button>
-                <button type="button" class="ask-suggestion" data-q="{% trans 'Which books are available in the library?' %}">{% trans 'Which books are available in the library?' %}</button>
+    {% if not ask_configured and user.is_staff %}
+    <div class="ask-notice">
+        {% trans "Ask DMWM has no chat provider yet. Add GROQ_API_KEY (free tier) or OPENAI_API_KEY and restart the app." %}
+    </div>
+    {% elif not ask_enabled and user.is_staff %}
+    <div class="ask-notice">
+        {% trans "Ask DMWM is disabled in the AI knowledge dashboard." %}
+    </div>
+    {% endif %}
+
+    <div class="ask-shell">
+        <div class="ask-chat" id="askChat">
+            <div class="ask-empty" id="askEmpty">
+                <div class="ask-empty-icon" aria-hidden="true">💬</div>
+                <p class="ask-empty-title">{% trans "Start a conversation" %}</p>
+                <p class="ask-empty-hint">{% trans "Ask anything about the orators' teachings, a video, a speech, or a book. Answers cite the passages and pages they rely on." %}</p>
+                <div class="ask-suggestions" id="askSuggestions">
+                    <button type="button" class="ask-suggestion" data-q="{% trans 'Who is Serigne Cheikh Ahmad Tidiane Sy Al Maktoum?' %}">{% trans "Who is Serigne Cheikh Ahmad Tidiane Sy Al Maktoum?" %}</button>
+                    <button type="button" class="ask-suggestion" data-q="{% trans 'What are the main teachings of Serigne Moustapha Sy?' %}">{% trans 'What are the main teachings of Serigne Moustapha Sy?' %}</button>
+                    <button type="button" class="ask-suggestion" data-q="{% trans 'Tell me about the speeches available on the site.' %}">{% trans 'Tell me about the speeches available on the site.' %}</button>
+                    <button type="button" class="ask-suggestion" data-q="{% trans 'Which books are available in the library?' %}">{% trans 'Which books are available in the library?' %}</button>
+                    <button type="button" class="ask-suggestion" data-q="{% trans 'What do the books say about patience?' %}">{% trans 'What do the books say about patience?' %}</button>
+                </div>
             </div>
+            <div class="ask-messages" id="askMessages" hidden></div>
         </div>
-        <div class="ask-messages" id="askMessages" hidden></div>
+
+        <form class="ask-form" id="askForm">
+            {% csrf_token %}
+            <textarea id="askInput" class="ask-input" rows="1" dir="auto"
+                      placeholder="{% trans 'Ask a question…' %}" required></textarea>
+            <button type="submit" class="ask-send-btn" id="askBtn" aria-label="{% trans 'Send' %}">
+                <span class="ask-send-icon" aria-hidden="true">➤</span>
+            </button>
+        </form>
     </div>
 
-    <form class="ask-form" id="askForm">
-        {% csrf_token %}
-        <textarea id="askInput" class="ask-input" rows="1"
-                  placeholder="{% trans 'Ask a question…' %}" required></textarea>
-        <button type="submit" class="ask-send-btn" id="askBtn" aria-label="{% trans 'Send' %}">
-            <span class="ask-send-icon" aria-hidden="true">➤</span>
-        </button>
-    </form>
     <form id="langForm" method="post" action="{% url 'set_language' %}" style="display:none;">
         {% csrf_token %}
         <input type="hidden" name="next" id="langNext" value="{{ request.get_full_path }}">
         <input type="hidden" name="language" id="langCode" value="">
     </form>
-    <p class="ask-disclaimer">{% trans "Answers are generated from the site's content and may not be exhaustive. Always refer to the original videos and books." %}</p>
+    <p class="ask-disclaimer">
+        {% trans "Answers are generated from the site's content and verified external sources. They may not be exhaustive, and the assistant is not a substitute for a qualified scholar. Always refer to the original videos and books." %}
+    </p>
 </div>
 
 <style>
-.ask-page { max-width: 900px; margin: 0 auto; padding-bottom: 24px; }
+.ask-page { max-width: 1180px; margin: 0 auto; padding-bottom: 20px; }
 
-.ask-hero { text-align: center; padding: 28px 16px 20px; }
+.ask-hero {
+    display: flex; align-items: flex-start; gap: 18px;
+    padding: 20px 22px; margin-bottom: 14px; text-align: start;
+    border: 1px solid var(--border-color, #ddd); border-radius: 16px;
+    background: var(--bg-secondary, #f9f9f9);
+}
 .ask-hero-logo {
-    width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
-    margin: 0 auto 12px; display: block;
+    width: 68px; height: 68px; flex: 0 0 68px; border-radius: 50%;
+    object-fit: cover; margin: 0;
     border: 3px solid var(--border-color, #ddd);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-.ask-hero h1 { margin: 0 0 8px; font-size: 2rem; }
-.ask-hero-sub { max-width: 720px; margin: 0 auto 14px; opacity: 0.8; line-height: 1.5; }
-.ask-hero-orators { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 16px; }
-.ask-orator {
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
-    width: 150px;
-}
+.ask-hero-copy { flex: 1; min-width: 0; }
+.ask-hero h1 { margin: 0 0 4px; font-size: 1.7rem; }
+.ask-hero-sub { max-width: none; margin: 0; opacity: 0.78; line-height: 1.45; font-size: 0.92rem; }
+.ask-hero-orators { display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: flex-start; margin-top: 12px; }
+.ask-orator { display: flex; flex-direction: row; align-items: center; gap: 8px; width: auto; }
 .ask-orator-img {
-    width: 96px; height: 96px; border-radius: 50%; object-fit: cover;
-    border: 3px solid var(--border-color, #ddd);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.ask-orator-img {
-    width: 96px; height: 96px; border-radius: 50%; object-fit: cover;
-    border: 3px solid var(--border-color, #ddd);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    width: 34px; height: 34px; border-radius: 50%; object-fit: cover;
+    border: 2px solid var(--border-color, #ddd);
 }
 .ask-orator-fallback {
-    width: 96px; height: 96px; border-radius: 50%;
+    width: 34px; height: 34px; border-radius: 50%;
     display: none; align-items: center; justify-content: center;
-    font-size: 1.6rem; font-weight: 700; color: #fff;
+    font-size: 0.8rem; font-weight: 700; color: #fff;
     background: linear-gradient(135deg, #1976d2, #42a5f5);
-    border: 3px solid var(--border-color, #ddd);
+    border: 2px solid var(--border-color, #ddd);
 }
 .ask-orator-name {
-    font-size: 0.78rem; font-weight: 600; text-align: center;
-    line-height: 1.3; max-width: 150px;
+    font-size: 0.74rem; font-weight: 600; line-height: 1.25;
+    max-width: 190px; text-align: start;
 }
 
 .ask-toolbar {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    margin-bottom: 14px; padding: 0 4px;
+    margin-bottom: 12px; padding: 0 4px;
 }
 .ask-toolbar-label { font-weight: 600; font-size: 0.9rem; }
-.ask-select { width: auto; min-width: 140px; }
+.ask-select { width: auto; min-width: 150px; }
 .ask-clear-btn {
-    margin-inline-start: auto; padding: 6px 12px; border-radius: 6px;
+    margin-inline-start: auto; padding: 7px 14px; border-radius: 8px;
     border: 1px solid var(--border-color, #ddd); background: transparent;
-    cursor: pointer; font-size: 0.85rem;
+    color: var(--text-primary, inherit); cursor: pointer; font-size: 0.85rem;
 }
 .ask-clear-btn:hover { background: var(--bg-secondary, #f0f0f0); }
 
+.ask-notice {
+    margin: 0 0 12px; padding: 10px 14px; border-radius: 10px;
+    background: rgba(255, 193, 7, 0.12); border: 1px solid rgba(255, 193, 7, 0.45);
+    font-size: 0.88rem;
+}
+
+.ask-shell {
+    display: flex; flex-direction: column;
+    height: clamp(520px, calc(100vh - 380px), 900px);
+    min-height: 480px;
+    border: 1px solid var(--border-color, #ddd); border-radius: 16px;
+    overflow: hidden; background: var(--bg-secondary, #f9f9f9);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.08);
+}
 .ask-chat {
-    border: 1px solid var(--border-color, #ddd); border-radius: 12px;
-    background: var(--bg-secondary, #f9f9f9); overflow: hidden;
-    display: flex; flex-direction: column; min-height: 420px; max-height: 62vh;
+    flex: 1; min-height: 0; display: flex; flex-direction: column;
+    border: 0; border-radius: 0; background: transparent;
+    overflow: hidden;
 }
 .ask-empty {
     flex: 1; display: flex; flex-direction: column; align-items: center;
-    justify-content: center; padding: 32px 16px; text-align: center;
+    justify-content: center; padding: 32px 24px; text-align: center;
 }
+.ask-empty[hidden] { display: none; }
 .ask-empty-icon { font-size: 3rem; margin-bottom: 8px; opacity: 0.6; }
-.ask-empty-title { font-size: 1.15rem; font-weight: 600; margin: 0 0 6px; }
-.ask-empty-hint { opacity: 0.7; margin: 0 0 16px; max-width: 420px; }
-.ask-suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 640px; }
+.ask-empty-title { font-size: 1.2rem; font-weight: 600; margin: 0 0 6px; }
+.ask-empty-hint { opacity: 0.7; margin: 0 0 18px; max-width: 560px; }
+.ask-suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 820px; }
 .ask-suggestion {
-    padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color, #ddd);
-    background: var(--bg-primary, #fff); cursor: pointer; font-size: 0.85rem;
-    text-align: start; transition: background 0.15s, border-color 0.15s;
+    padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border-color, #ddd);
+    background: var(--bg-primary, #fff); color: var(--text-primary, inherit);
+    cursor: pointer; font-size: 0.86rem; text-align: start;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.ask-suggestion:hover { background: var(--accent, #1976d2); color: #fff; border-color: var(--accent, #1976d2); }
+.ask-suggestion:hover {
+    background: var(--accent-red, #1976d2); color: #fff;
+    border-color: var(--accent-red, #1976d2);
+}
 
-.ask-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.ask-messages {
+    flex: 1; overflow-y: auto; padding: 20px 24px;
+    display: flex; flex-direction: column; gap: 18px;
+    scroll-behavior: smooth;
+}
+.ask-messages[hidden] { display: none; }
 
-.ask-msg { display: flex; gap: 10px; max-width: 100%; }
+.ask-msg { display: flex; gap: 12px; max-width: 100%; }
 .ask-msg.user { flex-direction: row-reverse; }
 .ask-avatar {
-    width: 34px; height: 34px; border-radius: 50%; flex: 0 0 34px;
+    width: 36px; height: 36px; border-radius: 50%; flex: 0 0 36px;
     display: flex; align-items: center; justify-content: center;
     font-size: 1rem; background: var(--bg-primary, #fff);
     border: 1px solid var(--border-color, #ddd);
 }
+.ask-msg > div:last-child { min-width: 0; max-width: 82%; }
 .ask-bubble {
-    max-width: 82%; padding: 10px 14px; border-radius: 14px;
-    line-height: 1.55; white-space: pre-wrap; word-wrap: break-word;
+    padding: 12px 16px; border-radius: 15px;
+    line-height: 1.62; word-wrap: break-word; overflow-wrap: anywhere;
+    font-size: 1rem;
 }
 .ask-msg.user .ask-bubble {
-    background: var(--accent, #1976d2); color: #fff; border-bottom-right-radius: 4px;
+    background: var(--accent-red, #1976d2); color: #fff;
+    border-bottom-right-radius: 4px; white-space: pre-wrap;
 }
 .ask-msg.assistant .ask-bubble {
     background: var(--bg-primary, #fff); border: 1px solid var(--border-color, #ddd);
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 4px; color: var(--text-primary, inherit);
 }
-.ask-msg-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 0.75rem; opacity: 0.6; }
+.ask-answer-line { min-height: 1.1em; }
+.ask-answer-heading { font-weight: 700; margin: 0.7em 0 0.25em; font-size: 1.02em; }
+.ask-answer-bullet { padding-inline-start: 1.1em; position: relative; }
+.ask-answer-bullet::before { content: "•"; position: absolute; inset-inline-start: 0.2em; opacity: 0.7; }
+.ask-gap { height: 0.55em; }
+.ask-cite {
+    display: inline-block; padding: 0 3px; border-radius: 4px;
+    font-size: 0.78em; font-weight: 700; text-decoration: none;
+    color: var(--accent-red, #1976d2); background: rgba(25, 118, 210, 0.10);
+    vertical-align: 0.1em;
+}
+.ask-cite:hover { background: rgba(25, 118, 210, 0.22); }
+
+.ask-sources {
+    margin-top: 10px; padding: 10px 12px; border-radius: 10px;
+    background: var(--bg-secondary, #f5f5f5);
+    border: 1px solid var(--border-color, #e0e0e0);
+    font-size: 0.86rem;
+}
+.ask-sources summary {
+    cursor: pointer; font-weight: 700; opacity: 0.8;
+    list-style: none;
+}
+.ask-sources summary::-webkit-details-marker { display: none; }
+.ask-sources summary::before { content: "▸ "; }
+.ask-sources[open] summary::before { content: "▾ "; }
+.ask-source-list { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.ask-source {
+    padding: 8px 10px; border-radius: 8px;
+    background: var(--bg-primary, #fff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    scroll-margin: 80px;
+}
+.ask-source-head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.ask-source-head a { color: var(--text-primary, inherit); font-weight: 600; text-decoration: none; }
+.ask-source-head a:hover { color: var(--accent-red, #1976d2); text-decoration: underline; }
+.ask-source-num {
+    font-size: 0.72rem; font-weight: 800; color: var(--accent-red, #1976d2);
+    background: rgba(25, 118, 210, 0.10); padding: 1px 5px; border-radius: 4px;
+}
+.ask-source-meta { margin-top: 3px; font-size: 0.74rem; opacity: 0.68; display: flex; flex-wrap: wrap; gap: 6px; }
+.ask-source-snippet { margin: 5px 0 0; font-size: 0.8rem; opacity: 0.8; line-height: 1.45; }
+.ask-badge {
+    display: inline-block; padding: 1px 6px; border-radius: 999px;
+    font-size: 0.66rem; font-weight: 700; letter-spacing: 0.02em;
+    border: 1px solid var(--border-color, #ddd); opacity: 0.9;
+}
+.ask-badge.external { color: #b26a00; border-color: rgba(178, 106, 0, 0.4); background: rgba(255, 193, 7, 0.12); }
+.ask-badge.internal { color: #1976d2; border-color: rgba(25, 118, 210, 0.35); background: rgba(25, 118, 210, 0.08); }
+
+.ask-msg-meta { display: flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 0.75rem; opacity: 0.65; flex-wrap: wrap; }
 .ask-msg.user .ask-msg-meta { justify-content: flex-end; }
 .ask-copy {
     background: none; border: none; cursor: pointer; padding: 2px 6px;
-    border-radius: 4px; font-size: 0.75rem; opacity: 0.7;
+    border-radius: 4px; font-size: 0.75rem; color: inherit; opacity: 0.75;
 }
 .ask-copy:hover { background: var(--bg-secondary, #f0f0f0); opacity: 1; }
+.ask-translation {
+    margin-top: 8px; padding: 9px 12px; border-radius: 8px;
+    background: rgba(25, 118, 210, 0.06);
+    border: 1px dashed rgba(25, 118, 210, 0.35);
+    font-size: 0.92rem; line-height: 1.55; color: var(--text-primary, inherit);
+}
+.ask-translation-label { display: block; font-size: 0.7rem; font-weight: 700; opacity: 0.6; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+.ask-followups { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.ask-followup {
+    border: 1px solid var(--border-color, #ddd); background: transparent;
+    color: var(--text-primary, inherit); border-radius: 999px; padding: 4px 10px;
+    font-size: 0.76rem; cursor: pointer; text-align: start;
+}
+.ask-followup:hover { border-color: var(--accent-red, #1976d2); color: var(--accent-red, #1976d2); }
 
-.ask-typing { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
+.ask-feedback { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; font-size: 0.76rem; opacity: 0.8; }
+.ask-feedback-label { opacity: 0.75; }
+.ask-feedback button {
+    border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff);
+    color: var(--text-primary, inherit); border-radius: 999px; padding: 3px 9px;
+    cursor: pointer; font-size: 0.76rem;
+}
+.ask-feedback button:hover { border-color: var(--accent-red, #1976d2); }
+.ask-feedback textarea {
+    width: 100%; min-height: 54px; margin-top: 4px; border-radius: 8px;
+    border: 1px solid var(--border-color, #ddd); padding: 6px 9px;
+    font-family: inherit; font-size: 0.8rem; resize: vertical;
+    background: var(--bg-primary, #fff); color: var(--text-primary, inherit);
+}
+.ask-feedback-done { color: #2e7d32; font-weight: 600; }
+
+.ask-typing { display: flex; gap: 4px; align-items: center; padding: 4px 0 8px; }
 .ask-typing span {
     width: 7px; height: 7px; border-radius: 50%;
     background: var(--text-secondary, #888); opacity: 0.4;
@@ -191,46 +313,53 @@
 }
 .ask-typing span:nth-child(2) { animation-delay: 0.15s; }
 .ask-typing span:nth-child(3) { animation-delay: 0.3s; }
+.ask-typing-label { font-size: 0.78rem; opacity: 0.65; }
 @keyframes ask-bounce {
     0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
     40% { transform: translateY(-6px); opacity: 1; }
 }
 
 .ask-form {
-    display: flex; gap: 8px; align-items: flex-end;
-    padding: 12px 16px; border-top: 1px solid var(--border-color, #ddd);
+    display: flex; gap: 10px; align-items: flex-end;
+    padding: 14px 16px; border-top: 1px solid var(--border-color, #ddd);
     background: var(--bg-primary, #fff);
 }
 .ask-input {
-    flex: 1; resize: none; min-height: 42px; max-height: 120px;
-    border-radius: 10px; padding: 10px 12px; font-family: inherit;
+    flex: 1; resize: none; min-height: 48px; max-height: 150px;
+    border-radius: 11px; padding: 12px 14px; font-family: inherit;
+    font-size: 1rem; line-height: 1.4;
 }
 .ask-send-btn {
-    width: 44px; height: 44px; border-radius: 10px; border: none;
-    background: var(--accent, #1976d2); color: #fff; cursor: pointer;
+    width: 48px; height: 48px; border-radius: 11px; border: none;
+    background: var(--accent-red, #1976d2); color: #fff; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; flex: 0 0 44px;
+    font-size: 1.15rem; flex: 0 0 48px;
 }
 .ask-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.ask-send-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.ask-send-btn:hover:not(:disabled) { filter: brightness(1.08); }
 
-.ask-refs {
-    margin-top: 8px; padding: 8px 10px; border-radius: 8px;
-    background: var(--bg-secondary, #f5f5f5); border: 1px solid var(--border-color, #e0e0e0);
+.ask-disclaimer {
+    margin: 10px 4px 0; font-size: 0.76rem; opacity: 0.6;
+    text-align: center; line-height: 1.4;
 }
-.ask-refs-title { font-size: 0.75rem; font-weight: 700; opacity: 0.7; margin-bottom: 4px; }
-.ask-ref {
-    display: inline-block; margin: 2px 4px 2px 0; padding: 3px 8px;
-    border-radius: 6px; font-size: 0.78rem; text-decoration: none;
-    background: var(--bg-primary, #fff); border: 1px solid var(--border-color, #ddd);
-    color: var(--text-primary, #333);
-}
-.ask-ref:hover { border-color: var(--accent, #1976d2); color: var(--accent, #1976d2); }
 
-@media (max-width: 600px) {
-    .ask-hero h1 { font-size: 1.5rem; }
-    .ask-bubble { max-width: 92%; }
+@media (max-width: 760px) {
+    .ask-hero { padding: 15px; gap: 12px; }
+    .ask-hero-logo { width: 54px; height: 54px; flex-basis: 54px; }
+    .ask-hero h1 { font-size: 1.35rem; }
+    .ask-hero-sub { font-size: 0.84rem; }
+    .ask-hero-orators { gap: 6px 12px; }
+    .ask-orator-img, .ask-orator-fallback { width: 28px; height: 28px; }
+    .ask-orator-name { font-size: 0.68rem; max-width: 150px; }
+    .ask-shell { height: clamp(420px, calc(100dvh - 320px), 760px); min-height: 420px; border-radius: 12px; }
+    .ask-messages { padding: 14px; gap: 13px; }
+    .ask-msg > div:last-child { max-width: 92%; }
+    .ask-bubble { font-size: 0.95rem; padding: 10px 12px; }
+    .ask-avatar { display: none; }
     .ask-suggestion { font-size: 0.8rem; }
+    .ask-form { padding: 10px 12px; }
+    .ask-input { min-height: 44px; font-size: 0.95rem; }
+    .ask-send-btn { width: 44px; height: 44px; flex-basis: 44px; }
 }
 </style>
 
@@ -245,41 +374,49 @@
     const lang = document.getElementById("askLang");
     const clearBtn = document.getElementById("askClear");
     const suggestions = document.getElementById("askSuggestions");
-    const chat = document.getElementById("askChat");
-    const csrfInput = form.querySelector("input[name=csrfmiddlewaretoken]");
-    const csrf = csrfInput ? csrfInput.value : "";
+    const csrf = "{{ csrf_token }}";
     const langForm = document.getElementById("langForm");
     const langCode = document.getElementById("langCode");
     const langNext = document.getElementById("langNext");
 
-    // Persist and restore the conversation across a language switch.
+    let conversation = [];
+    let messageCounter = 0;
+
     function saveHistory() {
-        const msgs = [];
-        messages.querySelectorAll(".ask-msg").forEach(m => {
-            const role = m.classList.contains("user") ? "user" : "assistant";
-            const txt = m.querySelector(".ask-bubble");
-            if (txt) msgs.push({ role, text: txt.textContent });
-        });
-        try { sessionStorage.setItem("askHistory", JSON.stringify(msgs)); } catch (e) {}
+        try {
+            sessionStorage.setItem("askHistoryV2", JSON.stringify(conversation.slice(-20)));
+        } catch (e) {}
     }
 
-    // Switching the language re-renders the page in that language.
+    (function restoreHistory() {
+        let saved = [];
+        try { saved = JSON.parse(sessionStorage.getItem("askHistoryV2") || "[]"); } catch (e) {}
+        if (!saved.length) return;
+        saved.forEach(message => {
+            const item = addMessage(
+                message.role,
+                message.text || "",
+                message.refs || [],
+                message.interactionId || null,
+                true
+            );
+            conversation.push({
+                role: message.role,
+                text: message.text || "",
+                refs: message.refs || [],
+                interactionId: message.interactionId || null,
+            });
+            return item;
+        });
+        sessionStorage.removeItem("askHistoryV2");
+    })();
+
     lang.addEventListener("change", function () {
         saveHistory();
         langCode.value = lang.value;
         langNext.value = window.location.pathname + window.location.search;
         langForm.submit();
     });
-
-    // Restore conversation after a language switch.
-    (function restoreHistory() {
-        let msgs = [];
-        try { msgs = JSON.parse(sessionStorage.getItem("askHistory") || "[]"); } catch (e) {}
-        if (!msgs.length) return;
-        showMessages();
-        msgs.forEach(m => addMessage(m.role, m.text));
-        sessionStorage.removeItem("askHistory");
-    })();
 
     function showMessages() {
         empty.hidden = true;
@@ -290,54 +427,206 @@
         messages.scrollTop = messages.scrollHeight;
     }
 
-    function copyText(text, btn) {
-        const done = () => {
-            const orig = btn.textContent;
-            btn.textContent = "{% trans 'Copied' %}";
-            setTimeout(() => { btn.textContent = orig; }, 1200);
-        };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(done).catch(() => {});
-        } else {
-            const ta = document.createElement("textarea");
-            ta.value = text;
-            document.body.appendChild(ta);
-            ta.select();
-            try { document.execCommand("copy"); done(); } catch (e) {}
-            document.body.removeChild(ta);
-        }
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, function (char) {
+            return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[char];
+        });
     }
 
-    function addMessage(role, text, refs) {
+    function citationLink(text, refs, key) {
+        let safe = escapeHtml(text);
+        safe = safe.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+        safe = safe.replace(/\[S(\d+)\]/g, function (match, number) {
+            const exists = (refs || []).some(function (ref) {
+                return String(ref.citation || "") === "S" + number;
+            });
+            if (!exists) return match;
+            return '<a class="ask-cite" href="#source-' + key + "-" + number + '">[S' + number + "]</a>";
+        });
+        return safe;
+    }
+
+    function renderAnswer(bubble, text, refs, key) {
+        if (!refs || !refs.length) {
+            bubble.textContent = text;
+            return;
+        }
+        const lines = String(text || "").split("\n");
+        bubble.innerHTML = lines.map(function (line) {
+            const trimmed = line.trim();
+            if (!trimmed) return '<div class="ask-gap"></div>';
+            if (/^#{1,4}\s+/.test(trimmed)) {
+                return '<div class="ask-answer-heading">' + citationLink(trimmed.replace(/^#{1,4}\s+/, ""), refs, key) + "</div>";
+            }
+            if (/^[-*•]\s+/.test(trimmed)) {
+                return '<div class="ask-answer-bullet">' + citationLink(trimmed.replace(/^[-*•]\s+/, ""), refs, key) + "</div>";
+            }
+            return '<div class="ask-answer-line">' + citationLink(trimmed, refs, key) + "</div>";
+        }).join("");
+    }
+
+    function renderSources(refs, key) {
+        const box = document.createElement("details");
+        box.className = "ask-sources";
+        box.open = refs.length <= 3;
+
+        const summary = document.createElement("summary");
+        summary.textContent = "{% trans 'Sources and evidence' %} (" + refs.length + ")";
+        box.appendChild(summary);
+
+        const list = document.createElement("ol");
+        list.className = "ask-source-list";
+        refs.forEach(function (ref) {
+            const number = String(ref.citation || "").replace(/[^0-9]/g, "") || "?";
+            const item = document.createElement("li");
+            item.className = "ask-source";
+            item.id = "source-" + key + "-" + number;
+
+            const head = document.createElement("div");
+            head.className = "ask-source-head";
+            const num = document.createElement("span");
+            num.className = "ask-source-num";
+            num.textContent = ref.citation || ("S" + number);
+            head.appendChild(num);
+
+            const link = document.createElement("a");
+            link.href = ref.url || "#";
+            link.target = "_blank";
+            link.rel = "noopener";
+            link.textContent = ref.title || ref.url || "{% trans 'Source' %}";
+            head.appendChild(link);
+
+            const origin = document.createElement("span");
+            origin.className = "ask-badge " + (ref.origin === "external" ? "external" : "internal");
+            origin.textContent = ref.origin === "external" ? "{% trans 'External' %}" : "{% trans 'Library' %}";
+            head.appendChild(origin);
+
+            if (ref.authority === "primary") {
+                const authority = document.createElement("span");
+                authority.className = "ask-badge";
+                authority.textContent = "{% trans 'Primary' %}";
+                head.appendChild(authority);
+            }
+            item.appendChild(head);
+
+            const meta = document.createElement("div");
+            meta.className = "ask-source-meta";
+            const parts = [];
+            if (ref.location) parts.push(ref.location);
+            if (ref.page) parts.push("p. " + ref.page);
+            if (ref.timestamp) parts.push(ref.timestamp);
+            if (ref.author) parts.push(ref.author);
+            if (ref.origin === "external") parts.push("{% trans 'web research' %}");
+            meta.textContent = parts.join(" · ");
+            if (meta.textContent) item.appendChild(meta);
+
+            if (ref.snippet) {
+                const snippet = document.createElement("p");
+                snippet.className = "ask-source-snippet";
+                snippet.textContent = ref.snippet;
+                item.appendChild(snippet);
+            }
+            list.appendChild(item);
+        });
+        box.appendChild(list);
+        return box;
+    }
+
+    function feedbackRow(interactionId, wrap) {
+        const row = document.createElement("div");
+        row.className = "ask-feedback";
+        const label = document.createElement("span");
+        label.className = "ask-feedback-label";
+        label.textContent = "{% trans 'Was this answer helpful?' %}";
+        row.appendChild(label);
+
+        function finish(message) {
+            row.innerHTML = "";
+            const done = document.createElement("span");
+            done.className = "ask-feedback-done";
+            done.textContent = message;
+            row.appendChild(done);
+        }
+
+        async function send(helpful, comment) {
+            const body = new FormData();
+            body.append("interaction_id", interactionId);
+            body.append("helpful", helpful ? "1" : "0");
+            body.append("comment", comment || "");
+            try {
+                const response = await fetch("{% url 'videos:ask_feedback' %}", {
+                    method: "POST",
+                    headers: {"X-CSRFToken": csrf},
+                    body: body,
+                });
+                const data = await response.json();
+                if (data.success) finish(data.message || "{% trans 'Thank you for the feedback.' %}");
+            } catch (e) {}
+        }
+
+        const yes = document.createElement("button");
+        yes.type = "button";
+        yes.textContent = "👍 {% trans 'Yes' %}";
+        yes.addEventListener("click", function () { send(true, ""); });
+
+        const no = document.createElement("button");
+        no.type = "button";
+        no.textContent = "👎 {% trans 'No' %}";
+        no.addEventListener("click", function () {
+            row.innerHTML = "";
+            const box = document.createElement("div");
+            box.style.width = "100%";
+            const area = document.createElement("textarea");
+            area.placeholder = "{% trans 'What was missing or wrong? (optional)' %}";
+            const sendBtn = document.createElement("button");
+            sendBtn.type = "button";
+            sendBtn.textContent = "{% trans 'Send feedback' %}";
+            sendBtn.addEventListener("click", function () { send(false, area.value); });
+            box.appendChild(area);
+            box.appendChild(sendBtn);
+            row.appendChild(box);
+            area.focus();
+        });
+
+        row.appendChild(yes);
+        row.appendChild(no);
+        wrap.appendChild(row);
+    }
+
+    function addMessage(role, text, refs, interactionId, restoring) {
         showMessages();
+        messageCounter += 1;
+        const key = "m" + messageCounter;
         const div = document.createElement("div");
         div.className = "ask-msg " + role;
+
         const avatar = document.createElement("div");
         avatar.className = "ask-avatar";
         avatar.textContent = role === "user" ? "👤" : "✨";
+
         const wrap = document.createElement("div");
         const bubble = document.createElement("div");
         bubble.className = "ask-bubble";
-        bubble.textContent = text;
+        bubble.dir = "auto";
+        renderAnswer(bubble, text, refs, key);
+
+        bubble.addEventListener("click", function (event) {
+            const link = event.target.closest(".ask-cite");
+            if (!link) return;
+            event.preventDefault();
+            const target = document.querySelector(link.getAttribute("href"));
+            if (!target) return;
+            const details = target.closest("details");
+            if (details) details.open = true;
+            target.scrollIntoView({behavior: "smooth", block: "center"});
+        });
+
         wrap.appendChild(bubble);
+
         if (role === "assistant" && refs && refs.length) {
-            const refBox = document.createElement("div");
-            refBox.className = "ask-refs";
-            const refTitle = document.createElement("div");
-            refTitle.className = "ask-refs-title";
-            refTitle.textContent = "{% trans 'References' %}";
-            refBox.appendChild(refTitle);
-            refs.forEach(r => {
-                const a = document.createElement("a");
-                a.className = "ask-ref ask-ref-" + (r.type || "web");
-                a.href = r.url || "#";
-                a.target = r.type === "web" ? "_blank" : "_self";
-                a.rel = "noopener";
-                a.textContent = (r.type === "video" ? "🎬 " : r.type === "book" ? "📖 " : r.type === "short" ? "📱 " : "🔗 ") + (r.title || r.url);
-                refBox.appendChild(a);
-            });
-            wrap.appendChild(refBox);
+            wrap.appendChild(renderSources(refs, key));
         }
+
         if (role === "assistant") {
             const meta = document.createElement("div");
             meta.className = "ask-msg-meta";
@@ -345,10 +634,94 @@
             copy.type = "button";
             copy.className = "ask-copy";
             copy.textContent = "{% trans 'Copy' %}";
-            copy.addEventListener("click", () => copyText(text, copy));
+            copy.addEventListener("click", function () { copyText(text, copy); });
             meta.appendChild(copy);
+
+            let translationBox = null;
+            if (text) {
+                const translate = document.createElement("button");
+                translate.type = "button";
+                translate.className = "ask-copy";
+                translate.textContent = "{% trans 'Translate' %}";
+                translate.addEventListener("click", async function () {
+                    if (translationBox) {
+                        translationBox.hidden = !translationBox.hidden;
+                        translate.textContent = translationBox.hidden
+                            ? "{% trans 'Translate' %}"
+                            : "{% trans 'Show original' %}";
+                        return;
+                    }
+                    translate.disabled = true;
+                    translate.textContent = "{% trans 'Translating…' %}";
+                    try {
+                        const response = await fetch("{% url 'library:translate_text' %}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRFToken": csrf,
+                            },
+                            body: JSON.stringify({
+                                text: text,
+                                source: "auto",
+                                target: lang.value,
+                            }),
+                        });
+                        const data = await response.json();
+                        if (!response.ok || !data.translated) {
+                            throw new Error(data.error || "unavailable");
+                        }
+                        translationBox = document.createElement("div");
+                        translationBox.className = "ask-translation";
+                        const label = document.createElement("span");
+                        label.className = "ask-translation-label";
+                        label.textContent = "{% trans 'Translation' %}";
+                        translationBox.appendChild(label);
+                        const body = document.createElement("div");
+                        body.dir = "auto";
+                        renderAnswer(body, data.translated, refs, key);
+                        translationBox.appendChild(body);
+                        wrap.insertBefore(translationBox, meta);
+                        translate.textContent = "{% trans 'Show original' %}";
+                    } catch (error) {
+                        translate.textContent = "{% trans 'Translation unavailable' %}";
+                        setTimeout(function () {
+                            translate.textContent = "{% trans 'Translate' %}";
+                        }, 2200);
+                    } finally {
+                        translate.disabled = false;
+                    }
+                });
+                meta.appendChild(translate);
+            }
             wrap.appendChild(meta);
+
+            if (refs && refs.length) {
+                const followups = document.createElement("div");
+                followups.className = "ask-followups";
+                [
+                    "{% trans 'Can you give the exact source and page?' %}",
+                    "{% trans 'What do the library books say about this?' %}",
+                    "{% trans 'How do scholars explain this?' %}",
+                ].forEach(function (question) {
+                    const chip = document.createElement("button");
+                    chip.type = "button";
+                    chip.className = "ask-followup";
+                    chip.textContent = question;
+                    chip.addEventListener("click", function () {
+                        input.value = question;
+                        input.focus();
+                        input.dispatchEvent(new Event("input"));
+                    });
+                    followups.appendChild(chip);
+                });
+                wrap.appendChild(followups);
+            }
+
+            if (interactionId) {
+                feedbackRow(interactionId, wrap);
+            }
         }
+
         div.appendChild(avatar);
         div.appendChild(wrap);
         messages.appendChild(div);
@@ -365,10 +738,9 @@
         avatar.textContent = "✨";
         const bubble = document.createElement("div");
         bubble.className = "ask-bubble";
-        const typing = document.createElement("div");
-        typing.className = "ask-typing";
-        typing.innerHTML = "<span></span><span></span><span></span>";
-        bubble.appendChild(typing);
+        bubble.innerHTML =
+            '<div class="ask-typing"><span></span><span></span><span></span></div>' +
+            '<div class="ask-typing-label">{% trans "Searching the library, transcripts and web…" %}</div>';
         div.appendChild(avatar);
         div.appendChild(bubble);
         messages.appendChild(div);
@@ -376,64 +748,110 @@
         return div;
     }
 
-    suggestions.addEventListener("click", function (e) {
-        const btn = e.target.closest(".ask-suggestion");
-        if (!btn) return;
-        input.value = btn.dataset.q || btn.textContent;
+    function copyText(text, button) {
+        const done = function () {
+            const original = button.textContent;
+            button.textContent = "{% trans 'Copied' %}";
+            setTimeout(function () { button.textContent = original; }, 1200);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {});
+        } else {
+            const area = document.createElement("textarea");
+            area.value = text;
+            document.body.appendChild(area);
+            area.select();
+            try { document.execCommand("copy"); done(); } catch (e) {}
+            document.body.removeChild(area);
+        }
+    }
+
+    suggestions.addEventListener("click", function (event) {
+        const button = event.target.closest(".ask-suggestion");
+        if (!button) return;
+        input.value = button.dataset.q || button.textContent;
         input.focus();
+        input.dispatchEvent(new Event("input"));
     });
 
     clearBtn.addEventListener("click", function () {
+        conversation = [];
         messages.innerHTML = "";
         empty.hidden = false;
         messages.hidden = true;
+        try { sessionStorage.removeItem("askHistoryV2"); } catch (e) {}
     });
 
-    form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const q = input.value.trim();
-        if (!q) return;
-        addMessage("user", q);
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        const question = input.value.trim();
+        if (!question) return;
+
+        const priorHistory = conversation
+            .filter(function (message) { return message.role === "user" || message.role === "assistant"; })
+            .slice(-6)
+            .map(function (message) { return {role: message.role, content: message.text}; });
+
+        addMessage("user", question, [], null, false);
+        conversation.push({role: "user", text: question, refs: [], interactionId: null});
+
         input.value = "";
         input.style.height = "auto";
         btn.disabled = true;
         const thinking = addTyping();
 
         const body = new FormData();
-        body.append("question", q);
+        body.append("question", question);
         body.append("language", lang.value);
+        body.append("history", JSON.stringify(priorHistory));
         body.append("csrfmiddlewaretoken", csrf);
 
         fetch("{% url 'videos:ask_send' %}", {
             method: "POST",
-            headers: { "X-CSRFToken": csrf },
+            headers: {"X-CSRFToken": csrf},
             body: body,
         })
-            .then(r => r.json())
-            .then(data => {
+            .then(function (response) {
+                return response.json().then(function (data) {
+                    return {ok: response.ok, data: data};
+                });
+            })
+            .then(function (result) {
                 thinking.remove();
+                const data = result.data;
                 if (data.success) {
-                    addMessage("assistant", data.answer, data.references);
+                    addMessage("assistant", data.answer, data.references || [], data.interaction_id, false);
+                    conversation.push({
+                        role: "assistant",
+                        text: data.answer,
+                        refs: data.references || [],
+                        interactionId: data.interaction_id || null,
+                    });
                 } else {
-                    addMessage("assistant", data.error || "{% trans 'Something went wrong.' %}");
+                    const message = data.error || "{% trans 'Something went wrong.' %}";
+                    addMessage("assistant", message, [], null, false);
+                    conversation.push({role: "assistant", text: message, refs: [], interactionId: null});
                 }
             })
-            .catch(() => {
+            .catch(function () {
                 thinking.remove();
-                addMessage("assistant", "{% trans 'Network error. Please try again.' %}");
+                const message = "{% trans 'Network error. Please try again.' %}";
+                addMessage("assistant", message, [], null, false);
+                conversation.push({role: "assistant", text: message, refs: [], interactionId: null});
             })
-            .finally(() => { btn.disabled = false; input.focus(); });
+            .finally(function () {
+                btn.disabled = false;
+                input.focus();
+            });
     });
 
-    // Auto-grow textarea
     input.addEventListener("input", function () {
         input.style.height = "auto";
-        input.style.height = Math.min(input.scrollHeight, 120) + "px";
+        input.style.height = Math.min(input.scrollHeight, 150) + "px";
     });
-    // Enter to send, Shift+Enter for newline
-    input.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
+    input.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
             form.requestSubmit();
         }
     });

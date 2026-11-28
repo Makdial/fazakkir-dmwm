@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "AI knowledge" %} - Fazakkir{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/social.css' %}">
+<link rel="stylesheet" href="{% static 'css/manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="section-header">
+    <h1>{% trans "AI knowledge" %}</h1>
+    <p class="section-subtitle">
+        {% trans "Index, review and operate the Ask DMWM retrieval-augmented assistant." %}
+    </p>
+</div>
+
+{% include 'dashboard/_tabs.html' %}
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <span class="stat-value">{{ stats.chunks }}</span>
+        <span class="stat-label">{% trans "Indexed passages" %}</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ stats.books_indexed }}/{{ stats.books_total }}</span>
+        <span class="stat-label">{% trans "Books indexed" %}</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ stats.videos_indexed }}/{{ stats.videos_total }}</span>
+        <span class="stat-label">{% trans "Videos indexed" %}</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{% if ask_settings.external_search_enabled %}{% trans "On" %}{% else %}{% trans "Off" %}{% endif %}</span>
+        <span class="stat-label">{% trans "External research" %}</span>
+    </div>
+</div>
+
+<div class="dash-panel">
+    <h2>{% trans "Provider status" %}</h2>
+    <p class="section-subtitle">
+        {% if provider %}
+            {% blocktrans with name=provider.name model=provider.model %}Chat answers use {{ name }} ({{ model }}).{% endblocktrans %}
+        {% else %}
+            {% trans "No chat provider is configured. Add GROQ_API_KEY (free tier) or OPENAI_API_KEY." %}
+        {% endif %}
+    </p>
+    <p class="section-subtitle">
+        {% if stats.providers %}
+            {% trans "Embeddings in the index:" %}
+            {% for provider_name, model_name in stats.providers %}
+                <span class="chip">{{ provider_name }} · {{ model_name }}</span>
+            {% endfor %}
+        {% else %}
+            {% trans "The index is empty. Index a first batch below." %}
+        {% endif %}
+    </p>
+    {% if not stats.providers or stats.providers.0.0 == "local" %}
+        <p class="dash-warning">
+            {% trans "Local hashing embeddings are active. They keep the site working without an API key, but adding OPENAI_API_KEY and rebuilding the index enables true multilingual semantic search." %}
+        </p>
+    {% endif %}
+</div>
+
+<div class="dash-panel">
+    <h2>{% trans "Answer policy" %}</h2>
+    <p class="section-subtitle">
+        {% trans "The prompt is stored in the database, so it can be updated without changing code. The citation and safety rules are part of the default prompt." %}
+    </p>
+    <form method="post" action="{% url 'dashboard:ai_prompt' %}" class="dash-form">
+        {% csrf_token %}
+        <label style="display:block;margin-bottom:1rem;">
+            <span>{% trans "System prompt" %}</span>
+            <textarea name="system_prompt" class="form-input" rows="12"
+                      placeholder="{{ default_prompt }}">{{ ask_settings.system_prompt }}</textarea>
+            <small>{% trans "Leave blank to use the built-in prompt shown as the placeholder." %}</small>
+        </label>
+        <div class="dash-form-grid">
+            <label>
+                <span>{% trans "Temperature" %}</span>
+                <input type="number" step="0.05" min="0" max="1" name="temperature"
+                       value="{{ ask_settings.temperature }}" class="form-input">
+            </label>
+            <label>
+                <span>{% trans "Maximum evidence characters" %}</span>
+                <input type="number" min="4000" max="60000" step="1000" name="max_context_chars"
+                       value="{{ ask_settings.max_context_chars }}" class="form-input">
+            </label>
+            <label style="display:flex;gap:.5rem;align-items:center;">
+                <input type="checkbox" name="external_search_enabled" {% if ask_settings.external_search_enabled %}checked{% endif %}>
+                <span>{% trans "Allow external research" %}</span>
+            </label>
+            <label style="display:flex;gap:.5rem;align-items:center;">
+                <input type="checkbox" name="is_enabled" {% if ask_settings.is_enabled %}checked{% endif %}>
+                <span>{% trans "Assistant is enabled" %}</span>
+            </label>
+        </div>
+        <div class="dash-form-actions">
+            <button type="submit" class="btn-primary">{% trans "Save policy" %}</button>
+        </div>
+    </form>
+</div>
+
+<div class="dash-panel">
+    <h2>{% trans "Indexing" %}</h2>
+    <p class="section-subtitle">
+        {% trans "A batch indexes up to 5 books, 10 videos and 10 shorts. Run it repeatedly until the coverage cards reach the total. The management command can index everything without a request timeout." %}
+    </p>
+    <form method="post" action="{% url 'dashboard:ai_index' %}" class="dash-form-actions">
+        {% csrf_token %}
+        <input type="hidden" name="scope" value="all">
+        <button type="submit" class="btn-primary">{% trans "Index next batch" %}</button>
+        <code>python manage.py build_knowledge_index --all</code>
+    </form>
+</div>
+
+<div class="dash-panel">
+    <h2>{% trans "Source review and coverage" %}</h2>
+    <p class="section-subtitle">
+        {% trans "Unapproved sources are excluded from retrieval. Authority controls how strongly a passage is ranked." %}
+    </p>
+    <div class="manage-table-wrap">
+        <table class="manage-table">
+            <thead>
+                <tr>
+                    <th>{% trans "Source" %}</th>
+                    <th>{% trans "Passages" %}</th>
+                    <th>{% trans "Authority" %}</th>
+                    <th>{% trans "Perspective / notes" %}</th>
+                    <th>{% trans "Approved" %}</th>
+                    <th>{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in source_rows %}
+                <tr>
+                    <td>
+                        <a href="{{ row.url }}" target="_blank" rel="noopener">{{ row.title }}</a>
+                        <div class="muted">{{ row.kind }}</div>
+                    </td>
+                    <td>{{ row.chunks }}</td>
+                    <td colspan="3">
+                        <form method="post" action="{% url 'dashboard:ai_source' %}" class="ai-source-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="source_type" value="{{ row.source_type }}">
+                            <input type="hidden" name="source_id" value="{{ row.source_id }}">
+                            <input type="hidden" name="title" value="{{ row.title }}">
+                            <select name="authority" class="form-input">
+                                {% for value, label in authority_choices %}
+                                <option value="{{ value }}" {% if row.profile and row.profile.authority == value %}selected{% elif not row.profile and value == "reference" %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" name="perspective" class="form-input"
+                                   value="{{ row.profile.perspective|default:'' }}"
+                                   placeholder="{% trans 'Perspective (optional)' %}">
+                            <input type="text" name="notes" class="form-input"
+                                   value="{{ row.profile.notes|default:'' }}"
+                                   placeholder="{% trans 'Editorial notes' %}">
+                            <label class="ai-inline-check">
+                                <input type="checkbox" name="is_approved" {% if not row.profile or row.profile.is_approved %}checked{% endif %}>
+                                {% trans "Approved" %}
+                            </label>
+                            <button type="submit" class="btn-small">{% trans "Save review" %}</button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" action="{% url 'dashboard:ai_index' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="source_type" value="{{ row.source_type }}">
+                            <input type="hidden" name="source_id" value="{{ row.source_id }}">
+                            <button type="submit" class="btn-small">{% trans "Reindex" %}</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6">{% trans "No books or videos found." %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="dash-panel">
+    <h2>{% trans "External web sources" %}</h2>
+    <p class="section-subtitle">
+        {% trans "Only domains on the server allowlist or approved here can reach the model. Add a domain to override the default decision." %}
+    </p>
+    <form method="post" action="{% url 'dashboard:ai_web_source' %}" class="dash-form-grid" style="margin-bottom:1rem;">
+        {% csrf_token %}
+        <label>
+            <span>{% trans "Domain" %}</span>
+            <input type="text" name="domain" class="form-input" placeholder="example.org" required>
+        </label>
+        <label>
+            <span>{% trans "Authority" %}</span>
+            <select name="authority" class="form-input">
+                {% for value, label in authority_choices %}
+                <option value="{{ value }}" {% if value == "reference" %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>{% trans "Notes" %}</span>
+            <input type="text" name="notes" class="form-input" placeholder="{% trans 'Why this source is trusted' %}">
+        </label>
+        <label style="display:flex;gap:.5rem;align-items:center;">
+            <input type="checkbox" name="is_approved" checked>
+            <span>{% trans "Approved" %}</span>
+        </label>
+        <button type="submit" class="btn-primary">{% trans "Save domain" %}</button>
+    </form>
+    {% if web_rules %}
+    <div class="manage-table-wrap">
+        <table class="manage-table">
+            <thead><tr><th>{% trans "Domain" %}</th><th>{% trans "Decision" %}</th><th>{% trans "Authority" %}</th><th>{% trans "Notes" %}</th></tr></thead>
+            <tbody>
+                {% for rule in web_rules %}
+                <tr>
+                    <td>{{ rule.domain }}</td>
+                    <td>{% if rule.is_approved %}<span class="badge badge-ok">{% trans "Allowed" %}</span>{% else %}<span class="badge badge-critical">{% trans "Blocked" %}</span>{% endif %}</td>
+                    <td>{{ rule.get_authority_display }}</td>
+                    <td>{{ rule.notes }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<div class="dash-panel">
+    <h2>{% trans "Recent feedback" %}</h2>
+    {% if feedback_items %}
+    <div class="manage-table-wrap">
+        <table class="manage-table">
+            <thead><tr><th>{% trans "Question" %}</th><th>{% trans "Verdict" %}</th><th>{% trans "Comment" %}</th><th>{% trans "Action" %}</th></tr></thead>
+            <tbody>
+                {% for item in feedback_items %}
+                <tr>
+                    <td>{{ item.interaction.question|truncatechars:120 }}</td>
+                    <td>
+                        {% if item.helpful %}<span class="badge badge-ok">{% trans "Helpful" %}</span>
+                        {% else %}<span class="badge badge-critical">{% trans "Not helpful" %}</span>{% endif %}
+                    </td>
+                    <td>{{ item.comment|default:"—"|truncatechars:160 }}</td>
+                    <td>
+                        {% if item.is_reviewed %}
+                            <span class="muted">{% trans "Reviewed" %}</span>
+                        {% else %}
+                            <form method="post" action="{% url 'dashboard:ai_feedback' item.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-small">{% trans "Mark reviewed" %}</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="muted">{% trans "No feedback yet." %}</p>
+    {% endif %}
+</div>
+
+<div class="dash-panel">
+    <h2>{% trans "Unanswered questions and errors" %}</h2>
+    {% if questions %}
+    <div class="manage-table-wrap">
+        <table class="manage-table">
+            <thead><tr><th>{% trans "Question" %}</th><th>{% trans "Status" %}</th><th>{% trans "When" %}</th><th>{% trans "Follow-up" %}</th></tr></thead>
+            <tbody>
+                {% for item in questions %}
+                <tr>
+                    <td>{{ item.question|truncatechars:160 }}</td>
+                    <td><span class="badge badge-warning">{{ item.get_status_display }}</span></td>
+                    <td>{{ item.created_at|date:"SHORT_DATETIME_FORMAT" }}</td>
+                    <td>
+                        <form method="post" action="{% url 'dashboard:ai_interaction' item.pk %}" class="ai-source-form">
+                            {% csrf_token %}
+                            <input type="text" name="admin_notes" class="form-input" value="{{ item.admin_notes }}" placeholder="{% trans 'Answer, correction or note' %}">
+                            <label class="ai-inline-check">
+                                <input type="checkbox" name="is_resolved" {% if item.is_resolved %}checked{% endif %}>
+                                {% trans "Resolved" %}
+                            </label>
+                            <button type="submit" class="btn-small">{% trans "Save" %}</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="muted">{% trans "No unanswered questions." %}</p>
+    {% endif %}
+</div>
+
+<div class="dash-panel">
+    <h2>{% trans "Recent answers" %}</h2>
+    <p class="section-subtitle">{% trans "The ten latest questions, including successful answers, are kept for review in the Django admin and here." %}</p>
+    <ul>
+        {% for item in recent_answers %}
+        <li>
+            <strong>{{ item.question|truncatechars:130 }}</strong>
+            <span class="muted">— {{ item.get_status_display }} · {{ item.created_at|date:"SHORT_DATETIME_FORMAT" }}</span>
+        </li>
+        {% empty %}
+        <li class="muted">{% trans "No questions yet." %}</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<style>
+.ai-source-form { display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; }
+.ai-source-form .form-input { min-width: 140px; flex: 1 1 140px; }
+.ai-inline-check { display:flex; align-items:center; gap:.3rem; font-size:.85rem; white-space:nowrap; }
+.muted { opacity:.65; font-size:.85rem; }
+</style>
+{% endblock %}

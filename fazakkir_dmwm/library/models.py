@@ -139,8 +139,16 @@ class Book(models.Model):
     tags = models.CharField(max_length=300, blank=True, help_text=_("Comma separated"))
     isbn = models.CharField(max_length=20, blank=True)
     publisher = models.CharField(max_length=200, blank=True)
+    edition = models.CharField(max_length=120, blank=True)
     published_year = models.PositiveIntegerField(null=True, blank=True)
     page_count = models.PositiveIntegerField(default=0)
+
+    # Searchable text extracted from the PDF, used by Ask DMWM to ground its
+    # answers in the actual books.  content_indexed records that extraction
+    # already ran (even when the PDF is scanned and produced no text).
+    content_text = models.TextField(blank=True, default="")
+    content_pages = models.JSONField(default=list, blank=True)
+    content_indexed = models.BooleanField(default=False)
 
     # R2 storage fields (mirroring the Video model).
     pdf_file_id = models.CharField(max_length=200, blank=True, default="")
@@ -189,10 +197,50 @@ class Book(models.Model):
         return round(self.rating_sum / self.rating_count, 1)
 
     @property
+    def file_extension(self) -> str:
+        from pathlib import Path
+
+        return Path(self.pdf_file_id or "").suffix.lower().lstrip(".")
+
+    @property
+    def is_pdf(self) -> bool:
+        return self.file_extension in ("", "pdf")
+
+    @property
+    def file_label(self) -> str:
+        labels = {
+            "pdf": "PDF",
+            "epub": "EPUB",
+            "docx": "DOCX",
+            "txt": "TXT",
+            "md": "Markdown",
+            "markdown": "Markdown",
+        }
+        return labels.get(self.file_extension, "File")
+
+    @property
     def pdf_download_url(self):
         from videos import r2_storage
 
-        return r2_storage.download_url(self.pdf_file_id, f"{self.slug or 'book'}.pdf", self.pdf_url)
+        extension = self.file_extension or "pdf"
+        return r2_storage.download_url(
+            self.pdf_file_id, f"{self.slug or 'book'}.{extension}", self.pdf_url
+        )
+
+    @staticmethod
+    def content_type_for(filename: str) -> str:
+        """Return the HTTP content type for a supported book file."""
+        suffix = (filename or "").lower().rsplit(".", 1)[-1]
+        return {
+            "pdf": "application/pdf",
+            "epub": "application/epub+zip",
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "txt": "text/plain; charset=utf-8",
+            "md": "text/markdown; charset=utf-8",
+            "markdown": "text/markdown; charset=utf-8",
+            "html": "text/html; charset=utf-8",
+            "htm": "text/html; charset=utf-8",
+        }.get(suffix, "application/octet-stream")
 
     @property
     def pdf_view_url(self):

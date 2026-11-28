@@ -147,6 +147,16 @@ def read_book(request: HttpRequest, slug: str) -> HttpResponse:
     ):
         return redirect("library:book_list")
 
+    if not book.is_pdf:
+        messages.info(
+            request,
+            _(
+                "This book is stored as a %(format)s file. Its text is indexed for Ask DMWM; download the original to read it in full."
+            )
+            % {"format": book.file_label},
+        )
+        return redirect("library:book_detail", slug=book.slug)
+
     progress = ReadingProgress.objects.filter(user=request.user, book=book).first()
     start_page = progress.page if progress else 1
 
@@ -183,7 +193,7 @@ def upload_book(request: HttpRequest) -> HttpResponse:
             book = form.save(commit=False)
             book.uploader = request.user
             if not pdf:
-                form.add_error("pdf_file", _("A PDF file is required."))
+                form.add_error("pdf_file", _("A book file is required."))
                 categories = Category.objects.all()
                 return render(request, "library/upload.html", {"form": form, "categories": categories})
             if pdf:
@@ -191,7 +201,7 @@ def upload_book(request: HttpRequest) -> HttpResponse:
                 from pathlib import Path
                 ext = Path(pdf.name).suffix.lower() or ".pdf"
                 key = f"books/{uuid.uuid4().hex}{ext}"
-                r2_storage.upload_object(key, pdf, content_type="application/pdf")
+                r2_storage.upload_object(key, pdf, content_type=Book.content_type_for(pdf.name))
                 book.pdf_file_id = key
                 book.pdf_url = r2_storage.stored_url(key)
                 book.file_size = getattr(pdf, "size", 0) or 0
@@ -204,11 +214,22 @@ def upload_book(request: HttpRequest) -> HttpResponse:
                 book.cover_file_id = key
                 book.cover_url = r2_storage.stored_url(key)
             book.save()
+
+            # Index the book so Ask DMWM can answer from the text itself, not
+            # only from its title and description.  Extraction is best effort:
+            # a scanned or encrypted file still uploads normally.
+            try:
+                from knowledge.indexing import index_book
+
+                index_book(book, force=False, max_pages=60)
+            except Exception:  # noqa: BLE001
+                logger.warning("Could not index the uploaded book %r", book.title, exc_info=True)
+
             messages.success(request, _("Book uploaded successfully."))
             return redirect("library:book_detail", slug=book.slug)
         # attach file errors
         if not pdf and not book.pdf_file_id:
-            form.add_error("pdf_file", _("A PDF file is required."))
+            form.add_error("pdf_file", _("A book file is required."))
     else:
         form = BookForm(initial={"status": "published", "is_public": True, "allow_download": True, "language": "en"})
 
@@ -233,10 +254,14 @@ def edit_book(request: HttpRequest, slug: str) -> HttpResponse:
                     r2_storage.delete_file(book.pdf_file_id)
                 ext = Path(pdf.name).suffix.lower() or ".pdf"
                 key = f"books/{uuid.uuid4().hex}{ext}"
-                r2_storage.upload_object(key, pdf, content_type="application/pdf")
+                r2_storage.upload_object(key, pdf, content_type=Book.content_type_for(pdf.name))
                 book.pdf_file_id = key
                 book.pdf_url = r2_storage.stored_url(key)
                 book.file_size = getattr(pdf, "size", 0) or book.file_size
+                # The old text belonged to the previous file.
+                book.content_text = ""
+                book.content_pages = []
+                book.content_indexed = False
             if cover:
                 import uuid
                 from pathlib import Path
@@ -248,6 +273,15 @@ def edit_book(request: HttpRequest, slug: str) -> HttpResponse:
                 book.cover_file_id = key
                 book.cover_url = r2_storage.stored_url(key)
             book.save()
+
+            if pdf:
+                try:
+                    from knowledge.indexing import index_book
+
+                    index_book(book, force=False, max_pages=60)
+                except Exception:  # noqa: BLE001
+                    logger.warning("Could not re-index the book %r", book.title, exc_info=True)
+
             messages.success(request, _("Book updated."))
             return redirect("library:book_detail", slug=book.slug)
     else:
@@ -408,10 +442,11 @@ def serve_pdf(request: HttpRequest, slug: str) -> HttpResponse:
         return HttpResponseBadRequest("Could not load PDF")
 
     body = obj["Body"]
-    # Force a PDF content type and inline disposition: R2 objects are sometimes
-    # stored as application/octet-stream, which makes browsers download the
-    # file instead of displaying it in the native viewer / iframe fallback.
-    content_type = "application/pdf"
+    # The stored object can be a PDF, EPUB, DOCX, TXT or Markdown file.  Send
+    # the matching content type so browsers open PDFs and text inline and
+    # download the formats they cannot display.
+    extension = book.file_extension or "pdf"
+    content_type = Book.content_type_for(extension)
     content_length = obj.get("ContentLength")
     status_code = 206 if range_header and obj.get("ContentRange") else 200
 
@@ -428,7 +463,12 @@ def serve_pdf(request: HttpRequest, slug: str) -> HttpResponse:
     if obj.get("ContentRange"):
         resp["Content-Range"] = obj["ContentRange"]
     resp["Accept-Ranges"] = "bytes"
-    resp["Content-Disposition"] = "inline"
+    if extension in ("pdf", "txt", "md", "markdown"):
+        resp["Content-Disposition"] = "inline"
+    else:
+        resp["Content-Disposition"] = (
+            f'attachment; filename="{book.slug or "book"}.{extension}"'
+        )
     resp["X-Content-Type-Options"] = "nosniff"
     resp["Cache-Control"] = "private, max-age=3600"
     return resp

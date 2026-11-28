@@ -1,4 +1,7 @@
 from django.urls import path
+
+from knowledge import views as knowledge_views
+
 from . import composition_views, views
 
 app_name = "videos"
@@ -47,6 +50,7 @@ urlpatterns = [
     path("notes/", views.my_notes, name="my_notes"),
     path("ask/", views.ask, name="ask"),
     path("ask/send/", views.ask_send, name="ask_send"),
+    path("ask/feedback/", knowledge_views.feedback, name="ask_feedback"),
     path("activity/", views.my_activity, name="my_activity"),
     path("<int:video_id>/playback/", views.video_playback, name="playback"),
     path("<int:video_id>/audio-stream/", views.audio_stream, name="audio_stream"),

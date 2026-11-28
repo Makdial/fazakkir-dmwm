@@ -1898,247 +1898,38 @@ def my_notes(request):
 
 def ask(request):
     """Page where visitors can ask questions about the orators' teachings."""
-    return render(request, "videos/ask.html")
+    from knowledge.answer import chat_provider
+    from knowledge.models import AskSettings
+
+    ask_settings = AskSettings.load()
+    return render(
+        request,
+        "videos/ask.html",
+        {
+            "ask_configured": chat_provider() is not None,
+            "ask_enabled": ask_settings.is_enabled,
+            "external_search_enabled": ask_settings.external_search_enabled,
+        },
+    )
 
 
 @require_POST
 def ask_send(request):
-    """Answer a question using OpenAI, grounded in the site's videos and books."""
-    import json
+    """Answer a question with the hybrid RAG service and log the interaction."""
+    from knowledge.answer import answer_question, clean_history
 
     question = (request.POST.get("question") or "").strip()
-    if not question:
-        return JsonResponse({"success": False, "error": _("Ask a question first.")}, status=400)
-
     language = (request.POST.get("language") or request.LANGUAGE_CODE or "en").strip()
-    openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    groq_key = os.environ.get("GROQ_API_KEY", "").strip()
-    if not openai_key and not groq_key:
-        return JsonResponse(
-            {"success": False, "error": _("The AI assistant is not configured.")},
-            status=503,
-        )
+    history = clean_history(request.POST.get("history"))
 
-    # Prefer Groq (free tier) when its key is set, otherwise OpenAI.
-    if groq_key:
-        api_url = "https://api.groq.com/openai/v1/chat/completions"
-        api_key = groq_key
-        model = os.environ.get("GROQ_ASK_MODEL", "openai/gpt-oss-20b")
-    elif openai_key:
-        api_url = "https://api.openai.com/v1/chat/completions"
-        api_key = openai_key
-        model = os.environ.get("OPENAI_ASK_MODEL", "gpt-4o-mini")
-    else:
-        return JsonResponse(
-            {"success": False, "error": _("The AI assistant is not configured.")},
-            status=503,
-        )
-
-    # Gather the site's content (videos + books) and pick the most relevant
-    # entries for the question, so the model can ground its answer in the
-    # orators' actual teachings rather than only titles.
-    all_videos = list(Video.objects.order_by("-created_at")[:60])
-    try:
-        from library.models import Book
-
-        all_books = list(Book.objects.filter(is_public=True).order_by("-created_at")[:60])
-    except Exception:  # noqa: BLE001
-        all_books = []
-    try:
-        from shorts.models import Short
-
-        all_shorts = list(Short.objects.order_by("-created_at")[:30])
-    except Exception:  # noqa: BLE001
-        all_shorts = []
-
-    # Score each item by keyword overlap with the question so the most relevant
-    # teachings are sent to the model within the token budget.
-    q_tokens = set(question.lower().split())
-
-    def score(text):
-        if not text:
-            return 0
-        t = set(text.lower().split())
-        return len(q_tokens & t)
-
-    video_entries = []
-    for v in all_videos:
-        text = " ".join(filter(None, [v.title, v.description]))
-        try:
-            for st in v.subtitle_tracks.all():
-                if st.content:
-                    text += " " + st.content[:1500]
-        except Exception:  # noqa: BLE001
-            pass
-        video_entries.append((score(text), v, text))
-
-    book_entries = []
-    for b in all_books:
-        text = " ".join(filter(None, [b.title, b.author, b.description]))
-        book_entries.append((score(text), b, text))
-    try:
-        from shorts.models import Short
-
-        all_shorts = list(Short.objects.order_by("-created_at")[:30])
-    except Exception:  # noqa: BLE001
-        all_shorts = []
-    short_entries = []
-    for s in all_shorts:
-        text = " ".join(filter(None, [s.title, s.description]))
-        short_entries.append((score(text), s, text))
-
-    # Sort by relevance (then recency) and keep the top entries.
-    video_entries.sort(key=lambda x: (x[0],), reverse=True)
-    book_entries.sort(key=lambda x: (x[0],), reverse=True)
-    top_videos = [e for e in video_entries if e[0] > 0][:6] or video_entries[:6]
-    top_books = [e for e in book_entries if e[0] > 0][:4] or book_entries[:4]
-    top_shorts = [e for e in short_entries if e[0] > 0][:4] or short_entries[:4]
-
-    video_lines = []
-    for _score, v, text in top_videos:
-        video_lines.append(f"- {v.title}" + (f": {v.description[:300]}" if v.description else ""))
-    book_lines = []
-    for _score, b, text in top_books:
-        parts = [f"- {b.title}"]
-        if b.author:
-            parts.append(f" by {b.author}")
-        if b.description:
-            parts.append(f": {b.description[:300]}")
-        book_lines.append("".join(parts))
-    short_lines = []
-    for _score, s, text in top_shorts:
-        short_lines.append(f"- {s.title}" + (f": {s.description[:200]}" if s.description else ""))
-
-    # Gather reputable web references about the orators: Wikipedia summaries
-    # plus a DuckDuckGo search. This keeps answers grounded in public sources.
-    web_results = []
-    orator_names = [
-        "Serigne Cheikh Ahmad Tidiane Sy Al Maktoum",
-        "Serigne Moustapha Sy",
-        "Serigne Cheikh Ahmad Tidiane Sy Capitaine",
-    ]
-    try:
-        import httpx
-
-        # Wikipedia full article text for each orator.
-        for name in orator_names:
-            for lang in ("en", "fr"):
-                try:
-                    slug = name.replace(" ", "_")
-                    resp = httpx.get(
-                        f"https://{lang}.wikipedia.org/w/api.php",
-                        params={
-                            "action": "query",
-                            "prop": "extracts",
-                            "explaintext": "1",
-                            "titles": name,
-                            "format": "json",
-                        },
-                        timeout=10.0,
-                        headers={"User-Agent": "Fazakkir/1.0"},
-                    )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        pages = (data.get("query") or {}).get("pages") or {}
-                        for pid, page in pages.items():
-                            if pid == "-1":
-                                continue
-                            extract = (page.get("extract") or "").strip()
-                            if extract:
-                                url = f"https://{lang}.wikipedia.org/wiki/{slug}"
-                                web_results.append({"title": f"{name} (Wikipedia, {lang})", "url": url, "snippet": extract[:1500]})
-                except Exception:  # noqa: BLE001
-                    pass
-
-        # DuckDuckGo search for additional sources (including reecoutes.com).
-        search_query = f"{question} {' OR '.join(orator_names)} reecoutes.com"
-        resp = httpx.get(
-            "https://api.duckduckgo.com/",
-            params={"q": search_query, "format": "json", "no_html": "1", "skip_disambig": "1"},
-            timeout=10.0,
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            if data.get("Abstract") and data.get("AbstractURL"):
-                web_results.append({"title": data.get("Heading") or "Reference", "url": data["AbstractURL"], "snippet": data["Abstract"][:500]})
-            for topic in (data.get("RelatedTopics") or [])[:8]:
-                if isinstance(topic, dict) and topic.get("FirstURL") and topic.get("Text"):
-                    web_results.append({"title": topic["Text"][:80], "url": topic["FirstURL"], "snippet": topic["Text"][:300]})
-    except Exception:  # noqa: BLE001
-        web_results = []
-
-    # Build reference list for the UI.
-    references = []
-    for _score, v, text in top_videos:
-        references.append({"type": "video", "title": v.title, "url": f"/{v.id}"})
-    for _score, b, text in top_books:
-        references.append({"type": "book", "title": b.title, "url": f"/library/{b.slug}/" if getattr(b, "slug", None) else "/library/"})
-    for _score, s, text in top_shorts:
-        references.append({"type": "short", "title": s.title, "url": f"/shorts/{s.id}/" if hasattr(s, "id") else "/shorts/"})
-    for r in web_results[:4]:
-        references.append({"type": "web", "title": r["title"], "url": r["url"]})
-
-    context_block = ""
-    if video_lines:
-        context_block += "Videos and speeches on the site:\n" + "\n".join(video_lines) + "\n\n"
-    if book_lines:
-        context_block += "Books in the library:\n" + "\n".join(book_lines) + "\n\n"
-    if short_lines:
-        context_block += "Shorts on the site:\n" + "\n".join(short_lines) + "\n\n"
-    if web_results:
-        context_block += "Relevant web references:\n" + "\n".join(
-            f"- {r['title']}: {r['snippet']} ({r['url']})" for r in web_results[:4]
-        ) + "\n"
-
-    system = (
-        "You are a scholarly assistant for the Fazakkir platform. You answer "
-        "questions about the Islamic teachings, life, and works of three orators: "
-        "Serigne Cheikh Ahmad Tidiane Sy Al Maktoum, Serigne Moustapha Sy, and "
-        "Serigne Cheikh Ahmad Tidiane Sy Capitaine. "
-        "You must stay strictly within their teachings and the content published "
-        "on this site (videos, speeches, books, and shorts), and you may also "
-        "draw on reputable internet sources about them (Wikipedia, reecoutes.com, "
-        "and other authoritative references). "
-        "Provide thorough, well-written, professional answers: include historical "
-        "context, biographical details, key teachings, and the books or speeches "
-        "they authored, with proper citations. "
-        "Answer in the language requested by the user. Be respectful and "
-        "scholarly. Do not invent facts; if information is not available in the "
-        "provided references, say so and suggest where to look."
+    result = answer_question(
+        question=question,
+        language=language,
+        history=history,
+        user=request.user,
     )
-    user_content = f"Language: {language}\n\nQuestion: {question}"
-    if context_block:
-        user_content += f"\n\nReference material:\n{context_block}"
-
-    try:
-        import httpx
-
-        resp = httpx.post(
-            api_url,
-            headers={"Authorization": f"Bearer {api_key}"},
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user_content},
-                ],
-                "temperature": 0.3,
-            },
-            timeout=60.0,
-        )
-        if resp.status_code != 200:
-            return JsonResponse(
-                {"success": False, "error": _("The AI service returned an error.")},
-                status=502,
-            )
-        answer = resp.json()["choices"][0]["message"]["content"].strip()
-        return JsonResponse({"success": True, "answer": answer, "references": references})
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("AI ask failed: %s", exc)
-        return JsonResponse(
-            {"success": False, "error": _("The AI assistant is unavailable right now.")},
-            status=502,
-        )
+    status = result.pop("status", 200)
+    return JsonResponse(result, status=status)
 
 
 def my_activity(request):

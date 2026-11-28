@@ -18,6 +18,9 @@
     <a href="{% url 'dashboard:usage' %}" class="dash-tab{% if active_tab == 'usage' %} active{% endif %}">
         {% trans "Usage" %}
     </a>
+    <a href="{% url 'dashboard:ai' %}" class="dash-tab{% if active_tab == 'ai' %} active{% endif %}">
+        {% trans "AI knowledge" %}
+    </a>
     <a href="{% url 'accounts:manage_users' %}" class="dash-tab">
         {% trans "Users" %}
     </a>

@@ -1696,3 +1696,780 @@ msgstr ""
 
 msgid "Ask DMWM"
 msgstr ""
+
+msgid "A batch indexes up to 5 books, 10 videos and 10 shorts. Run it repeatedly until the coverage cards reach the total. The management command can index everything without a request timeout."
+msgstr ""
+
+msgid "A timeline of what you have watched, liked, commented on and saved."
+msgstr ""
+
+msgid "AI knowledge"
+msgstr ""
+
+msgid "Action"
+msgstr ""
+
+msgid "Activity"
+msgstr ""
+
+msgid "Add"
+msgstr ""
+
+msgid "Add YouTube video"
+msgstr ""
+
+msgid "Add as YouTube link (embed only)"
+msgstr ""
+
+msgid "Add note"
+msgstr ""
+
+msgid "Add selected"
+msgstr ""
+
+msgid "Add to favorites"
+msgstr ""
+
+msgid "Add videos / audio"
+msgstr ""
+
+msgid "Added items appear on the left. Reorder them with the arrows, then Save."
+msgstr ""
+
+msgid "Admin Dashboard"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "All books"
+msgstr ""
+
+msgid "All categories"
+msgstr ""
+
+msgid "All languages"
+msgstr ""
+
+msgid "All statuses"
+msgstr ""
+
+msgid "All videos"
+msgstr ""
+
+msgid "Allow download"
+msgstr ""
+
+msgid "Allow external research"
+msgstr ""
+
+msgid "Allowed"
+msgstr ""
+
+msgid "Answer policy"
+msgstr ""
+
+msgid "Answer, correction or note"
+msgstr ""
+
+msgid "Answers are generated from the site's content and verified external sources. They may not be exhaustive, and the assistant is not a substitute for a qualified scholar. Always refer to the original videos and books."
+msgstr ""
+
+msgid "Approved"
+msgstr ""
+
+msgid "Archived"
+msgstr ""
+
+msgid "Are you sure you want to delete"
+msgstr ""
+
+msgid "Ask DMWM has no chat provider yet. Add GROQ_API_KEY (free tier) or OPENAI_API_KEY and restart the app."
+msgstr ""
+
+msgid "Ask DMWM is disabled in the AI knowledge dashboard."
+msgstr ""
+
+msgid "Ask anything about the orators' teachings, a video, a speech, or a book. Answers cite the passages and pages they rely on."
+msgstr ""
+
+msgid "Assistant is enabled"
+msgstr ""
+
+msgid "Audio available"
+msgstr ""
+
+msgid "Authority"
+msgstr ""
+
+msgid "Back to books"
+msgstr ""
+
+msgid "Book file (PDF, EPUB, DOCX, TXT, Markdown)"
+msgstr ""
+
+msgid "Bookmark this page"
+msgstr ""
+
+msgid "Books"
+msgstr ""
+
+msgid "Books in progress"
+msgstr ""
+
+msgid "Books indexed"
+msgstr ""
+
+msgid "Browse, read and translate books from around the world."
+msgstr ""
+
+msgid "Can you give the exact source and page?"
+msgstr ""
+
+msgid "Categories"
+msgstr ""
+
+msgid "Category"
+msgstr ""
+
+msgid "Category name"
+msgstr ""
+
+msgid "Chapters"
+msgstr ""
+
+msgid "Chat answers use %(name)s (%(model)s)."
+msgstr ""
+
+msgid "Collections"
+msgstr ""
+
+msgid "Continue reading"
+msgstr ""
+
+msgid "Cover image"
+msgstr ""
+
+msgid "Create a category"
+msgstr ""
+
+msgid "Create categories and drag videos into them. Order matters on the main page."
+msgstr ""
+
+msgid "Current cover kept unless a new one is uploaded."
+msgstr ""
+
+msgid "Current file kept unless a new one is uploaded."
+msgstr ""
+
+msgid "Dark reading"
+msgstr ""
+
+msgid "Decision"
+msgstr ""
+
+msgid "Delete book"
+msgstr ""
+
+msgid "Delete collection"
+msgstr ""
+
+msgid "Delete this category?"
+msgstr ""
+
+msgid "Delete this note?"
+msgstr ""
+
+msgid "Digital Library"
+msgstr ""
+
+msgid "Display order"
+msgstr ""
+
+msgid "Domain"
+msgstr ""
+
+msgid "Download %(format)s"
+msgstr ""
+
+msgid "Downloads"
+msgstr ""
+
+msgid "Draft"
+msgstr ""
+
+msgid "Edit book"
+msgstr ""
+
+msgid "Edition"
+msgstr ""
+
+msgid "Editorial notes"
+msgstr ""
+
+msgid "Embeddings in the index:"
+msgstr ""
+
+msgid "Enter video description (optional)"
+msgstr ""
+
+msgid "Every note you have taken, newest first. Click a timestamp to open the video at that moment."
+msgstr ""
+
+msgid "Export saved"
+msgstr ""
+
+msgid "External"
+msgstr "Bitim"
+
+msgid "External research"
+msgstr ""
+
+msgid "External web sources"
+msgstr ""
+
+msgid "Extract the MP3 from this YouTube video?"
+msgstr ""
+
+msgid "Favorites"
+msgstr ""
+
+msgid "Featured"
+msgstr ""
+
+msgid "Filter"
+msgstr ""
+
+msgid "Fit"
+msgstr ""
+
+msgid "Follow-up"
+msgstr ""
+
+msgid "Get MP3"
+msgstr ""
+
+msgid "Helpful"
+msgstr ""
+
+msgid "Highlights"
+msgstr ""
+
+msgid "How do scholars explain this?"
+msgstr ""
+
+msgid "ISBN"
+msgstr ""
+
+msgid "Import (download into storage)"
+msgstr ""
+
+msgid "Import from YouTube"
+msgstr ""
+
+msgid "In this category"
+msgstr ""
+
+msgid "Index next batch"
+msgstr ""
+
+msgid "Index, review and operate the Ask DMWM retrieval-augmented assistant."
+msgstr ""
+
+msgid "Indexed passages"
+msgstr ""
+
+msgid "Indexing"
+msgstr ""
+
+msgid "Leave blank to use the built-in prompt shown as the placeholder."
+msgstr ""
+
+msgid "Library Admin"
+msgstr ""
+
+msgid "Loading..."
+msgstr ""
+
+msgid "Local hashing embeddings are active. They keep the site working without an API key, but adding OPENAI_API_KEY and rebuilding the index enables true multilingual semantic search."
+msgstr ""
+
+msgid "Manage Books"
+msgstr ""
+
+msgid "Manage books"
+msgstr ""
+
+msgid "Manage categories"
+msgstr ""
+
+msgid "Manage collections"
+msgstr ""
+
+msgid "Mark reviewed"
+msgstr ""
+
+msgid "Maximum evidence characters"
+msgstr ""
+
+msgid "Mode"
+msgstr ""
+
+msgid "More"
+msgstr ""
+
+msgid "Most active readers"
+msgstr ""
+
+msgid "Most popular books"
+msgstr ""
+
+msgid "Most read"
+msgstr ""
+
+msgid "My Collections"
+msgstr ""
+
+msgid "My Dashboard"
+msgstr ""
+
+msgid "My Library"
+msgstr ""
+
+msgid "My activity"
+msgstr ""
+
+msgid "My library"
+msgstr ""
+
+msgid "My notes"
+msgstr ""
+
+msgid "New collection name"
+msgstr ""
+
+msgid "Newest"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "No"
+msgstr "Déedéet"
+
+msgid "No activity yet"
+msgstr ""
+
+msgid "No books found."
+msgstr ""
+
+msgid "No books or videos found."
+msgstr ""
+
+msgid "No books."
+msgstr ""
+
+msgid "No categories yet. Create one above."
+msgstr ""
+
+msgid "No categories."
+msgstr ""
+
+msgid "No category"
+msgstr ""
+
+msgid "No chat provider is configured. Add GROQ_API_KEY (free tier) or OPENAI_API_KEY."
+msgstr ""
+
+msgid "No collections yet."
+msgstr ""
+
+msgid "No data."
+msgstr ""
+
+msgid "No favorites yet."
+msgstr ""
+
+msgid "No feedback yet."
+msgstr ""
+
+msgid "No highlights."
+msgstr ""
+
+msgid "No notes yet"
+msgstr ""
+
+msgid "No notes yet. Add your first one above."
+msgstr ""
+
+msgid "No questions yet."
+msgstr ""
+
+msgid "No reading in progress."
+msgstr ""
+
+msgid "No recommendations yet."
+msgstr ""
+
+msgid "No reviews yet."
+msgstr ""
+
+msgid "No saved translations."
+msgstr ""
+
+msgid "No translations yet."
+msgstr ""
+
+msgid "No translations."
+msgstr ""
+
+msgid "No unanswered questions."
+msgstr ""
+
+msgid "No videos yet. Add some from the right."
+msgstr ""
+
+msgid "Not helpful"
+msgstr ""
+
+msgid "Notes"
+msgstr ""
+
+msgid "On"
+msgstr ""
+
+msgid "Only domains on the server allowlist or approved here can reach the model. Add a domain to override the default decision."
+msgstr ""
+
+msgid "Open PDF directly"
+msgstr ""
+
+msgid "Open a video and use the 'My notes' box to write one."
+msgstr ""
+
+msgid "Open video"
+msgstr ""
+
+msgid "Original only"
+msgstr ""
+
+msgid "Page"
+msgstr ""
+
+msgid "Page count"
+msgstr ""
+
+msgid "Pages"
+msgstr ""
+
+msgid "Passages"
+msgstr ""
+
+msgid "Paste a YouTube link first."
+msgstr ""
+
+msgid "Paste a YouTube link to add it to the library. 'Import' downloads the video into storage so it gets every feature (MP3, subtitles, offline, downloads). 'Add as link' keeps it on YouTube and plays it through the embedded player."
+msgstr ""
+
+msgid "Perspective (optional)"
+msgstr ""
+
+msgid "Perspective / notes"
+msgstr ""
+
+msgid "Prev"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Primary"
+msgstr "Bu njëkk"
+
+msgid "Progress"
+msgstr ""
+
+msgid "Provider status"
+msgstr ""
+
+msgid "Published"
+msgstr ""
+
+msgid "Published year"
+msgstr ""
+
+msgid "Publisher"
+msgstr ""
+
+msgid "Question"
+msgstr ""
+
+msgid "Rating"
+msgstr ""
+
+msgid "Rating (1-5)"
+msgstr ""
+
+msgid "Read"
+msgstr ""
+
+msgid "Read now"
+msgstr ""
+
+msgid "Reading sessions"
+msgstr ""
+
+msgid "Reads"
+msgstr ""
+
+msgid "Recent answers"
+msgstr ""
+
+msgid "Recent feedback"
+msgstr ""
+
+msgid "Recent translations"
+msgstr ""
+
+msgid "Recently uploaded"
+msgstr ""
+
+msgid "Recommended reading"
+msgstr ""
+
+msgid "Registered users"
+msgstr ""
+
+msgid "Reindex"
+msgstr ""
+
+msgid "Related books"
+msgstr ""
+
+msgid "Remove from favorites"
+msgstr ""
+
+msgid "Resolved"
+msgstr ""
+
+msgid "Retry"
+msgstr ""
+
+msgid "Reviewed"
+msgstr ""
+
+msgid "Reviews"
+msgstr ""
+
+msgid "Save as playlist"
+msgstr ""
+
+msgid "Save domain"
+msgstr ""
+
+msgid "Save policy"
+msgstr ""
+
+msgid "Save review"
+msgstr ""
+
+msgid "Saved Highlights"
+msgstr ""
+
+msgid "Saved highlights"
+msgstr ""
+
+msgid "Saved only"
+msgstr ""
+
+msgid "Saved translations"
+msgstr ""
+
+msgid "Search books, authors, tags..."
+msgstr ""
+
+msgid "Search..."
+msgstr ""
+
+msgid "Searching the library, transcripts and web…"
+msgstr ""
+
+msgid "Send feedback"
+msgstr ""
+
+msgid "Show original"
+msgstr ""
+
+msgid "Side by side"
+msgstr ""
+
+msgid "Sign in to take notes on this video."
+msgstr ""
+
+msgid "Source"
+msgstr ""
+
+msgid "Source review and coverage"
+msgstr ""
+
+msgid "Sources and evidence"
+msgstr ""
+
+msgid "Start watching videos and your activity will appear here."
+msgstr ""
+
+msgid "System prompt"
+msgstr ""
+
+msgid "Tags"
+msgstr ""
+
+msgid "Take a note on this video…"
+msgstr ""
+
+msgid "Temperature"
+msgstr ""
+
+msgid "Thank you for the feedback."
+msgstr ""
+
+msgid "The index is empty. Index a first batch below."
+msgstr ""
+
+msgid "The note will be removed and cannot be recovered."
+msgstr ""
+
+msgid "The prompt is stored in the database, so it can be updated without changing code. The citation and safety rules are part of the default prompt."
+msgstr ""
+
+msgid "The ten latest questions, including successful answers, are kept for review in the Django admin and here."
+msgstr ""
+
+msgid "Timestamp (seconds)"
+msgstr ""
+
+msgid "Tip: set the timestamp to jump back to this moment later."
+msgstr ""
+
+msgid "Title A-Z"
+msgstr ""
+
+msgid "Top rated"
+msgstr ""
+
+msgid "Total books"
+msgstr ""
+
+msgid "Translate"
+msgstr "Tekki"
+
+msgid "Translate on select"
+msgstr ""
+
+msgid "Translate to"
+msgstr ""
+
+msgid "Translated only"
+msgstr ""
+
+msgid "Translating…"
+msgstr ""
+
+msgid "Translation"
+msgstr ""
+
+msgid "Translation History"
+msgstr ""
+
+msgid "Translation unavailable"
+msgstr ""
+
+msgid "Translations"
+msgstr ""
+
+msgid "Unanswered questions and errors"
+msgstr ""
+
+msgid "Unapproved sources are excluded from retrieval. Authority controls how strongly a passage is ranked."
+msgstr ""
+
+msgid "Unsave"
+msgstr ""
+
+msgid "Upload a new book"
+msgstr ""
+
+msgid "Upload book"
+msgstr ""
+
+msgid "Use native viewer"
+msgstr ""
+
+msgid "Verdict"
+msgstr ""
+
+msgid "Videos indexed"
+msgstr ""
+
+msgid "View all"
+msgstr ""
+
+msgid "View mode"
+msgstr ""
+
+msgid "Was this answer helpful?"
+msgstr ""
+
+msgid "Watch later"
+msgstr ""
+
+msgid "Welcome back"
+msgstr ""
+
+msgid "What do the books say about patience?"
+msgstr ""
+
+msgid "What do the library books say about this?"
+msgstr ""
+
+msgid "What was missing or wrong? (optional)"
+msgstr ""
+
+msgid "When"
+msgstr ""
+
+msgid "Why this source is trusted"
+msgstr ""
+
+msgid "Working…"
+msgstr ""
+
+msgid "Year"
+msgstr ""
+
+msgid "Yes"
+msgstr "Waaw"
+
+msgid "Yes, delete"
+msgstr ""
+
+msgid "YouTube link"
+msgstr ""
+
+msgid "Your bookmarks"
+msgstr ""
+
+msgid "books"
+msgstr ""
+
+msgid "pages"
+msgstr ""
+
+msgid "reads"
+msgstr ""
+
+msgid "remove"
+msgstr ""
+
+msgid "web research"
+msgstr "wut web"

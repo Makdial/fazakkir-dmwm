@@ -60,6 +60,11 @@ videos; every visitor can browse and play them.
   **Subtitles** row. Three back ends ship: **OpenAI** (Whisper), **Google
   Cloud** (Speech-to-Text + Cloud Translation) and **ElevenLabs** (Scribe,
   source language only).
+- **Ask DMWM**: a retrieval-augmented Islamic knowledge assistant that answers
+  from the library books, video transcripts and an administrator-approved web
+  allowlist, with page/timestamp citations, source review, feedback and an AI
+  dashboard at `/manage/ai/`. See [AI_SETUP.md](AI_SETUP.md) for provider keys
+  and indexing.
 - **Responsive layout**: works on phones and tablets, with a collapsible
   hamburger menu, fluid video grid, stacked player controls and touch-friendly
   tap targets.

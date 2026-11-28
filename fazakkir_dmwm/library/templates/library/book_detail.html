@@ -17,9 +17,11 @@
       <div class="lib-cover-placeholder lib-cover-large">book</div>
       {% endif %}
       <div class="lib-detail-actions">
+        {% if book.is_pdf %}
         <a href="{% url 'library:read_book' book.slug %}" class="btn btn-primary btn-block">{% trans "Read now" %}</a>
+        {% endif %}
         {% if book.allow_download %}
-        <a href="{% url 'library:download_book' book.slug %}" class="btn btn-outline btn-block">{% trans "Download PDF" %}</a>
+        <a href="{% url 'library:download_book' book.slug %}" class="btn {% if book.is_pdf %}btn-outline{% else %}btn-primary{% endif %} btn-block">{% blocktrans with format=book.file_label %}Download {{ format }}{% endblocktrans %}</a>
         {% endif %}
         {% if user.is_authenticated %}
         <button type="button" id="favBtn" class="btn btn-outline btn-block" data-slug="{{ book.slug }}" data-fav="{{ is_favorite|yesno:'1,0' }}">
@@ -46,6 +48,7 @@
       </div>
       <dl class="lib-meta-list">
         {% if book.publisher %}<dt>{% trans "Publisher" %}</dt><dd>{{ book.publisher }}</dd>{% endif %}
+        {% if book.edition %}<dt>{% trans "Edition" %}</dt><dd>{{ book.edition }}</dd>{% endif %}
         {% if book.published_year %}<dt>{% trans "Year" %}</dt><dd>{{ book.published_year }}</dd>{% endif %}
         {% if book.page_count %}<dt>{% trans "Pages" %}</dt><dd>{{ book.page_count }}</dd>{% endif %}
         {% if book.isbn %}<dt>ISBN</dt><dd>{{ book.isbn }}</dd>{% endif %}

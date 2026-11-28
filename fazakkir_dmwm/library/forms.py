@@ -5,14 +5,16 @@ from .models import Book, Category, Review
 
 
 class BookForm(forms.ModelForm):
-    pdf_file = forms.FileField(required=False, label=_("PDF file"))
+    pdf_file = forms.FileField(required=False, label=_("Book file"))
     cover_file = forms.FileField(required=False, label=_("Cover image"))
+
+    ALLOWED_BOOK_EXTENSIONS = (".pdf", ".epub", ".docx", ".txt", ".md")
 
     class Meta:
         model = Book
         fields = [
             "title", "author", "description", "category", "language", "tags",
-            "isbn", "publisher", "published_year", "page_count",
+            "isbn", "publisher", "edition", "published_year", "page_count",
             "status", "is_featured", "allow_download", "is_public",
         ]
         widgets = {
@@ -22,8 +24,10 @@ class BookForm(forms.ModelForm):
 
     def clean_pdf_file(self):
         f = self.cleaned_data.get("pdf_file")
-        if f and not f.name.lower().endswith(".pdf"):
-            raise forms.ValidationError(_("Only PDF files are allowed."))
+        if f and not f.name.lower().endswith(self.ALLOWED_BOOK_EXTENSIONS):
+            raise forms.ValidationError(
+                _("Upload a PDF, EPUB, DOCX, TXT or Markdown file.")
+            )
         return f
 
     def clean_cover_file(self):
