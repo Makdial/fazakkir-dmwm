@@ -28,7 +28,14 @@ def _ffmpeg_exe() -> str:
     system = shutil.which("ffmpeg")
     if system:
         return system
-
+    # Fall back to common install locations (some hosts put ffmpeg outside PATH).
+    for candidate in (
+        "/usr/bin/ffmpeg",
+        "/usr/local/bin/ffmpeg",
+        "/opt/homebrew/bin/ffmpeg",
+    ):
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
     # Fall back to the bundled binary; imported lazily so the rest of the site
     # works even if the optional dependency is missing.
     import imageio_ffmpeg
