@@ -1832,7 +1832,13 @@ def debug_run_audio(request):
 
 
 @require_GET
-def debug_env(request):
+def debug_audio_log(request):
+    try:
+        with open("/tmp/audio_sweep.log") as f:
+            content = f.read()
+        return JsonResponse({"log": content[-3000:]})
+    except Exception as e:  # noqa: BLE001
+        return JsonResponse({"error": str(e)[:200]})
     import shutil
 
     info = {"ffmpeg_path": shutil.which("ffmpeg")}
