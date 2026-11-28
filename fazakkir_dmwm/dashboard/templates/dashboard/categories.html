@@ -23,10 +23,6 @@
         {% csrf_token %}
         <div class="form-row">
             <input type="text" name="name" class="form-input" placeholder="{% trans 'Category name' %}" required>
-            <select name="parent" class="form-input" style="width:160px" title="{% trans 'Parent category' %}">
-                <option value="">{% trans "Top level" %}</option>
-                {% for c in categories %}{% if not c.parent %}<option value="{{ c.id }}">{{ c.name }}</option>{% endif %}{% endfor %}
-            </select>
             <input type="number" name="order" class="form-input" value="0" style="width:90px" title="{% trans 'Display order' %}">
             <button type="submit" class="btn-small">{% trans "Create" %}</button>
         </div>
@@ -34,15 +30,11 @@
 </div>
 
 {% for category in categories %}
-<div class="dash-card category-card" {% if category.parent %}style="margin-left:28px;border-left:3px solid var(--border-color,#ddd);padding-left:10px"{% endif %}>
+<div class="dash-card category-card">
     <form method="post" action="{% url 'dashboard:category_update' category.id %}" class="category-form" data-category="{{ category.id }}">
         {% csrf_token %}
         <div class="category-header">
             <input type="text" name="name" class="form-input category-name" value="{{ category.name }}" required>
-            <select name="parent" class="form-input" style="width:150px" title="{% trans 'Parent category' %}">
-                <option value="">{% trans "Top level" %}</option>
-                {% for c in categories %}{% if not c.parent and c.id != category.id %}<option value="{{ c.id }}" {% if category.parent_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endif %}{% endfor %}
-            </select>
             <input type="number" name="order" class="form-input" value="{{ category.order }}" style="width:80px" title="{% trans 'Display order' %}">
             <button type="submit" class="btn-small">{% trans "Save" %}</button>
             <button type="submit" formaction="{% url 'dashboard:category_delete' category.id %}" class="btn-small btn-danger" onclick="return confirm('{% trans 'Delete this category?' %}')">{% trans "Delete" %}</button>
