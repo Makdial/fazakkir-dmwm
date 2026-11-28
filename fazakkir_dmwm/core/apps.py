@@ -38,6 +38,9 @@ class CoreConfig(AppConfig):
             time.sleep(10)
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             manage_py = os.path.join(base_dir, "manage.py")
+            if not os.path.exists(manage_py):
+                base_dir = "/app/fazakkir_dmwm"
+                manage_py = os.path.join(base_dir, "manage.py")
             env = os.environ.copy()
             env.setdefault("DJANGO_SETTINGS_MODULE", "fazakkir_dmwm.settings")
             env.setdefault("DEBUG", "0")
