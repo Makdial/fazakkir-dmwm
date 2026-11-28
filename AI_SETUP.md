@@ -69,7 +69,7 @@ Add these variables to `.env` (local) or the Northflank environment:
 | `GROQ_API_KEY` | empty | Free chat provider, preferred when set. |
 | `GROQ_ASK_MODEL` | `openai/gpt-oss-20b` | Groq model used for answers. |
 | `GEMINI_API_KEY` | empty | Free Google Gemini chat provider (preferred). |
-| `GEMINI_ASK_MODEL` | `gemini-2.0-flash` | Gemini model used for answers. |
+| `GEMINI_ASK_MODEL` | `gemini-3.5-flash` | Gemini model used for answers. |
 | `OPENROUTER_API_KEY` | empty | Free OpenRouter chat provider (Llama and others). |
 | `OPENROUTER_ASK_MODEL` | `meta-llama/llama-3.3-70b-instruct:free` | OpenRouter model used for answers. |
 | `OPENAI_API_KEY` | empty | Fallback chat provider, embeddings and translation. |

@@ -58,7 +58,7 @@ def chat_provider() -> ChatProvider | None:
             name="gemini",
             url="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
             key=gemini_key,
-            model=getattr(settings, "GEMINI_ASK_MODEL", "gemini-2.0-flash"),
+            model=getattr(settings, "GEMINI_ASK_MODEL", "gemini-3.5-flash"),
         )
     if openrouter_key:
         return ChatProvider(
