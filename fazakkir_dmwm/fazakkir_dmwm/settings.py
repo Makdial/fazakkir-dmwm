@@ -367,6 +367,10 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 # Models used by the Ask DMWM assistant.
 GROQ_ASK_MODEL = os.environ.get("GROQ_ASK_MODEL", "openai/gpt-oss-20b")
+# Google Gemini (free tier: https://aistudio.google.com/apikey). Uses the
+# OpenAI-compatible endpoint, so the same chat code path applies.
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_ASK_MODEL = os.environ.get("GEMINI_ASK_MODEL", "gemini-2.0-flash")
 OPENAI_ASK_MODEL = os.environ.get("OPENAI_ASK_MODEL", "gpt-4o-mini")
 
 # --- Ask DMWM knowledge base ------------------------------------------------

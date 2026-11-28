@@ -36,6 +36,10 @@ def chat_provider() -> ChatProvider | None:
         getattr(settings, "GROQ_API_KEY", "")
         or os.environ.get("GROQ_API_KEY", "")
     ).strip()
+    gemini_key = (
+        getattr(settings, "GEMINI_API_KEY", "")
+        or os.environ.get("GEMINI_API_KEY", "")
+    ).strip()
     openai_key = (
         getattr(settings, "OPENAI_API_KEY", "")
         or os.environ.get("OPENAI_API_KEY", "")
@@ -47,6 +51,13 @@ def chat_provider() -> ChatProvider | None:
             url="https://api.groq.com/openai/v1/chat/completions",
             key=groq_key,
             model=os.environ.get("GROQ_ASK_MODEL", "openai/gpt-oss-20b"),
+        )
+    if gemini_key:
+        return ChatProvider(
+            name="gemini",
+            url="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            key=gemini_key,
+            model=getattr(settings, "GEMINI_ASK_MODEL", "gemini-2.0-flash"),
         )
     if openai_key:
         return ChatProvider(
