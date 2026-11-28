@@ -178,6 +178,22 @@ def training_examples(question: str = "", limit: int = 3) -> list[tuple[str, str
         .exclude(corrected_answer="")
         .order_by("-created_at")[:50]
     )
+    # Promoted feedback (reviewed by an admin with a suggested answer) also
+    # counts as an approved correction.
+    promoted = list(
+        AnswerFeedback.objects.filter(is_reviewed=True)
+        .exclude(suggested_answer="")
+        .select_related("interaction")
+        .order_by("-created_at")[:50]
+    )
+    for feedback in promoted:
+        interaction = feedback.interaction
+        rows.append(
+            type("Fb", (), {
+                "question": interaction.question if interaction else "",
+                "corrected_answer": feedback.suggested_answer,
+            })()
+        )
     if not rows:
         return []
     if not question:
@@ -228,7 +244,7 @@ def feedback_notes(question: str, limit: int = 4) -> list[str]:
         if feedback.comment:
             parts.append("issue: " + feedback.comment.strip().replace("\n", " ")[:240])
         if feedback.suggested_answer:
-            parts.append("suggested answer: " + feedback.suggested_answer.strip().replace("\n", " ")[:400])
+            parts.append("CORRECTION (use this as the right answer): " + feedback.suggested_answer.strip().replace("\n", " ")[:400])
         if feedback.helpful is False:
             parts.append("(marked not helpful)")
         if parts:
@@ -311,7 +327,7 @@ def answer_question(
             system += f"Q: {question}\nA: {answer}\n\n"
     notes = feedback_notes(question)
     if notes:
-        system += "\n\nVISITOR FEEDBACK (respect these reports; they are not verified sources):\n"
+        system += "\n\nUSER FEEDBACK AND CORRECTIONS (respect these reports; treat suggested answers as corrections):\n"
         for note in notes:
             system += f"- {note}\n"
     if has_external:
