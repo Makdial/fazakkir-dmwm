@@ -27,12 +27,12 @@
     <div class="ask-toolbar">
         <label for="askLang" class="ask-toolbar-label">{% trans "Language" %}</label>
         <select id="askLang" class="ask-select">
-            <option value="en">English</option>
-            <option value="fr">Français</option>
-            <option value="ar">العربية</option>
-            <option value="es">Español</option>
-            <option value="it">Italiano</option>
-            <option value="wo">Wolof</option>
+            <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>English</option>
+            <option value="fr" {% if LANGUAGE_CODE == 'fr' %}selected{% endif %}>Français</option>
+            <option value="ar" {% if LANGUAGE_CODE == 'ar' %}selected{% endif %}>العربية</option>
+            <option value="es" {% if LANGUAGE_CODE == 'es' %}selected{% endif %}>Español</option>
+            <option value="it" {% if LANGUAGE_CODE == 'it' %}selected{% endif %}>Italiano</option>
+            <option value="wo" {% if LANGUAGE_CODE == 'wo' %}selected{% endif %}>Wolof</option>
         </select>
         <button type="button" class="ask-clear-btn" id="askClear" title="{% trans 'Clear conversation' %}">
             {% trans "Clear" %}
@@ -61,6 +61,11 @@
         <button type="submit" class="ask-send-btn" id="askBtn" aria-label="{% trans 'Send' %}">
             <span class="ask-send-icon" aria-hidden="true">➤</span>
         </button>
+    </form>
+    <form id="langForm" method="post" action="{% url 'set_language' %}" style="display:none;">
+        {% csrf_token %}
+        <input type="hidden" name="next" id="langNext" value="{{ request.get_full_path }}">
+        <input type="hidden" name="language" id="langCode" value="">
     </form>
     <p class="ask-disclaimer">{% trans "Answers are generated from the site's content and may not be exhaustive. Always refer to the original videos and books." %}</p>
 </div>
@@ -194,6 +199,38 @@
     const chat = document.getElementById("askChat");
     const csrfInput = form.querySelector("input[name=csrfmiddlewaretoken]");
     const csrf = csrfInput ? csrfInput.value : "";
+    const langForm = document.getElementById("langForm");
+    const langCode = document.getElementById("langCode");
+    const langNext = document.getElementById("langNext");
+
+    // Persist and restore the conversation across a language switch.
+    function saveHistory() {
+        const msgs = [];
+        messages.querySelectorAll(".ask-msg").forEach(m => {
+            const role = m.classList.contains("user") ? "user" : "assistant";
+            const txt = m.querySelector(".ask-bubble");
+            if (txt) msgs.push({ role, text: txt.textContent });
+        });
+        try { sessionStorage.setItem("askHistory", JSON.stringify(msgs)); } catch (e) {}
+    }
+
+    // Switching the language re-renders the page in that language.
+    lang.addEventListener("change", function () {
+        saveHistory();
+        langCode.value = lang.value;
+        langNext.value = window.location.pathname + window.location.search;
+        langForm.submit();
+    });
+
+    // Restore conversation after a language switch.
+    (function restoreHistory() {
+        let msgs = [];
+        try { msgs = JSON.parse(sessionStorage.getItem("askHistory") || "[]"); } catch (e) {}
+        if (!msgs.length) return;
+        showMessages();
+        msgs.forEach(m => addMessage(m.role, m.text));
+        sessionStorage.removeItem("askHistory");
+    })();
 
     function showMessages() {
         empty.hidden = true;
