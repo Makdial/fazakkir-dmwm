@@ -2485,3 +2485,9 @@ msgstr "Réponse corrigée (utilisée pour l'entraînement)"
 
 msgid "Use as example"
 msgstr "Utiliser comme exemple"
+
+msgid "Parent category"
+msgstr "Catégorie parente"
+
+msgid "Top level"
+msgstr "Niveau supérieur"

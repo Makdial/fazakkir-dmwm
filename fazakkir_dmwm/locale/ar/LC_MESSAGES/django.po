@@ -2506,3 +2506,9 @@ msgstr "الإجابة المصححة (تُستخدم للتدريب)"
 
 msgid "Use as example"
 msgstr "استخدام كمثال"
+
+msgid "Parent category"
+msgstr "الفئة الأصل"
+
+msgid "Top level"
+msgstr "المستوى الأعلى"

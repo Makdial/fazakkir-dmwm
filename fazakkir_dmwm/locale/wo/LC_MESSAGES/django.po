@@ -2482,3 +2482,9 @@ msgstr "Tontu bu jub (ci jàng)"
 
 msgid "Use as example"
 msgstr "Jëfandikoo ni misaal"
+
+msgid "Parent category"
+msgstr "Kategori bu mag"
+
+msgid "Top level"
+msgstr "Kategori bu mag"

@@ -318,7 +318,11 @@ def category_create(request):
     if not name:
         return redirect("dashboard:categories")
     order = _to_int(request.POST.get("order"), 0)
-    Category.objects.create(name=name, order=order)
+    parent_id = request.POST.get("parent")
+    parent = None
+    if parent_id and str(parent_id).isdigit():
+        parent = Category.objects.filter(pk=int(parent_id)).first()
+    Category.objects.create(name=name, order=order, parent=parent)
     return redirect("dashboard:categories")
 
 
@@ -330,6 +334,13 @@ def category_update(request, category_id):
     if name:
         category.name = name
     category.order = _to_int(request.POST.get("order"), category.order)
+    parent_id = request.POST.get("parent")
+    if parent_id == "":
+        category.parent = None
+    elif parent_id and str(parent_id).isdigit():
+        parent = Category.objects.filter(pk=int(parent_id)).exclude(pk=category.pk).first()
+        if parent is not None:
+            category.parent = parent
     category.save()
     ordered = request.POST.getlist("ordered_videos")
     # The form sends a single comma-separated field; split it so multiple

@@ -223,6 +223,9 @@ class Category(models.Model):
 
     name = models.CharField(max_length=80, unique=True)
     slug = models.SlugField(max_length=90, unique=True, blank=True)
+    parent = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.CASCADE, related_name="children"
+    )
     order = models.PositiveIntegerField(default=0)
     videos = models.ManyToManyField(
         "Video", related_name="categories", blank=True
