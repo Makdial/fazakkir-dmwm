@@ -1809,6 +1809,26 @@ def save_duration(request, video_id):
     return JsonResponse({"success": True, "duration": duration})
 
 
+@require_GET
+def debug_env(request):
+    import shutil
+
+    info = {"ffmpeg_path": shutil.which("ffmpeg")}
+    try:
+        import imageio_ffmpeg
+
+        info["imageio_ffmpeg_exe"] = imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception as e:  # noqa: BLE001
+        info["imageio_ffmpeg_error"] = str(e)[:200]
+    try:
+        import yt_dlp
+
+        info["yt_dlp_available"] = True
+    except Exception as e:  # noqa: BLE001
+        info["yt_dlp_error"] = str(e)[:200]
+    return JsonResponse(info)
+
+
 def note_add(request, video_id):
     if not request.user.is_authenticated:
         return JsonResponse(

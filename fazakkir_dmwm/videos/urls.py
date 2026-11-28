@@ -41,7 +41,7 @@ urlpatterns = [
     ),
     path("comments/<int:comment_id>/delete/", views.comment_delete, name="comment_delete"),
     path("<int:video_id>", views.video_detail, name="detail"),
-    path("<int:video_id>/notes/add/", views.note_add, name="note_add"),
+    path("debug-env/", views.debug_env, name="debug_env"),
     path("<int:video_id>/duration/", views.save_duration, name="save_duration"),
     path("notes/<int:note_id>/delete/", views.note_delete, name="note_delete"),
     path("notes/", views.my_notes, name="my_notes"),
