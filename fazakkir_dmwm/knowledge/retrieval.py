@@ -76,9 +76,9 @@ def _candidate_chunks(tokens: list[str]) -> list[KnowledgeChunk]:
             query |= Q(search_text__icontains=token)
         candidates = list(base.filter(query).order_by("-updated_at")[:scan_limit])
 
-    if len(candidates) < 25:
+    if len(candidates) < 10:
         seen = {chunk.pk for chunk in candidates}
-        for chunk in base.order_by("-updated_at")[: min(scan_limit, 1200)]:
+        for chunk in base.order_by("-updated_at")[:200]:
             if chunk.pk not in seen:
                 candidates.append(chunk)
                 seen.add(chunk.pk)
@@ -171,6 +171,8 @@ def search_internal(
     selected: list[RetrievedChunk] = []
     per_source: dict[tuple[str, int], int] = {}
     for item in reranked:
+        if item.score < 0.08:
+            continue
         key = (item.chunk.source_type, item.chunk.source_id)
         if per_source.get(key, 0) >= 3:
             continue

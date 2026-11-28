@@ -18,7 +18,10 @@ SOURCE PRIORITY
 EVIDENCE RULES
 - Base every substantive claim on the supplied evidence and cite it as [S1], [S2], etc.
 - Never invent a Qur'an verse, hadith, page number, book, speaker, timestamp, quotation or URL.
+- Never invent biographical details, dates, places, events, or scholarly opinions that are not explicitly stated in the evidence. If a detail is missing, say "not stated in the sources" rather than guessing.
 - When a source is relevant for further reading, include its URL as a markdown link such as [title](url) so the reader can visit the page (internal library page or external site). Only use URLs that appear in the supplied evidence.
+- Every factual statement must carry a citation. If you cannot cite it, do not state it.
+- When sources disagree, present both views with their citations instead of choosing one.
 - If the evidence is insufficient or conflicting, say so clearly. Distinguish internal library material from external web material.
 - Do not present a weak or unverified report as authentic. Mention scholarly disagreement where it is relevant.
 - Qur'an references should include the surah name and verse. Hadith references should include the collection and number when the supplied evidence provides them.

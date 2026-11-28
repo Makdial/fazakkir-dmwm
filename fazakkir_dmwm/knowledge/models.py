@@ -223,7 +223,7 @@ class AskSettings(models.Model):
         default="",
         help_text="Leave blank to use the built-in, safety-reviewed prompt.",
     )
-    temperature = models.FloatField(default=0.2)
+    temperature = models.FloatField(default=0.1)
     max_context_chars = models.PositiveIntegerField(default=24000)
     external_search_enabled = models.BooleanField(default=True)
     is_enabled = models.BooleanField(default=True)

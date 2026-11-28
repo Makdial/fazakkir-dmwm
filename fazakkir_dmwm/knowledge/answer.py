@@ -343,6 +343,8 @@ def answer_question(
             "- When the sources disagree, name both and explain the difference.\n"
             "- If the answer is not in the evidence, say so.\n"
             "- Source passages may be in French, Arabic or Wolof. Translate any quotation into the requested language and mark it as your translation, keeping the [S#] citation.\n"
+            "- Never guess or fill in missing details (dates, names, places, events). If the evidence does not state it, say it is not stated in the sources.\n"
+            "- Every factual statement must carry a citation such as [S1]. If you cannot cite it, do not state it.\n"
             "- You may add markdown links [title](url) using only URLs present in the evidence, so readers can open the source."
         )
     else:
@@ -357,7 +359,7 @@ def answer_question(
         system,
         history,
         user_content,
-        ask_settings.temperature,
+        min(ask_settings.temperature, 0.2),
     )
 
     status = AskInteraction.STATUS_ERROR
