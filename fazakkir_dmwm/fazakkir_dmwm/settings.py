@@ -378,6 +378,10 @@ OPENROUTER_ASK_MODEL = os.environ.get("OPENROUTER_ASK_MODEL", "google/gemma-4-31
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_ASK_MODEL = os.environ.get("ANTHROPIC_ASK_MODEL", "claude-sonnet-4-5")
 OPENAI_ASK_MODEL = os.environ.get("OPENAI_ASK_MODEL", "gpt-4o-mini")
+# Multi-model synthesis: query several configured providers in parallel and
+# merge their answers. Increases cost and latency; off by default.
+AI_ASK_MULTI_MODEL = os.environ.get("AI_ASK_MULTI_MODEL", "0") == "1"
+AI_ASK_MULTI_MAX = int(os.environ.get("AI_ASK_MULTI_MAX", "3"))
 
 # --- Ask DMWM knowledge base ------------------------------------------------
 # Embeddings power semantic search. "auto" uses OpenAI when OPENAI_API_KEY is

@@ -97,6 +97,28 @@ def chat_provider() -> ChatProvider | None:
     return None
 
 
+def all_providers() -> list[ChatProvider]:
+    """Return every configured chat provider, in preference order."""
+    result: list[ChatProvider] = []
+    gemini_key = (getattr(settings, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "")).strip()
+    anthropic_key = (getattr(settings, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")).strip()
+    openrouter_key = (getattr(settings, "OPENROUTER_API_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")).strip()
+    groq_key = (getattr(settings, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")).strip()
+    openai_key = (getattr(settings, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")).strip()
+
+    if gemini_key:
+        result.append(ChatProvider("gemini", "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", gemini_key, getattr(settings, "GEMINI_ASK_MODEL", "gemini-3.5-flash")))
+    if anthropic_key:
+        result.append(ChatProvider("claude", "https://api.anthropic.com/v1/messages", anthropic_key, getattr(settings, "ANTHROPIC_ASK_MODEL", "claude-sonnet-4-5"), "anthropic"))
+    if openrouter_key:
+        result.append(ChatProvider("openrouter", "https://openrouter.ai/api/v1/chat/completions", openrouter_key, getattr(settings, "OPENROUTER_ASK_MODEL", "google/gemma-4-31b-it:free")))
+    if groq_key:
+        result.append(ChatProvider("groq", "https://api.groq.com/openai/v1/chat/completions", groq_key, getattr(settings, "GROQ_ASK_MODEL", "openai/gpt-oss-20b")))
+    if openai_key:
+        result.append(ChatProvider("openai", "https://api.openai.com/v1/chat/completions", openai_key, getattr(settings, "OPENAI_ASK_MODEL", "gpt-4o-mini")))
+    return result
+
+
 def clean_history(raw: str | None) -> list[dict[str, str]]:
     """Validate the conversation sent by the browser."""
     if not raw:
@@ -335,12 +357,19 @@ def answer_question(
         }
 
     provider = chat_provider()
-    if provider is None:
+    multi_model = bool(getattr(settings, "AI_ASK_MULTI_MODEL", False))
+    if multi_model:
+        providers = all_providers()
+    else:
+        providers = [provider] if provider is not None else []
+    if not providers:
         return {
             "success": False,
             "error": "The AI assistant is not configured.",
             "status": 503,
         }
+    provider = providers[0]
+    selected_providers = providers[: max(1, int(getattr(settings, "AI_ASK_MULTI_MAX", 3)))] if multi_model else [provider]
 
     try:
         context = build_context(question, language=language, history=history)
@@ -359,6 +388,12 @@ def answer_question(
     has_evidence = bool(context["text"].strip())
 
     system = ask_settings.effective_prompt
+    system += (
+        "\n\nORDER CLARIFICATION: The Fazakkir orators (Serigne Cheikh Ahmad Tidiane Sy Al Maktoum, "
+        "Serigne Moustapha Sy, Serigne Cheikh Ahmad Tidiane Sy Capitaine) belong to the Tijaniyya "
+        "(Tidiane) Sufi order, NOT the Mouride (Muridiyya) order. Never conflate them with Mouride "
+        "beliefs, practices, history or figures (Cheikh Ahmadou Bamba, Touba, the Mouride brotherhood)."
+    )
     examples = training_examples(question)
     if examples:
         system += "\n\nADMIN-APPROVED CORRECTIONS (use these as the authoritative answer when the question is similar; do not contradict them):\n"
@@ -409,8 +444,49 @@ def answer_question(
         )
 
     user_content = "\n\n".join(prompt_parts)
-    answer, error = _call_provider(
-        provider,
+    candidate_answers = []
+    if multi_model and len(selected_providers) > 1:
+        from concurrent.futures import ThreadPoolExecutor
+
+        def _run(p):
+            return p, _call_provider(
+                p, system, history, user_content, min(ask_settings.temperature, 0.2)
+            )
+
+        with ThreadPoolExecutor(max_workers=len(selected_providers)) as executor:
+            results = list(executor.map(_run, selected_providers))
+        for p, (ans, err) in results:
+            if ans:
+                candidate_answers.append((p.name, ans))
+
+    if candidate_answers and len(candidate_answers) > 1:
+        synthesis_system = (
+            system
+            + "\n\nYou are synthesizing answers from multiple AI models. "
+            "Combine them into one accurate, well-structured answer. Prefer "
+            "claims that are supported by the supplied evidence and agreed upon "
+            "by multiple models. Remove any claim that is unsupported or "
+            "contradicted by the evidence. Keep all [S#] citations."
+        )
+        synthesis_user = (
+            user_content
+            + "\n\nCANDIDATE ANSWERS FROM DIFFERENT MODELS:\n"
+            + "\n\n".join(f"[{name}]\n{ans}" for name, ans in candidate_answers)
+            + "\n\nProduce the final synthesized answer."
+        )
+        answer, error = _call_provider(
+            provider,
+            synthesis_system,
+            history,
+            synthesis_user,
+            min(ask_settings.temperature, 0.2),
+        )
+    else:
+        if candidate_answers:
+            answer, error = candidate_answers[0][1], ""
+        else:
+            answer, error = _call_provider(
+                provider,
         system,
         history,
         user_content,
