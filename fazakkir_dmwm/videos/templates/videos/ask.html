@@ -328,7 +328,7 @@
                 a.href = r.url || "#";
                 a.target = r.type === "web" ? "_blank" : "_self";
                 a.rel = "noopener";
-                a.textContent = (r.type === "video" ? "🎬 " : r.type === "book" ? "📖 " : "🔗 ") + (r.title || r.url);
+                a.textContent = (r.type === "video" ? "🎬 " : r.type === "book" ? "📖 " : r.type === "short" ? "📱 " : "🔗 ") + (r.title || r.url);
                 refBox.appendChild(a);
             });
             wrap.appendChild(refBox);

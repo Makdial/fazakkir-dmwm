@@ -1944,6 +1944,12 @@ def ask_send(request):
         all_books = list(Book.objects.filter(is_public=True).order_by("-created_at")[:60])
     except Exception:  # noqa: BLE001
         all_books = []
+    try:
+        from shorts.models import Short
+
+        all_shorts = list(Short.objects.order_by("-created_at")[:30])
+    except Exception:  # noqa: BLE001
+        all_shorts = []
 
     # Score each item by keyword overlap with the question so the most relevant
     # teachings are sent to the model within the token budget.
@@ -1970,12 +1976,23 @@ def ask_send(request):
     for b in all_books:
         text = " ".join(filter(None, [b.title, b.author, b.description]))
         book_entries.append((score(text), b, text))
+    try:
+        from shorts.models import Short
+
+        all_shorts = list(Short.objects.order_by("-created_at")[:30])
+    except Exception:  # noqa: BLE001
+        all_shorts = []
+    short_entries = []
+    for s in all_shorts:
+        text = " ".join(filter(None, [s.title, s.description]))
+        short_entries.append((score(text), s, text))
 
     # Sort by relevance (then recency) and keep the top entries.
     video_entries.sort(key=lambda x: (x[0],), reverse=True)
     book_entries.sort(key=lambda x: (x[0],), reverse=True)
     top_videos = [e for e in video_entries if e[0] > 0][:6] or video_entries[:6]
     top_books = [e for e in book_entries if e[0] > 0][:4] or book_entries[:4]
+    top_shorts = [e for e in short_entries if e[0] > 0][:4] or short_entries[:4]
 
     video_lines = []
     for _score, v, text in top_videos:
@@ -1988,6 +2005,9 @@ def ask_send(request):
         if b.description:
             parts.append(f": {b.description[:300]}")
         book_lines.append("".join(parts))
+    short_lines = []
+    for _score, s, text in top_shorts:
+        short_lines.append(f"- {s.title}" + (f": {s.description[:200]}" if s.description else ""))
 
     # Web search for additional reputable sources about the orators.
     web_results = []
@@ -2018,6 +2038,8 @@ def ask_send(request):
         references.append({"type": "video", "title": v.title, "url": f"/{v.id}"})
     for _score, b, text in top_books:
         references.append({"type": "book", "title": b.title, "url": f"/library/{b.slug}/" if getattr(b, "slug", None) else "/library/"})
+    for _score, s, text in top_shorts:
+        references.append({"type": "short", "title": s.title, "url": f"/shorts/{s.id}/" if hasattr(s, "id") else "/shorts/"})
     for r in web_results[:4]:
         references.append({"type": "web", "title": r["title"], "url": r["url"]})
 
@@ -2026,6 +2048,8 @@ def ask_send(request):
         context_block += "Videos and speeches on the site:\n" + "\n".join(video_lines) + "\n\n"
     if book_lines:
         context_block += "Books in the library:\n" + "\n".join(book_lines) + "\n\n"
+    if short_lines:
+        context_block += "Shorts on the site:\n" + "\n".join(short_lines) + "\n\n"
     if web_results:
         context_block += "Relevant web references:\n" + "\n".join(
             f"- {r['title']}: {r['snippet']} ({r['url']})" for r in web_results[:4]
@@ -2036,8 +2060,8 @@ def ask_send(request):
         "ONLY about the Islamic teachings of three orators: Serigne Cheikh Ahmad "
         "Tidiane Sy Al Maktoum, Serigne Moustapha Sy, and Serigne Cheikh Ahmad "
         "Tidiane Sy Capitaine. You must stay strictly within their teachings and "
-        "the content published on this site (videos, speeches, and books), and "
-        "may also draw on reputable sources about them. "
+        "the content published on this site (videos, speeches, books, and shorts), "
+        "and you may also draw on reputable internet sources about them. "
         "If a question is outside this scope, politely decline and redirect to "
         "these topics. "
         "Answer in the language requested by the user. Be concise, respectful, "
