@@ -1810,6 +1810,36 @@ def save_duration(request, video_id):
 
 
 @require_GET
+def debug_run_audio(request):
+    """Temporary: trigger the audio sweep and return its output."""
+    import subprocess, sys, os
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # views.py is in videos/, so go up two levels to fazakkir_dmwm
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    manage_py = os.path.join(base_dir, "manage.py")
+    env = os.environ.copy()
+    env.setdefault("DJANGO_SETTINGS_MODULE", "fazakkir_dmwm.settings")
+    try:
+        proc = subprocess.run(
+            [sys.executable, manage_py, "generateaudio"],
+            cwd=base_dir,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        return JsonResponse(
+            {
+                "returncode": proc.returncode,
+                "stdout": proc.stdout[-2000:],
+                "stderr": proc.stderr[-2000:],
+            }
+        )
+    except Exception as e:  # noqa: BLE001
+        return JsonResponse({"error": str(e)[:500]}, status=500)
+
+@require_GET
 def debug_env(request):
     import shutil
 
