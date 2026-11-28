@@ -239,6 +239,19 @@ def video_detail(request, video_id):
         else:
             schedule_missing_durations(Video.objects.filter(id=video.id))
 
+    # Extract audio for YouTube videos that don't have an MP3 yet.
+    if video.is_youtube and not video.has_audio and video.audio_status not in (
+        "processing",
+        "none",
+    ):
+        try:
+            from .audio_tasks import generate_youtube_audio
+
+            generate_youtube_audio(video.id)
+            video.refresh_from_db()
+        except Exception:  # noqa: BLE001
+            pass
+
     # When a video is opened from a playlist, remember which playlist it came
     # from so the player can queue the rest of that playlist and play them in
     # order when each video ends.
