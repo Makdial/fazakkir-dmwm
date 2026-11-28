@@ -319,6 +319,9 @@ class AnswerFeedback(models.Model):
     )
     helpful = models.BooleanField()
     comment = models.TextField(blank=True, default="")
+    # An optional "right answer" supplied by the visitor. When promoted by an
+    # administrator it becomes a training example for the assistant.
+    suggested_answer = models.TextField(blank=True, default="")
     is_reviewed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 

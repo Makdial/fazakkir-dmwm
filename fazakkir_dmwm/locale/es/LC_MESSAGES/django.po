@@ -4245,3 +4245,12 @@ msgstr ""
 
 msgid "web research"
 msgstr "investigación web"
+
+msgid "What is the right answer? (optional)"
+msgstr "¿Cuál es la respuesta correcta? (opcional)"
+
+msgid "Corrected answer (used for training)"
+msgstr "Respuesta corregida (usada para entrenamiento)"
+
+msgid "Use as example"
+msgstr "Usar como ejemplo"

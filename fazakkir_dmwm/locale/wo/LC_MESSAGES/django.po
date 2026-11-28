@@ -2473,3 +2473,12 @@ msgstr ""
 
 msgid "web research"
 msgstr "wut web"
+
+msgid "What is the right answer? (optional)"
+msgstr "Lan mooy tontu bu baax bi? (bu bëggee)"
+
+msgid "Corrected answer (used for training)"
+msgstr "Tontu bu jub (ci jàng)"
+
+msgid "Use as example"
+msgstr "Jëfandikoo ni misaal"

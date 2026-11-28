@@ -12,7 +12,7 @@ import httpx
 from django.conf import settings
 from django.utils import timezone
 
-from .models import AskInteraction, AskSettings
+from .models import AnswerFeedback, AskInteraction, AskSettings
 from .retrieval import build_context
 
 logger = logging.getLogger(__name__)
@@ -197,6 +197,45 @@ def training_examples(question: str = "", limit: int = 3) -> list[tuple[str, str
     return [(row.question, row.corrected_answer) for row in chosen]
 
 
+def feedback_notes(question: str, limit: int = 4) -> list[str]:
+    """Collect recent visitor feedback that is relevant to *question*.
+
+    These are treated as soft guidance ("users reported ...") rather than
+    authoritative corrections, so the model is told to respect them but not to
+    treat them as verified sources.
+    """
+    rows = list(
+        AnswerFeedback.objects.select_related("interaction")
+        .order_by("-created_at")[:60]
+    )
+    if not rows:
+        return []
+    question_tokens = set((question or "").lower().split())
+    scored = []
+    for feedback in rows:
+        interaction_question = getattr(feedback.interaction, "question", "") or ""
+        text_blob = (interaction_question + " " + (feedback.comment or "") + " " + (feedback.suggested_answer or "")).lower()
+        tokens = set(text_blob.split())
+        overlap = len(question_tokens & tokens) if question_tokens else 0
+        scored.append((overlap, feedback))
+    scored.sort(key=lambda item: item[0], reverse=True)
+    chosen = [fb for overlap, fb in scored if overlap > 0][:limit]
+    if not chosen:
+        chosen = [fb for _, fb in scored[:limit]]
+    notes: list[str] = []
+    for feedback in chosen:
+        parts = []
+        if feedback.comment:
+            parts.append("issue: " + feedback.comment.strip().replace("\n", " ")[:240])
+        if feedback.suggested_answer:
+            parts.append("suggested answer: " + feedback.suggested_answer.strip().replace("\n", " ")[:400])
+        if feedback.helpful is False:
+            parts.append("(marked not helpful)")
+        if parts:
+            notes.append("; ".join(parts))
+    return notes
+
+
 def answer_question(
     *,
     question: str,
@@ -270,6 +309,11 @@ def answer_question(
         system += "\n\nADMIN-APPROVED CORRECTIONS (use these as the authoritative answer when the question is similar; do not contradict them):\n"
         for question, answer in examples:
             system += f"Q: {question}\nA: {answer}\n\n"
+    notes = feedback_notes(question)
+    if notes:
+        system += "\n\nVISITOR FEEDBACK (respect these reports; they are not verified sources):\n"
+        for note in notes:
+            system += f"- {note}\n"
     if has_external:
         system += (
             "\n\nSome evidence is marked EXTERNAL. Use it only to supplement "
@@ -298,7 +342,8 @@ def answer_question(
             "- Cite only the sources listed above. Never create a new number.\n"
             "- When the sources disagree, name both and explain the difference.\n"
             "- If the answer is not in the evidence, say so.\n"
-            "- Source passages may be in French, Arabic or Wolof. Translate any quotation into the requested language and mark it as your translation, keeping the [S#] citation."
+            "- Source passages may be in French, Arabic or Wolof. Translate any quotation into the requested language and mark it as your translation, keeping the [S#] citation.\n"
+            "- You may add markdown links [title](url) using only URLs present in the evidence, so readers can open the source."
         )
     else:
         prompt_parts.append(

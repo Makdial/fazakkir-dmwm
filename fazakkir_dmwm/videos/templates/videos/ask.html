@@ -274,6 +274,7 @@
     border-radius: 4px; font-size: 0.75rem; color: inherit; opacity: 0.75;
 }
 .ask-copy:hover { background: var(--bg-secondary, #f0f0f0); opacity: 1; }
+.ask-link { color: var(--accent-red, #1976d2); text-decoration: underline; word-break: break-word; }
 .ask-translation {
     margin-top: 8px; padding: 9px 12px; border-radius: 8px;
     background: rgba(25, 118, 210, 0.06);
@@ -441,7 +442,13 @@
 
     function citationLink(text, refs, key) {
         let safe = escapeHtml(text);
+        safe = safe.replace(/\[([^\]]+?)\]\((https?:\/\/[^)\s]+)\)/g, function (match, label, url) {
+            return '<a class="ask-link" href="' + url + '" target="_blank" rel="noopener">' + label + "</a>";
+        });
         safe = safe.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+        safe = safe.replace(/(https?:\/\/[^\s<]+)/g, function (url) {
+            return '<a class="ask-link" href="' + url + '" target="_blank" rel="noopener">' + url + "</a>";
+        });
         safe = safe.replace(/\[S(\d+)\]/g, function (match, number) {
             const exists = (refs || []).some(function (ref) {
                 return String(ref.citation || "") === "S" + number;
@@ -612,11 +619,12 @@
             row.appendChild(done);
         }
 
-        async function send(helpful, comment) {
+        async function send(helpful, comment, suggestedAnswer) {
             const body = new FormData();
             body.append("interaction_id", interactionId);
             body.append("helpful", helpful ? "1" : "0");
             body.append("comment", comment || "");
+            body.append("suggested_answer", suggestedAnswer || "");
             try {
                 const response = await fetch("{% url 'videos:ask_feedback' %}", {
                     method: "POST",
@@ -642,11 +650,14 @@
             box.style.width = "100%";
             const area = document.createElement("textarea");
             area.placeholder = "{% trans 'What was missing or wrong? (optional)' %}";
+            const suggested = document.createElement("textarea");
+            suggested.placeholder = "{% trans 'What is the right answer? (optional)' %}";
             const sendBtn = document.createElement("button");
             sendBtn.type = "button";
             sendBtn.textContent = "{% trans 'Send feedback' %}";
-            sendBtn.addEventListener("click", function () { send(false, area.value); });
+            sendBtn.addEventListener("click", function () { send(false, area.value, suggested.value); });
             box.appendChild(area);
+            box.appendChild(suggested);
             box.appendChild(sendBtn);
             row.appendChild(box);
             area.focus();

@@ -39,6 +39,7 @@ def feedback(request):
     )
     helpful = (request.POST.get("helpful") or "").lower() in ("1", "true", "yes", "helpful")
     comment = (request.POST.get("comment") or "").strip()[:2000]
+    suggested_answer = (request.POST.get("suggested_answer") or "").strip()[:4000]
 
     if not request.user.is_authenticated:
         return JsonResponse({"success": False, "error": _("Please sign in.")}, status=403)
@@ -46,7 +47,11 @@ def feedback(request):
     feedback_obj, _created = AnswerFeedback.objects.update_or_create(
         interaction=interaction,
         user=request.user,
-        defaults={"helpful": helpful, "comment": comment},
+        defaults={
+            "helpful": helpful,
+            "comment": comment,
+            "suggested_answer": suggested_answer,
+        },
     )
     return JsonResponse(
         {

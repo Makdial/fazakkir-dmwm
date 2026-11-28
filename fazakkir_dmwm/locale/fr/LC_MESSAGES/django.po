@@ -2476,3 +2476,12 @@ msgstr ""
 
 msgid "web research"
 msgstr "recherche web"
+
+msgid "What is the right answer? (optional)"
+msgstr "Quelle est la bonne réponse ? (facultatif)"
+
+msgid "Corrected answer (used for training)"
+msgstr "Réponse corrigée (utilisée pour l'entraînement)"
+
+msgid "Use as example"
+msgstr "Utiliser comme exemple"
