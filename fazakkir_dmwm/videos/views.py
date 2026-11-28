@@ -2014,7 +2014,11 @@ def ask_send(request):
         )
         if resp.status_code != 200:
             return JsonResponse(
-                {"success": False, "error": _("The AI service returned an error.")},
+                {
+                    "success": False,
+                    "error": _("The AI service returned an error."),
+                    "detail": f"status={resp.status_code} body={resp.text[:300]}",
+                },
                 status=502,
             )
         answer = resp.json()["choices"][0]["message"]["content"].strip()
