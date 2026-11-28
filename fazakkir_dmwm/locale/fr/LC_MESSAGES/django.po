@@ -1648,3 +1648,6 @@ msgstr ""
 
 msgid "Scroll down"
 msgstr ""
+
+msgid "AI Ask"
+msgstr ""

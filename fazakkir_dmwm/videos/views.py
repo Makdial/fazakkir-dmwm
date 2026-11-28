@@ -1896,6 +1896,137 @@ def my_notes(request):
     return render(request, "videos/my_notes.html", {"notes": notes})
 
 
+def ask(request):
+    """Page where visitors can ask questions about the orators' teachings."""
+    return render(request, "videos/ask.html")
+
+
+@require_POST
+def ask_send(request):
+    """Answer a question using OpenAI, grounded in the site's videos and books."""
+    import json
+
+    question = (request.POST.get("question") or "").strip()
+    if not question:
+        return JsonResponse({"success": False, "error": _("Ask a question first.")}, status=400)
+
+    language = (request.POST.get("language") or request.LANGUAGE_CODE or "en").strip()
+    openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not openai_key:
+        return JsonResponse(
+            {"success": False, "error": _("The AI assistant is not configured.")},
+            status=503,
+        )
+
+    # Gather the site's content (videos + books) and pick the most relevant
+    # entries for the question, so the model can ground its answer in the
+    # orators' actual teachings rather than only titles.
+    all_videos = list(Video.objects.order_by("-created_at")[:60])
+    try:
+        from library.models import Book
+
+        all_books = list(Book.objects.filter(is_public=True).order_by("-created_at")[:60])
+    except Exception:  # noqa: BLE001
+        all_books = []
+
+    # Score each item by keyword overlap with the question so the most relevant
+    # teachings are sent to the model within the token budget.
+    q_tokens = set(question.lower().split())
+
+    def score(text):
+        if not text:
+            return 0
+        t = set(text.lower().split())
+        return len(q_tokens & t)
+
+    video_entries = []
+    for v in all_videos:
+        text = " ".join(filter(None, [v.title, v.description]))
+        try:
+            for st in v.subtitle_tracks.all():
+                if st.content:
+                    text += " " + st.content[:1500]
+        except Exception:  # noqa: BLE001
+            pass
+        video_entries.append((score(text), v, text))
+
+    book_entries = []
+    for b in all_books:
+        text = " ".join(filter(None, [b.title, b.author, b.description]))
+        book_entries.append((score(text), b, text))
+
+    # Sort by relevance (then recency) and keep the top entries.
+    video_entries.sort(key=lambda x: (x[0],), reverse=True)
+    book_entries.sort(key=lambda x: (x[0],), reverse=True)
+    top_videos = [e for e in video_entries if e[0] > 0][:6] or video_entries[:6]
+    top_books = [e for e in book_entries if e[0] > 0][:4] or book_entries[:4]
+
+    video_lines = []
+    for _score, v, text in top_videos:
+        video_lines.append(f"- {v.title}" + (f": {v.description[:300]}" if v.description else ""))
+    book_lines = []
+    for _score, b, text in top_books:
+        parts = [f"- {b.title}"]
+        if b.author:
+            parts.append(f" by {b.author}")
+        if b.description:
+            parts.append(f": {b.description[:300]}")
+        book_lines.append("".join(parts))
+
+    context_block = ""
+    if video_lines:
+        context_block += "Videos and speeches on the site:\n" + "\n".join(video_lines) + "\n\n"
+    if book_lines:
+        context_block += "Books in the library:\n" + "\n".join(book_lines) + "\n"
+
+    system = (
+        "You are an assistant for the Fazakkir platform. You answer questions "
+        "ONLY about the Islamic teachings of three orators: Serigne Cheikh Ahmad "
+        "Tidiane Sy Al Maktoum, Serigne Moustapha Sy, and Serigne Cheikh Ahmad "
+        "Tidiane Sy Capitaine. You must stay strictly within their teachings and "
+        "the content published on this site (videos, speeches, and books). "
+        "If a question is outside this scope, politely decline and redirect to "
+        "these topics. "
+        "Answer in the language requested by the user. Be concise, respectful, "
+        "and cite the relevant video or book title when possible. "
+        "Do not invent facts; if the answer is not in the provided references, "
+        "say so."
+    )
+    user_content = f"Language: {language}\n\nQuestion: {question}"
+    if context_block:
+        user_content += f"\n\nReference material from the site:\n{context_block}"
+
+    try:
+        import httpx
+
+        resp = httpx.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {openai_key}"},
+            json={
+                "model": os.environ.get("OPENAI_ASK_MODEL", "gpt-4o-mini"),
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user_content},
+                ],
+                "temperature": 0.3,
+            },
+            timeout=60.0,
+        )
+        if resp.status_code != 200:
+            return JsonResponse(
+                {"success": False, "error": _("The AI service returned an error.")},
+                status=502,
+            )
+        answer = resp.json()["choices"][0]["message"]["content"].strip()
+        return JsonResponse({"success": True, "answer": answer})
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("AI ask failed: %s", exc)
+        return JsonResponse(
+            {"success": False, "error": _("The AI assistant is unavailable right now.")},
+            status=502,
+        )
+
+
 def my_activity(request):
     if not request.user.is_authenticated:
         return redirect("accounts:login")
