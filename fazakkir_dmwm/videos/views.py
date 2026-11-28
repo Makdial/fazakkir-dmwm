@@ -1927,7 +1927,7 @@ def ask_send(request):
     else:
         api_url = "https://api.groq.com/openai/v1/chat/completions"
         api_key = groq_key
-        model = os.environ.get("GROQ_ASK_MODEL", "llama-3.3-70b-versatile")
+        model = os.environ.get("GROQ_ASK_MODEL", "openai/gpt-oss-20b")
 
     # Gather the site's content (videos + books) and pick the most relevant
     # entries for the question, so the model can ground its answer in the
