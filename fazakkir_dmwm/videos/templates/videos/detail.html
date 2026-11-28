@@ -531,6 +531,7 @@
                 }
                 ytVideoFrame.hidden = true;
                 ytAudioSlot.hidden = false;
+                ytAudioSlot.classList.add("audio-mode");
                 if (!ytLoaded) {
                     fetch(ytPlaybackUrl, { credentials: "same-origin", headers: { Accept: "application/json" } })
                         .then(r => r.json())
@@ -571,6 +572,7 @@
                 const time = ap ? ap.currentTime || 0 : 0;
                 if (ap) ap.pause();
                 ytAudioSlot.hidden = true;
+                ytAudioSlot.classList.remove("audio-mode");
                 ytVideoFrame.hidden = false;
                 if (window.FZ && typeof window.FZ.ytSeekTo === "function") {
                     window.FZ.ytSeekTo(time, wasPlaying);

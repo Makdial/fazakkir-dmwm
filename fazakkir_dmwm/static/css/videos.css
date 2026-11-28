@@ -305,6 +305,26 @@
     z-index: 100;
 }
 
+/* Audio mode (YouTube -> MP3): keep the 16:9 frame and show the cover so the
+   slot does not collapse into a black bar. */
+.watch-player-slot.audio-mode {
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.watch-player-slot.audio-mode .fz-player-host {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.watch-player-slot.audio-mode .audio-cover {
+    display: block;
+}
+
 .watch-main {
     min-width: 0;
 }
