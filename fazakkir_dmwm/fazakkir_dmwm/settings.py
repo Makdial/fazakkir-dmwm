@@ -374,6 +374,9 @@ GEMINI_ASK_MODEL = os.environ.get("GEMINI_ASK_MODEL", "gemini-3.5-flash")
 # OpenRouter (free models available): https://openrouter.ai/keys
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_ASK_MODEL = os.environ.get("OPENROUTER_ASK_MODEL", "google/gemma-4-31b-it:free")
+# Anthropic Claude: https://console.anthropic.com
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_ASK_MODEL = os.environ.get("ANTHROPIC_ASK_MODEL", "claude-sonnet-4-5")
 OPENAI_ASK_MODEL = os.environ.get("OPENAI_ASK_MODEL", "gpt-4o-mini")
 
 # --- Ask DMWM knowledge base ------------------------------------------------

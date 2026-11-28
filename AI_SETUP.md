@@ -72,6 +72,8 @@ Add these variables to `.env` (local) or the Northflank environment:
 | `GEMINI_ASK_MODEL` | `gemini-3.5-flash` | Gemini model used for answers. |
 | `OPENROUTER_API_KEY` | empty | Free OpenRouter chat provider (Llama and others). |
 | `OPENROUTER_ASK_MODEL` | `meta-llama/llama-3.3-70b-instruct:free` | OpenRouter model used for answers. |
+| `ANTHROPIC_API_KEY` | empty | Anthropic Claude chat provider. |
+| `ANTHROPIC_ASK_MODEL` | `claude-sonnet-4-5` | Claude model used for answers. |
 | `OPENAI_API_KEY` | empty | Fallback chat provider, embeddings and translation. |
 | `OPENAI_ASK_MODEL` | `gpt-4o-mini` | OpenAI chat model. |
 | `EMBEDDING_PROVIDER` | `auto` | `auto`, `local` or `openai`. |

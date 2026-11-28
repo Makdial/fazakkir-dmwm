@@ -28,6 +28,7 @@ class ChatProvider:
     url: str
     key: str
     model: str
+    kind: str = "openai"
 
 
 def chat_provider() -> ChatProvider | None:
@@ -44,6 +45,10 @@ def chat_provider() -> ChatProvider | None:
         getattr(settings, "GEMINI_API_KEY", "")
         or os.environ.get("GEMINI_API_KEY", "")
     ).strip()
+    anthropic_key = (
+        getattr(settings, "ANTHROPIC_API_KEY", "")
+        or os.environ.get("ANTHROPIC_API_KEY", "")
+    ).strip()
     openrouter_key = (
         getattr(settings, "OPENROUTER_API_KEY", "")
         or os.environ.get("OPENROUTER_API_KEY", "")
@@ -59,6 +64,14 @@ def chat_provider() -> ChatProvider | None:
             url="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
             key=gemini_key,
             model=getattr(settings, "GEMINI_ASK_MODEL", "gemini-3.5-flash"),
+        )
+    if anthropic_key:
+        return ChatProvider(
+            name="claude",
+            url="https://api.anthropic.com/v1/messages",
+            key=anthropic_key,
+            model=getattr(settings, "ANTHROPIC_ASK_MODEL", "claude-sonnet-4-5"),
+            kind="anthropic",
         )
     if openrouter_key:
         return ChatProvider(
@@ -129,20 +142,39 @@ def _call_provider(
     user_content: str,
     temperature: float,
 ) -> tuple[str | None, str]:
+    temperature = max(0.0, min(1.0, temperature))
     try:
-        response = httpx.post(
-            provider.url,
-            headers={
-                "Authorization": f"Bearer {provider.key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": provider.model,
-                "messages": _messages(system, history, user_content),
-                "temperature": max(0.0, min(1.0, temperature)),
-            },
-            timeout=90.0,
-        )
+        if provider.kind == "anthropic":
+            response = httpx.post(
+                provider.url,
+                headers={
+                    "x-api-key": provider.key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": provider.model,
+                    "max_tokens": 2048,
+                    "system": system,
+                    "messages": history + [{"role": "user", "content": user_content}],
+                    "temperature": temperature,
+                },
+                timeout=90.0,
+            )
+        else:
+            response = httpx.post(
+                provider.url,
+                headers={
+                    "Authorization": f"Bearer {provider.key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": provider.model,
+                    "messages": _messages(system, history, user_content),
+                    "temperature": temperature,
+                },
+                timeout=90.0,
+            )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Ask provider %s failed: %s", provider.name, exc)
         return None, "The AI assistant is unavailable right now."
@@ -157,8 +189,15 @@ def _call_provider(
         return None, "The AI service returned an error."
 
     try:
-        answer = response.json()["choices"][0]["message"]["content"].strip()
-    except (KeyError, IndexError, ValueError) as exc:
+        payload = response.json()
+        if provider.kind == "anthropic":
+            parts = payload.get("content") or []
+            answer = "".join(
+                item.get("text", "") for item in parts if item.get("type") == "text"
+            ).strip()
+        else:
+            answer = payload["choices"][0]["message"]["content"].strip()
+    except (KeyError, IndexError, ValueError, TypeError) as exc:
         logger.warning("Unexpected response from %s: %s", provider.name, exc)
         return None, "The AI service returned an unreadable answer."
     if not answer:
