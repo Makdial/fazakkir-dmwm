@@ -10,17 +10,23 @@
 {% endblock %}
 
 {% block content %}
-<div class="section-header">
-    <h1>{% trans "AI Ask" %}</h1>
-    <p class="section-subtitle">
-        {% trans "Ask about the teachings of Serigne Cheikh Ahmad Tidiane Sy Al Maktoum, Serigne Moustapha Sy and Serigne Cheikh Ahmad Tidiane Sy Capitaine. Answers are drawn from the videos, speeches and books published on this site." %}
-    </p>
-</div>
+<div class="ask-page">
+    <header class="ask-hero">
+        <div class="ask-hero-icon" aria-hidden="true">✨</div>
+        <h1>{% trans "AI Ask" %}</h1>
+        <p class="ask-hero-sub">
+            {% trans "Ask about the teachings of Serigne Cheikh Ahmad Tidiane Sy Al Maktoum, Serigne Moustapha Sy and Serigne Cheikh Ahmad Tidiane Sy Capitaine. Answers are drawn from the videos, speeches and books published on this site." %}
+        </p>
+        <div class="ask-hero-orators">
+            <span>Serigne Cheikh Ahmad Tidiane Sy Al Maktoum</span>
+            <span>Serigne Moustapha Sy</span>
+            <span>Serigne Cheikh Ahmad Tidiane Sy Capitaine</span>
+        </div>
+    </header>
 
-<div class="ask-box">
-    <div class="ask-controls">
-        <label for="askLang">{% trans "Language" %}</label>
-        <select id="askLang" class="form-input">
+    <div class="ask-toolbar">
+        <label for="askLang" class="ask-toolbar-label">{% trans "Language" %}</label>
+        <select id="askLang" class="ask-select">
             <option value="en">English</option>
             <option value="fr">Français</option>
             <option value="ar">العربية</option>
@@ -28,33 +34,150 @@
             <option value="it">Italiano</option>
             <option value="wo">Wolof</option>
         </select>
+        <button type="button" class="ask-clear-btn" id="askClear" title="{% trans 'Clear conversation' %}">
+            {% trans "Clear" %}
+        </button>
     </div>
-    <div class="ask-messages" id="askMessages"></div>
+
+    <div class="ask-chat" id="askChat">
+        <div class="ask-empty" id="askEmpty">
+            <div class="ask-empty-icon" aria-hidden="true">💬</div>
+            <p class="ask-empty-title">{% trans "Start a conversation" %}</p>
+            <p class="ask-empty-hint">{% trans "Ask anything about the orators' teachings, a video, a speech, or a book." %}</p>
+            <div class="ask-suggestions" id="askSuggestions">
+                <button type="button" class="ask-suggestion" data-q="{% trans 'Who is Serigne Cheikh Ahmad Tidiane Sy Al Maktoum?' %}">{% trans "Who is Serigne Cheikh Ahmad Tidiane Sy Al Maktoum?" %}</button>
+                <button type="button" class="ask-suggestion" data-q="{% trans 'What are the main teachings of Serigne Moustapha Sy?' %}">{% trans 'What are the main teachings of Serigne Moustapha Sy?' %}</button>
+                <button type="button" class="ask-suggestion" data-q="{% trans 'Tell me about the speeches available on the site.' %}">{% trans 'Tell me about the speeches available on the site.' %}</button>
+                <button type="button" class="ask-suggestion" data-q="{% trans 'Which books are available in the library?' %}">{% trans 'Which books are available in the library?' %}</button>
+            </div>
+        </div>
+        <div class="ask-messages" id="askMessages" hidden></div>
+    </div>
+
     <form class="ask-form" id="askForm">
         {% csrf_token %}
-        <textarea id="askInput" class="form-input" rows="2"
+        <textarea id="askInput" class="ask-input" rows="1"
                   placeholder="{% trans 'Ask a question…' %}" required></textarea>
-        <button type="submit" class="btn-primary" id="askBtn">{% trans "Ask" %}</button>
+        <button type="submit" class="ask-send-btn" id="askBtn" aria-label="{% trans 'Send' %}">
+            <span class="ask-send-icon" aria-hidden="true">➤</span>
+        </button>
     </form>
+    <p class="ask-disclaimer">{% trans "Answers are generated from the site's content and may not be exhaustive. Always refer to the original videos and books." %}</p>
 </div>
 
 <style>
-.ask-box { max-width: 820px; margin: 0 auto; }
-.ask-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.ask-controls label { font-weight: 600; }
-.ask-controls select { width: auto; }
-.ask-messages { min-height: 200px; max-height: 60vh; overflow-y: auto; padding: 12px;
-                border: 1px solid var(--border-color, #ddd); border-radius: 8px;
-                background: var(--bg-secondary, #f9f9f9); margin-bottom: 12px; }
-.ask-msg { margin-bottom: 12px; }
-.ask-msg .ask-role { font-weight: 700; font-size: 0.85rem; opacity: 0.7; margin-bottom: 4px; }
-.ask-msg.user .ask-role { color: var(--accent, #1976d2); }
-.ask-msg.assistant .ask-role { color: #2e7d32; }
-.ask-msg .ask-text { white-space: pre-wrap; line-height: 1.5; }
-.ask-msg.assistant .ask-text { background: #fff; padding: 10px; border-radius: 6px;
-                               border: 1px solid #e0e0e0; }
-.ask-form { display: flex; gap: 8px; align-items: flex-end; }
-.ask-form textarea { flex: 1; }
+.ask-page { max-width: 900px; margin: 0 auto; padding-bottom: 24px; }
+
+.ask-hero { text-align: center; padding: 28px 16px 20px; }
+.ask-hero-icon { font-size: 2.6rem; line-height: 1; margin-bottom: 8px; }
+.ask-hero h1 { margin: 0 0 8px; font-size: 2rem; }
+.ask-hero-sub { max-width: 720px; margin: 0 auto 14px; opacity: 0.8; line-height: 1.5; }
+.ask-hero-orators { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.ask-hero-orators span {
+    font-size: 0.8rem; padding: 4px 10px; border-radius: 999px;
+    background: var(--bg-secondary, #f0f0f0); border: 1px solid var(--border-color, #ddd);
+}
+
+.ask-toolbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 14px; padding: 0 4px;
+}
+.ask-toolbar-label { font-weight: 600; font-size: 0.9rem; }
+.ask-select { width: auto; min-width: 140px; }
+.ask-clear-btn {
+    margin-inline-start: auto; padding: 6px 12px; border-radius: 6px;
+    border: 1px solid var(--border-color, #ddd); background: transparent;
+    cursor: pointer; font-size: 0.85rem;
+}
+.ask-clear-btn:hover { background: var(--bg-secondary, #f0f0f0); }
+
+.ask-chat {
+    border: 1px solid var(--border-color, #ddd); border-radius: 12px;
+    background: var(--bg-secondary, #f9f9f9); overflow: hidden;
+    display: flex; flex-direction: column; min-height: 420px; max-height: 62vh;
+}
+.ask-empty {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 32px 16px; text-align: center;
+}
+.ask-empty-icon { font-size: 3rem; margin-bottom: 8px; opacity: 0.6; }
+.ask-empty-title { font-size: 1.15rem; font-weight: 600; margin: 0 0 6px; }
+.ask-empty-hint { opacity: 0.7; margin: 0 0 16px; max-width: 420px; }
+.ask-suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 640px; }
+.ask-suggestion {
+    padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color, #ddd);
+    background: var(--bg-primary, #fff); cursor: pointer; font-size: 0.85rem;
+    text-align: start; transition: background 0.15s, border-color 0.15s;
+}
+.ask-suggestion:hover { background: var(--accent, #1976d2); color: #fff; border-color: var(--accent, #1976d2); }
+
+.ask-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+.ask-msg { display: flex; gap: 10px; max-width: 100%; }
+.ask-msg.user { flex-direction: row-reverse; }
+.ask-avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex: 0 0 34px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; background: var(--bg-primary, #fff);
+    border: 1px solid var(--border-color, #ddd);
+}
+.ask-bubble {
+    max-width: 82%; padding: 10px 14px; border-radius: 14px;
+    line-height: 1.55; white-space: pre-wrap; word-wrap: break-word;
+}
+.ask-msg.user .ask-bubble {
+    background: var(--accent, #1976d2); color: #fff; border-bottom-right-radius: 4px;
+}
+.ask-msg.assistant .ask-bubble {
+    background: var(--bg-primary, #fff); border: 1px solid var(--border-color, #ddd);
+    border-bottom-left-radius: 4px;
+}
+.ask-msg-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 0.75rem; opacity: 0.6; }
+.ask-msg.user .ask-msg-meta { justify-content: flex-end; }
+.ask-copy {
+    background: none; border: none; cursor: pointer; padding: 2px 6px;
+    border-radius: 4px; font-size: 0.75rem; opacity: 0.7;
+}
+.ask-copy:hover { background: var(--bg-secondary, #f0f0f0); opacity: 1; }
+
+.ask-typing { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
+.ask-typing span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text-secondary, #888); opacity: 0.4;
+    animation: ask-bounce 1.2s infinite ease-in-out;
+}
+.ask-typing span:nth-child(2) { animation-delay: 0.15s; }
+.ask-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes ask-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-6px); opacity: 1; }
+}
+
+.ask-form {
+    display: flex; gap: 8px; align-items: flex-end;
+    padding: 12px 16px; border-top: 1px solid var(--border-color, #ddd);
+    background: var(--bg-primary, #fff);
+}
+.ask-input {
+    flex: 1; resize: none; min-height: 42px; max-height: 120px;
+    border-radius: 10px; padding: 10px 12px; font-family: inherit;
+}
+.ask-send-btn {
+    width: 44px; height: 44px; border-radius: 10px; border: none;
+    background: var(--accent, #1976d2); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex: 0 0 44px;
+}
+.ask-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.ask-send-btn:hover:not(:disabled) { filter: brightness(1.1); }
+
+.ask-disclaimer { text-align: center; font-size: 0.78rem; opacity: 0.6; margin-top: 10px; }
+
+@media (max-width: 600px) {
+    .ask-hero h1 { font-size: 1.5rem; }
+    .ask-bubble { max-width: 92%; }
+    .ask-suggestion { font-size: 0.8rem; }
+}
 </style>
 
 <script>
@@ -63,25 +186,104 @@
     const form = document.getElementById("askForm");
     const input = document.getElementById("askInput");
     const messages = document.getElementById("askMessages");
+    const empty = document.getElementById("askEmpty");
     const btn = document.getElementById("askBtn");
     const lang = document.getElementById("askLang");
-    const csrf = document.querySelector("#askForm input[name=csrfmiddlewaretoken]").value;
+    const clearBtn = document.getElementById("askClear");
+    const suggestions = document.getElementById("askSuggestions");
+    const chat = document.getElementById("askChat");
+    const csrfInput = form.querySelector("input[name=csrfmiddlewaretoken]");
+    const csrf = csrfInput ? csrfInput.value : "";
+
+    function showMessages() {
+        empty.hidden = true;
+        messages.hidden = false;
+    }
+
+    function scrollToBottom() {
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function copyText(text, btn) {
+        const done = () => {
+            const orig = btn.textContent;
+            btn.textContent = "{% trans 'Copied' %}";
+            setTimeout(() => { btn.textContent = orig; }, 1200);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(() => {});
+        } else {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand("copy"); done(); } catch (e) {}
+            document.body.removeChild(ta);
+        }
+    }
 
     function addMessage(role, text) {
+        showMessages();
         const div = document.createElement("div");
         div.className = "ask-msg " + role;
-        const roleLabel = document.createElement("div");
-        roleLabel.className = "ask-role";
-        roleLabel.textContent = role === "user" ? "{% trans 'You' %}" : "{% trans 'AI Ask' %}";
-        const txt = document.createElement("div");
-        txt.className = "ask-text";
-        txt.textContent = text;
-        div.appendChild(roleLabel);
-        div.appendChild(txt);
+        const avatar = document.createElement("div");
+        avatar.className = "ask-avatar";
+        avatar.textContent = role === "user" ? "👤" : "✨";
+        const wrap = document.createElement("div");
+        const bubble = document.createElement("div");
+        bubble.className = "ask-bubble";
+        bubble.textContent = text;
+        wrap.appendChild(bubble);
+        if (role === "assistant") {
+            const meta = document.createElement("div");
+            meta.className = "ask-msg-meta";
+            const copy = document.createElement("button");
+            copy.type = "button";
+            copy.className = "ask-copy";
+            copy.textContent = "{% trans 'Copy' %}";
+            copy.addEventListener("click", () => copyText(text, copy));
+            meta.appendChild(copy);
+            wrap.appendChild(meta);
+        }
+        div.appendChild(avatar);
+        div.appendChild(wrap);
         messages.appendChild(div);
-        messages.scrollTop = messages.scrollHeight;
+        scrollToBottom();
         return div;
     }
+
+    function addTyping() {
+        showMessages();
+        const div = document.createElement("div");
+        div.className = "ask-msg assistant";
+        const avatar = document.createElement("div");
+        avatar.className = "ask-avatar";
+        avatar.textContent = "✨";
+        const bubble = document.createElement("div");
+        bubble.className = "ask-bubble";
+        const typing = document.createElement("div");
+        typing.className = "ask-typing";
+        typing.innerHTML = "<span></span><span></span><span></span>";
+        bubble.appendChild(typing);
+        div.appendChild(avatar);
+        div.appendChild(bubble);
+        messages.appendChild(div);
+        scrollToBottom();
+        return div;
+    }
+
+    suggestions.addEventListener("click", function (e) {
+        const btn = e.target.closest(".ask-suggestion");
+        if (!btn) return;
+        input.value = btn.dataset.q || btn.textContent;
+        input.focus();
+    });
+
+    clearBtn.addEventListener("click", function () {
+        messages.innerHTML = "";
+        empty.hidden = false;
+        messages.hidden = true;
+    });
 
     form.addEventListener("submit", function (e) {
         e.preventDefault();
@@ -89,8 +291,9 @@
         if (!q) return;
         addMessage("user", q);
         input.value = "";
+        input.style.height = "auto";
         btn.disabled = true;
-        const thinking = addMessage("assistant", "{% trans 'Thinking…' %}");
+        const thinking = addTyping();
 
         const body = new FormData();
         body.append("question", q);
@@ -115,7 +318,20 @@
                 thinking.remove();
                 addMessage("assistant", "{% trans 'Network error. Please try again.' %}");
             })
-            .finally(() => { btn.disabled = false; });
+            .finally(() => { btn.disabled = false; input.focus(); });
+    });
+
+    // Auto-grow textarea
+    input.addEventListener("input", function () {
+        input.style.height = "auto";
+        input.style.height = Math.min(input.scrollHeight, 120) + "px";
+    });
+    // Enter to send, Shift+Enter for newline
+    input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            form.requestSubmit();
+        }
     });
 })();
 </script>
