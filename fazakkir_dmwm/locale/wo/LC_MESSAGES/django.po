@@ -1648,3 +1648,51 @@ msgstr ""
 
 msgid "AI Ask"
 msgstr ""
+
+msgid "Start a conversation"
+msgstr ""
+
+msgid "Something went wrong."
+msgstr ""
+
+msgid "Tell me about the speeches available on the site."
+msgstr ""
+
+msgid "Which books are available in the library?"
+msgstr ""
+
+msgid "Ask anything about the orators' teachings, a video, a speech, or a book."
+msgstr ""
+
+msgid "Answers are generated from the site's content and may not be exhaustive. Always refer to the original videos and books."
+msgstr ""
+
+msgid "Network error. Please try again."
+msgstr ""
+
+msgid "What are the main teachings of Serigne Moustapha Sy?"
+msgstr ""
+
+msgid "Who is Serigne Cheikh Ahmad Tidiane Sy Al Maktoum?"
+msgstr ""
+
+msgid "Ask a question…"
+msgstr ""
+
+msgid "Ask about the teachings of Serigne Cheikh Ahmad Tidiane Sy Al Maktoum, Serigne Moustapha Sy and Serigne Cheikh Ahmad Tidiane Sy Capitaine. Answers are drawn from the videos, speeches and books published on this site."
+msgstr ""
+
+msgid "Copied"
+msgstr ""
+
+msgid "Send"
+msgstr ""
+
+msgid "Clear conversation"
+msgstr ""
+
+msgid "Copy"
+msgstr ""
+
+msgid "Ask DMWM"
+msgstr ""

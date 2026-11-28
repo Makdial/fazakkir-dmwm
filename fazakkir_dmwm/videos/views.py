@@ -1989,28 +1989,65 @@ def ask_send(request):
             parts.append(f": {b.description[:300]}")
         book_lines.append("".join(parts))
 
+    # Web search for additional reputable sources about the orators.
+    web_results = []
+    try:
+        import httpx
+
+        search_query = f"{question} Serigne Cheikh Ahmad Tidiane Sy Al Maktoum OR Serigne Moustapha Sy OR Serigne Cheikh Ahmad Tidiane Sy Capitaine"
+        resp = httpx.get(
+            "https://api.duckduckgo.com/",
+            params={"q": search_query, "format": "json", "no_html": "1", "skip_disambig": "1"},
+            timeout=10.0,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            # Abstract
+            if data.get("Abstract") and data.get("AbstractURL"):
+                web_results.append({"title": data.get("Heading") or "Reference", "url": data["AbstractURL"], "snippet": data["Abstract"][:300]})
+            # Related topics
+            for topic in (data.get("RelatedTopics") or [])[:5]:
+                if isinstance(topic, dict) and topic.get("FirstURL") and topic.get("Text"):
+                    web_results.append({"title": topic["Text"][:80], "url": topic["FirstURL"], "snippet": topic["Text"][:200]})
+    except Exception:  # noqa: BLE001
+        web_results = []
+
+    # Build reference list for the UI.
+    references = []
+    for _score, v, text in top_videos:
+        references.append({"type": "video", "title": v.title, "url": f"/{v.id}"})
+    for _score, b, text in top_books:
+        references.append({"type": "book", "title": b.title, "url": f"/library/{b.slug}/" if getattr(b, "slug", None) else "/library/"})
+    for r in web_results[:4]:
+        references.append({"type": "web", "title": r["title"], "url": r["url"]})
+
     context_block = ""
     if video_lines:
         context_block += "Videos and speeches on the site:\n" + "\n".join(video_lines) + "\n\n"
     if book_lines:
-        context_block += "Books in the library:\n" + "\n".join(book_lines) + "\n"
+        context_block += "Books in the library:\n" + "\n".join(book_lines) + "\n\n"
+    if web_results:
+        context_block += "Relevant web references:\n" + "\n".join(
+            f"- {r['title']}: {r['snippet']} ({r['url']})" for r in web_results[:4]
+        ) + "\n"
 
     system = (
         "You are an assistant for the Fazakkir platform. You answer questions "
         "ONLY about the Islamic teachings of three orators: Serigne Cheikh Ahmad "
         "Tidiane Sy Al Maktoum, Serigne Moustapha Sy, and Serigne Cheikh Ahmad "
         "Tidiane Sy Capitaine. You must stay strictly within their teachings and "
-        "the content published on this site (videos, speeches, and books). "
+        "the content published on this site (videos, speeches, and books), and "
+        "may also draw on reputable sources about them. "
         "If a question is outside this scope, politely decline and redirect to "
         "these topics. "
         "Answer in the language requested by the user. Be concise, respectful, "
-        "and cite the relevant video or book title when possible. "
+        "and cite the relevant video, book, or web reference. "
         "Do not invent facts; if the answer is not in the provided references, "
         "say so."
     )
     user_content = f"Language: {language}\n\nQuestion: {question}"
     if context_block:
-        user_content += f"\n\nReference material from the site:\n{context_block}"
+        user_content += f"\n\nReference material:\n{context_block}"
 
     try:
         import httpx
@@ -2034,7 +2071,7 @@ def ask_send(request):
                 status=502,
             )
         answer = resp.json()["choices"][0]["message"]["content"].strip()
-        return JsonResponse({"success": True, "answer": answer})
+        return JsonResponse({"success": True, "answer": answer, "references": references})
     except Exception as exc:  # noqa: BLE001
         logger.warning("AI ask failed: %s", exc)
         return JsonResponse(

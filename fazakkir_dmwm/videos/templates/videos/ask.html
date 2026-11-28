@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static i18n %}
 
-{% block title %}{% trans "AI Ask" %} - Fazakkir{% endblock %}
+{% block title %}{% trans "Ask DMWM" %} - Fazakkir{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/social.css' %}">
@@ -209,7 +209,18 @@
 .ask-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .ask-send-btn:hover:not(:disabled) { filter: brightness(1.1); }
 
-.ask-disclaimer { text-align: center; font-size: 0.78rem; opacity: 0.6; margin-top: 10px; }
+.ask-refs {
+    margin-top: 8px; padding: 8px 10px; border-radius: 8px;
+    background: var(--bg-secondary, #f5f5f5); border: 1px solid var(--border-color, #e0e0e0);
+}
+.ask-refs-title { font-size: 0.75rem; font-weight: 700; opacity: 0.7; margin-bottom: 4px; }
+.ask-ref {
+    display: inline-block; margin: 2px 4px 2px 0; padding: 3px 8px;
+    border-radius: 6px; font-size: 0.78rem; text-decoration: none;
+    background: var(--bg-primary, #fff); border: 1px solid var(--border-color, #ddd);
+    color: var(--text-primary, #333);
+}
+.ask-ref:hover { border-color: var(--accent, #1976d2); color: var(--accent, #1976d2); }
 
 @media (max-width: 600px) {
     .ask-hero h1 { font-size: 1.5rem; }
@@ -292,7 +303,7 @@
         }
     }
 
-    function addMessage(role, text) {
+    function addMessage(role, text, refs) {
         showMessages();
         const div = document.createElement("div");
         div.className = "ask-msg " + role;
@@ -304,6 +315,24 @@
         bubble.className = "ask-bubble";
         bubble.textContent = text;
         wrap.appendChild(bubble);
+        if (role === "assistant" && refs && refs.length) {
+            const refBox = document.createElement("div");
+            refBox.className = "ask-refs";
+            const refTitle = document.createElement("div");
+            refTitle.className = "ask-refs-title";
+            refTitle.textContent = "{% trans 'References' %}";
+            refBox.appendChild(refTitle);
+            refs.forEach(r => {
+                const a = document.createElement("a");
+                a.className = "ask-ref ask-ref-" + (r.type || "web");
+                a.href = r.url || "#";
+                a.target = r.type === "web" ? "_blank" : "_self";
+                a.rel = "noopener";
+                a.textContent = (r.type === "video" ? "🎬 " : r.type === "book" ? "📖 " : "🔗 ") + (r.title || r.url);
+                refBox.appendChild(a);
+            });
+            wrap.appendChild(refBox);
+        }
         if (role === "assistant") {
             const meta = document.createElement("div");
             meta.className = "ask-msg-meta";
@@ -379,7 +408,7 @@
             .then(data => {
                 thinking.remove();
                 if (data.success) {
-                    addMessage("assistant", data.answer);
+                    addMessage("assistant", data.answer, data.references);
                 } else {
                     addMessage("assistant", data.error || "{% trans 'Something went wrong.' %}");
                 }
