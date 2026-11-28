@@ -2020,22 +2020,33 @@ def ask_send(request):
     try:
         import httpx
 
-        # Wikipedia summaries (English + French) for each orator.
+        # Wikipedia full article text for each orator.
         for name in orator_names:
             for lang in ("en", "fr"):
                 try:
                     slug = name.replace(" ", "_")
                     resp = httpx.get(
-                        f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{slug}",
-                        timeout=8.0,
+                        f"https://{lang}.wikipedia.org/w/api.php",
+                        params={
+                            "action": "query",
+                            "prop": "extracts",
+                            "explaintext": "1",
+                            "titles": name,
+                            "format": "json",
+                        },
+                        timeout=10.0,
                         headers={"User-Agent": "Fazakkir/1.0"},
                     )
                     if resp.status_code == 200:
                         data = resp.json()
-                        extract = (data.get("extract") or "").strip()
-                        url = (data.get("content_urls") or {}).get("desktop", {}).get("page") or f"https://{lang}.wikipedia.org/wiki/{slug}"
-                        if extract:
-                            web_results.append({"title": f"{name} (Wikipedia, {lang})", "url": url, "snippet": extract[:400]})
+                        pages = (data.get("query") or {}).get("pages") or {}
+                        for pid, page in pages.items():
+                            if pid == "-1":
+                                continue
+                            extract = (page.get("extract") or "").strip()
+                            if extract:
+                                url = f"https://{lang}.wikipedia.org/wiki/{slug}"
+                                web_results.append({"title": f"{name} (Wikipedia, {lang})", "url": url, "snippet": extract[:1500]})
                 except Exception:  # noqa: BLE001
                     pass
 
@@ -2049,10 +2060,10 @@ def ask_send(request):
         if resp.status_code == 200:
             data = resp.json()
             if data.get("Abstract") and data.get("AbstractURL"):
-                web_results.append({"title": data.get("Heading") or "Reference", "url": data["AbstractURL"], "snippet": data["Abstract"][:300]})
-            for topic in (data.get("RelatedTopics") or [])[:5]:
+                web_results.append({"title": data.get("Heading") or "Reference", "url": data["AbstractURL"], "snippet": data["Abstract"][:500]})
+            for topic in (data.get("RelatedTopics") or [])[:8]:
                 if isinstance(topic, dict) and topic.get("FirstURL") and topic.get("Text"):
-                    web_results.append({"title": topic["Text"][:80], "url": topic["FirstURL"], "snippet": topic["Text"][:200]})
+                    web_results.append({"title": topic["Text"][:80], "url": topic["FirstURL"], "snippet": topic["Text"][:300]})
     except Exception:  # noqa: BLE001
         web_results = []
 
@@ -2080,21 +2091,20 @@ def ask_send(request):
         ) + "\n"
 
     system = (
-        "You are an assistant for the Fazakkir platform. You answer questions "
-        "ONLY about the Islamic teachings of three orators: Serigne Cheikh Ahmad "
-        "Tidiane Sy Al Maktoum, Serigne Moustapha Sy, and Serigne Cheikh Ahmad "
-        "Tidiane Sy Capitaine. These three are Tijani (Tidiane) scholars, NOT "
-        "Mouride. Never describe them as Mouride. "
+        "You are a scholarly assistant for the Fazakkir platform. You answer "
+        "questions about the Islamic teachings, life, and works of three orators: "
+        "Serigne Cheikh Ahmad Tidiane Sy Al Maktoum, Serigne Moustapha Sy, and "
+        "Serigne Cheikh Ahmad Tidiane Sy Capitaine. "
         "You must stay strictly within their teachings and the content published "
         "on this site (videos, speeches, books, and shorts), and you may also "
-        "draw on reputable internet sources about them (such as Wikipedia and "
-        "reecoutes.com). "
-        "If a question is outside this scope, politely decline and redirect to "
-        "these topics. "
-        "Answer in the language requested by the user. Be concise, respectful, "
-        "and cite the relevant video, book, or web reference. "
-        "Do not invent facts; if the answer is not in the provided references, "
-        "say so."
+        "draw on reputable internet sources about them (Wikipedia, reecoutes.com, "
+        "and other authoritative references). "
+        "Provide thorough, well-written, professional answers: include historical "
+        "context, biographical details, key teachings, and the books or speeches "
+        "they authored, with proper citations. "
+        "Answer in the language requested by the user. Be respectful and "
+        "scholarly. Do not invent facts; if information is not available in the "
+        "provided references, say so and suggest where to look."
     )
     user_content = f"Language: {language}\n\nQuestion: {question}"
     if context_block:
