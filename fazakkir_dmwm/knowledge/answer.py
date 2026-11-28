@@ -382,6 +382,20 @@ def answer_question(
         used_external=has_external,
     )
 
+    # Guard against hallucinated citations: keep only markers that point to
+    # sources we actually retrieved.
+    if answer:
+        valid = {ref.get("citation") for ref in context["references"] if ref.get("citation")}
+        import re as _re
+
+        def _strip_unknown(match):
+            number = match.group(1)
+            if f"S{number}" in valid:
+                return match.group(0)
+            return ""
+
+        answer = _re.sub(r"\\[S(\\d+)\\]", _strip_unknown, answer)
+
     if not answer:
         return {
             "success": False,
