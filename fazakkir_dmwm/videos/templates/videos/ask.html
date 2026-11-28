@@ -110,7 +110,7 @@
     background: var(--bg-secondary, #f9f9f9);
 }
 .ask-hero-logo {
-    width: 88px; height: 88px; flex: 0 0 88px; border-radius: 50%;
+    width: 120px; height: 120px; flex: 0 0 120px; border-radius: 50%;
     object-fit: cover; margin: 0;
     border: 3px solid var(--border-color, #ddd);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -121,15 +121,15 @@
 .ask-hero-orators { display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: flex-start; margin-top: 12px; }
 .ask-orator { display: flex; flex-direction: row; align-items: center; gap: 8px; width: auto; }
 .ask-orator-img {
-    width: 60px; height: 60px; border-radius: 50%; object-fit: cover;
-    border: 2px solid var(--border-color, #ddd);
+    width: 90px; height: 90px; border-radius: 50%; object-fit: cover;
+    border: 3px solid var(--border-color, #ddd);
 }
 .ask-orator-fallback {
-    width: 60px; height: 60px; border-radius: 50%;
+    width: 90px; height: 90px; border-radius: 50%;
     display: none; align-items: center; justify-content: center;
-    font-size: 1.1rem; font-weight: 700; color: #fff;
+    font-size: 1.6rem; font-weight: 700; color: #fff;
     background: linear-gradient(135deg, #1976d2, #42a5f5);
-    border: 2px solid var(--border-color, #ddd);
+    border: 3px solid var(--border-color, #ddd);
 }
 .ask-orator-name {
     font-size: 0.74rem; font-weight: 600; line-height: 1.25;
@@ -351,11 +351,11 @@
 
 @media (max-width: 760px) {
     .ask-hero { padding: 15px; gap: 12px; }
-    .ask-hero-logo { width: 64px; height: 64px; flex-basis: 64px; }
+    .ask-hero-logo { width: 80px; height: 80px; flex-basis: 80px; }
     .ask-hero h1 { font-size: 1.35rem; }
     .ask-hero-sub { font-size: 0.84rem; }
     .ask-hero-orators { gap: 6px 12px; }
-    .ask-orator-img, .ask-orator-fallback { width: 44px; height: 44px; }
+    .ask-orator-img, .ask-orator-fallback { width: 60px; height: 60px; }
     .ask-orator-name { font-size: 0.68rem; max-width: 150px; }
     .ask-shell { height: clamp(420px, calc(100dvh - 320px), 760px); min-height: 420px; border-radius: 12px; }
     .ask-messages { padding: 14px; gap: 13px; }
