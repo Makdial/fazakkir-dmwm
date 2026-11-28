@@ -34,6 +34,8 @@ VALID_SOURCE_TYPES = {choice[0] for choice in KnowledgeChunk.SOURCE_CHOICES}
 @require_POST
 def feedback(request):
     """Record a visitor's helpful/not-helpful verdict on one answer."""
+    if not getattr(request.user, "is_staff", False):
+        return JsonResponse({"success": False, "error": _("Not available.")}, status=403)
     interaction = get_object_or_404(
         AskInteraction, pk=request.POST.get("interaction_id") or 0
     )

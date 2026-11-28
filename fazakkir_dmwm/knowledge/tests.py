@@ -332,7 +332,10 @@ class AnswerServiceTests(TestCase):
 class AskViewTests(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.user = User.objects.create_user(username="visitor", password="x")
+        self.user = User.objects.create_user(
+            username="admin", password="x", is_staff=True, is_superuser=True
+        )
+        self.client.login(username="admin", password="x")
         AskSettings.objects.update_or_create(
             pk=1, defaults={"external_search_enabled": False}
         )
@@ -360,7 +363,7 @@ class AskViewTests(TestCase):
         self.assertTrue(response.json()["success"])
         answer_question_mock.assert_called_once()
 
-    def test_feedback_works_for_guests(self):
+    def test_feedback_works_for_staff(self):
         interaction = AskInteraction.objects.create(question="Q", answer="A")
         response = self.client.post(
             reverse("videos:ask_feedback"),
@@ -376,6 +379,16 @@ class AskViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
+    def test_guests_are_blocked(self):
+        self.client.logout()
+        response = self.client.get(reverse("videos:ask"))
+        self.assertEqual(response.status_code, 302)
+        response = self.client.post(
+            reverse("videos:ask_feedback"),
+            {"interaction_id": 1, "helpful": "1"},
+        )
+        self.assertEqual(response.status_code, 403)
+
     def test_feedback_is_saved(self):
         interaction = AskInteraction.objects.create(question="Q", answer="A")
         self.client.force_login(self.user)
@@ -389,6 +402,7 @@ class AskViewTests(TestCase):
         self.assertEqual(feedback.comment, "Useful")
 
     def test_ai_dashboard_requires_staff(self):
+        self.client.logout()
         response = self.client.get(reverse("dashboard:ai"))
         self.assertEqual(response.status_code, 302)
 

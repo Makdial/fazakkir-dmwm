@@ -12,6 +12,7 @@ from urllib.parse import urlencode
 
 from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, JsonResponse, StreamingHttpResponse
+from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -1897,7 +1898,14 @@ def my_notes(request):
 
 
 def ask(request):
-    """Page where visitors can ask questions about the orators' teachings."""
+    """Page where visitors can ask questions about the orators' teachings.
+
+    Ask DMWM is temporarily restricted to administrators while the assistant
+    is being refined.
+    """
+    if not getattr(request.user, "is_staff", False):
+        messages.info(request, _("Ask DMWM is currently available to administrators only."))
+        return redirect("videos:list")
     from knowledge.answer import chat_provider
     from knowledge.models import AskSettings
 
@@ -1916,6 +1924,8 @@ def ask(request):
 @require_POST
 def ask_send(request):
     """Answer a question with the hybrid RAG service and log the interaction."""
+    if not getattr(request.user, "is_staff", False):
+        return JsonResponse({"success": False, "error": _("Not available.")}, status=403)
     from knowledge.answer import answer_question, clean_history
 
     question = (request.POST.get("question") or "").strip()
