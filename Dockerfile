@@ -1,4 +1,5 @@
 # Container image for Fazakkir.
+# Cache bust: 2026-11-28b
 #
 # Used by Northflank (and works unchanged on Render, Railway, Fly.io and any
 # Docker host). ffmpeg is installed from the distribution because the static
