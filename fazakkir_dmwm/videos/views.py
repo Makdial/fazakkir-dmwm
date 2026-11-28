@@ -239,16 +239,16 @@ def video_detail(request, video_id):
         else:
             schedule_missing_durations(Video.objects.filter(id=video.id))
 
-    # Extract audio for YouTube videos that don't have an MP3 yet.
+    # Schedule audio extraction in the background for YouTube videos that
+    # still need an MP3 (non-blocking).
     if video.is_youtube and not video.has_audio and video.audio_status not in (
         "processing",
         "none",
     ):
         try:
-            from .audio_tasks import generate_youtube_audio
+            from .audio_tasks import schedule_youtube_audio
 
-            generate_youtube_audio(video.id)
-            video.refresh_from_db()
+            schedule_youtube_audio(video.id, retry=True)
         except Exception:  # noqa: BLE001
             pass
 
@@ -1820,54 +1820,6 @@ def save_duration(request, video_id):
         duration_seconds=duration
     )
     return JsonResponse({"success": True, "duration": duration})
-
-
-@require_GET
-def debug_run_audio(request):
-    """Temporary: trigger the audio sweep in the background and return immediately."""
-    import subprocess, sys, os
-
-    base_dir = "/app/fazakkir_dmwm"
-    manage_py = os.path.join(base_dir, "manage.py")
-    env = os.environ.copy()
-    env.setdefault("DJANGO_SETTINGS_MODULE", "fazakkir_dmwm.settings")
-    try:
-        proc = subprocess.Popen(
-            [sys.executable, manage_py, "generateaudio"],
-            cwd=base_dir,
-            env=env,
-            stdout=open("/tmp/audio_sweep.log", "w"),
-            stderr=subprocess.STDOUT,
-        )
-        return JsonResponse({"started": True, "pid": proc.pid})
-    except Exception as e:  # noqa: BLE001
-        return JsonResponse({"error": str(e)[:500]}, status=500)
-
-
-@require_GET
-def debug_audio_log(request):
-    try:
-        with open("/tmp/audio_sweep.log") as f:
-            content = f.read()
-        return JsonResponse({"log": content[-3000:]})
-    except Exception as e:  # noqa: BLE001
-        return JsonResponse({"error": str(e)[:200]})
-    import shutil
-
-    info = {"ffmpeg_path": shutil.which("ffmpeg")}
-    try:
-        import imageio_ffmpeg
-
-        info["imageio_ffmpeg_exe"] = imageio_ffmpeg.get_ffmpeg_exe()
-    except Exception as e:  # noqa: BLE001
-        info["imageio_ffmpeg_error"] = str(e)[:200]
-    try:
-        import yt_dlp
-
-        info["yt_dlp_available"] = True
-    except Exception as e:  # noqa: BLE001
-        info["yt_dlp_error"] = str(e)[:200]
-    return JsonResponse(info)
 
 
 def note_add(request, video_id):

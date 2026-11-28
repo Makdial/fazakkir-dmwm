@@ -409,16 +409,37 @@ def test_email(request):
 @require_POST
 def audio_generate(request):
     """Start converting every video that is missing an MP3, in the background."""
-    started = start_audio_sweep()
-    return JsonResponse(
-        {
-            "success": True,
-            "started": started,
-            "message": _("Generating missing MP3s in the background.")
-            if started
-            else _("An MP3 generation run is already in progress."),
-        }
-    )
+    import os
+    import subprocess
+    import sys
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base_dir = os.path.dirname(base_dir)  # dashboard -> fazakkir_dmwm
+    manage_py = os.path.join(base_dir, "manage.py")
+    if not os.path.exists(manage_py):
+        base_dir = "/app/fazakkir_dmwm"
+        manage_py = os.path.join(base_dir, "manage.py")
+    env = os.environ.copy()
+    env.setdefault("DJANGO_SETTINGS_MODULE", "fazakkir_dmwm.settings")
+    try:
+        subprocess.Popen(
+            [sys.executable, manage_py, "generateaudio"],
+            cwd=base_dir,
+            env=env,
+            stdout=open("/tmp/audio_sweep.log", "w"),
+            stderr=subprocess.STDOUT,
+        )
+        return JsonResponse(
+            {
+                "success": True,
+                "started": True,
+                "message": _("Generating missing MP3s in the background."),
+            }
+        )
+    except Exception as e:  # noqa: BLE001
+        return JsonResponse(
+            {"success": False, "error": str(e)[:200]}, status=500
+        )
 
 
 @write_required
